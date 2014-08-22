@@ -1,0 +1,1161 @@
+--- Lua Services Test Framework.
+-- <ul>Requirements:
+-- <li>Modem Simulator and Terminal Simulator</li>
+-- <li>Modem Simulator, Desktop Terminal, and Raspberry Pi</li>
+-- </ul>
+-- See documentation for further details.
+-- You may find it convenient to run your test suite from SciTE.
+-- @usage
+-- shell> lua -e "debugLevel = 0|1|2" <test file name>
+-- @usage
+-- -- Here, debugLevel 0 is implied
+-- shell> lua <test file name>
+-- @usage
+-- -- If lua is in system path, you can simply run (in debugLevel 0) like so:
+-- shell> MyTestSuite.lua
+-- @module TestFramework
+
+local http = require("socket.http")
+local ltn12 = require("ltn12")
+local mime = require("mime")
+local io = require("io")
+local json = require("json")
+local cfg = require("TestConfiguration")
+
+local rev = "$Revision: 1194 $"
+
+local startUTC = nil
+local testNum = 0
+local b64map='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'	--needed for b64 encoding.
+local lastForwardID = 0
+local testStartTime = os.time()
+local calledGateway = false
+local terminalInfo = nil
+local gatewayVersion = nil
+local timeOffset = 0
+
+local gateway = {}
+local lsf = {}
+local device = {}
+local gps = {}
+local framework = {}
+
+gateway.returnMsgList = {}
+cfg.PORTMAP = {1, 2, 3, 4}
+local function getTableLength(table)
+	local len = 0
+	for _ in pairs(table) do len = len + 1 end
+	return len
+end
+
+cfg.mt = {}
+cfg.mt.__index = function(table, key)
+	if getTableLength(table) == 0 then return key end
+	error("Invalid I/O port: " .. tostring(key))
+end
+setmetatable(cfg.PORTMAP, cfg.mt)
+
+function printf(...)
+	io.write(string.format(...))
+end
+
+function printfLine(...)
+	printf(...)
+	io.write("\n")
+end
+
+function printfLineDate(...)
+	io.write(os.date("![%Y-%m-%d %X] "))
+	printfLine(...)
+end
+
+function dummyFunc() end
+
+--------------------Local Framework Functions--------------------
+
+local function getRevision()
+	for number in rev:gmatch("%d+") do
+		return number
+	end
+end
+
+local function lowerCaseNoSpace(str)
+	if str == nil then return nil end
+	return str:gsub("%s", ""):lower()
+end
+
+if debugLevel == 2 then
+	trace2 = printfLineDate
+	trace1 = printfLineDate
+	print "trace1 ON, trace2 ON"
+elseif debugLevel == 1 then
+	trace2 = dummyFunc
+	trace1 = printfLineDate
+	print "trace1 ON, trace2 OFF"
+else
+	trace2 = dummyFunc
+	trace1 = dummyFunc
+	print "trace1 OFF, trace2 OFF"
+end
+trace0 = printfLineDate
+
+--- print regardless of debugLevel
+-- @function trace0
+-- @param ... variable arguments that could be passed to string.format
+-- @usage
+-- -- output will be similar to this:
+-- -- [2014-06-24 21:18:16] Hello World!
+-- trace0("Hello %s!", "World")
+-- @within Extensions
+
+--- print when debug level is 1 or higher
+-- @function trace1
+-- @param ... variable arguments that could be passed to string.format
+-- @usage
+-- -- output will be similar to this:
+-- -- [2014-06-24 21:18:16] Today's day of week: Tuesday
+-- trace1("Today's day of week: %s", os.date("%A"))
+-- @within Extensions
+
+--- print when debug level is 2
+-- @function trace2
+-- @param ... variable arguments that could be passed to string.format
+-- @usage
+-- -- output will be similar to this:
+-- -- [2014-06-24 21:18:16] He said, "thank you".
+-- trace2("He said, %q.", "thank you")
+-- @within Extensions
+
+local function escape(s)
+	s = string.gsub(s, "[&=+:%%%c]", function(c)
+		return string.format("%%%02X", string.byte(c))
+	end)
+	s = string.gsub(s, " ", "+")
+	return s
+end
+
+local function encode(t)
+	local b = { }
+	for k, v in pairs(t) do
+		b[#b + 1] = (escape(k) .. "=" .. escape(v))
+	end
+	return table.concat(b, "&")
+end
+
+-- function string.tohex(str)
+--     return (str:gsub('.', function (c)
+--         return string.format('%02X', string.byte(c))
+--     end))
+-- end
+
+local function webServiceGet(fullURL, decode)
+	framework.firstCallHouseKeeping()
+	local encoded = json.encode(nil)
+	local source = ltn12.source.string(encoded);
+	local response = {}
+	local sink = ltn12.sink.table(response)
+	local headers = {
+			["Content-Type"] = "application/json",
+			["Content-Length"] = 0		-- TODO: keep this? breaks something else?
+		}
+
+	if decode == nil then
+		decode = true
+	end
+	trace2(fullURL)
+	ok, code, headers = http.request {
+		url = fullURL,
+		proxy = cfg.HTTP_PROXY,
+		method = "GET", headers = headers, source = source, sink = sink
+	}
+	if (ok and code == 200) then
+		local response1 = response[1];
+		if decode then
+			return json.decode(response1)
+		end
+	else
+		return false, code
+	end
+end
+
+local function webServiceGetRsc(url, resource, params, decode)
+	params = params == nil and "" or "?" .. encode(params)
+	return webServiceGet(url .. "/" .. resource .. ".json/" .. params, decode)
+end
+
+-- returns a resouce value; the resource must be published by the web service (like info_utc_time) <br />
+-- See document N201 for list of gateway web resources.
+local function getGatewayResource(
+			resource, 			-- string: resource to get from gateway
+			params				-- table: table of parameters to pass to the gateway in a GET request
+		)
+	local returnVal, code = webServiceGetRsc(cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX, resource, params)
+	if not returnVal then
+		error("Gateway unreachable. HTTP Error code: " .. tostring(code))
+	end
+	return returnVal
+end
+
+local function collapseFields(fields)
+	local t = { }
+	for i = 1, #fields do
+		local value = fields[i].Value
+		local elements = fields[i].Elements
+		t[fields[i].Name] = value and value or elements
+	end
+	return t
+end
+
+local function oneLineDump(var)
+	if type(var) == "string" then
+		return '"' .. var .. '"'
+	elseif type(var) == "table" then
+		out = ""
+		for k,v in pairs(var) do
+			if type(v) ~= "table" then
+				out = out .. " ".. k .."=" .. tostring(v)
+			end
+		end
+		return out
+	else
+		return tostring(var)
+	end
+end
+
+-- msg: collapsed return message
+local function recordAndPrintMsg(msg)
+	local brief = {id=msg.ID, time=msg.MessageUTC, sin=msg.SIN, name=msg.Payload.Name}
+	if msg.SIN == 18 and msg.Payload.MIN == 3 then
+		print("Invalid ToTerminal msg: " .. framework.dump(msg))
+	elseif msg.SIN == 18 and msg.Payload.MIN == 4 then
+		print("Terminal couldn't process msg: " .. framework.dump(msg))
+	elseif msg.SIN == 26 and msg.Payload.MIN == 1 and msg.Payload.success=="False" then
+		print("Invalid shell command: " .. framework.dump(msg))
+	else
+		if trace2 == dummyFunc then
+			trace1("Received: " ..  oneLineDump(msg.Payload))
+		else
+			trace2("Received: " .. framework.dump(msg.Payload))
+		end
+	end
+	gateway.returnMsgList[#gateway.returnMsgList+1] = brief
+end
+
+local function checkShellResponse(msg, substring)
+	substring = substring and substring or ""
+	local colmsg = framework.collapseMessage(msg)
+	if(colmsg.Payload.Name == "cmdResult" and colmsg.Payload.output:find(substring)) then
+		return true
+	end
+end
+
+-- local function checkSinMin(msg, tbl)
+-- 	--print("checking sin, min... ", msg.Payload.SIN, tbl[1], msg.Payload.MIN, tbl[2])
+-- 	assert(msg, "Message with specified (SIN, MIN) = (" .. tostring(tbl[1]) .. ", " .. tostring(tbl[2]) .. ") never received")
+-- 	local colmsg = framework.collapseMessage(msg)
+-- 	if colmsg.Payload.SIN == tbl[1] and colmsg.Payload.MIN == tbl[2] then return true end
+-- end
+
+local function checkPropValResponse(msg)
+	assert(msg, "PropertyValues response never received.")
+	local colmsg = framework.collapseMessage(msg)
+	if colmsg.Payload.Name == "propertyValues" then return true end
+end
+
+local function assertSinRange(sin)
+	assert(type(sin) == "number" and 1 <= sin and sin <= 255, "Expected SIN between 1 and 255; got " .. tostring(sin))
+end
+
+local function checkValueType(t)
+	--unsignedint, signedint, string, boolean, enum, data
+	if t == "unsignedint" or t == "signedint" or t == "enum" or t == "string" or t == "boolean" or t == "data" then
+		return true
+	end
+	return false
+end
+
+local function getSettingsTable(settings)
+	if type(settings[1]) ~= "table" then
+		settings = {settings}
+	end
+	sTable = {}
+	for i=1,#settings do
+		sTable[i]={}
+		settings[i][3] = settings[i][3] and settings[i][3] or "unsignedint"
+		assert(settings[i][1] ~= nil and settings[i][2] ~= nil and settings[i][3] ~= nil, "settings must be array of {1=pin, 2=value, 3=valType}")
+		assert(checkValueType(settings[i][3]), "Value type must obe one of: unsignedint, signedint, string, boolean, enum, data; is " .. tostring(valType))
+		sTable[i].Index=i-1
+		sTable[i].Fields={{Name="pin",Value=settings[i][1]},
+			{Name="value",Value=settings[i][2],Type=settings[i][3]}}
+	end
+	return sTable
+end
+
+local function getReturnMessages()
+	framework.firstCallHouseKeeping()
+	local encoded = json.encode(msgs)
+	local source = ltn12.source.string(encoded);
+
+	local response = {}
+	local sink = ltn12.sink.table(response)
+
+	local headers = {
+		["Content-Type"] = "application/json",
+	}
+	local startTime = startUTC
+	local params = {
+		["access_id"] = ACCESS_ID,
+		["password"] = PASSWORD,
+		--["from_id"] = lastID,
+		["start_utc"] = startTime
+	}
+	local url = cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX .. "/get_return_messages.json/?" .. encode(params)
+	ok, code, headers = http.request {
+		url = url,
+		proxy = cfg.HTTP_PROXY,
+		method = "GET", headers = headers, source = source, sink = sink
+	}
+
+	if (ok and code == 200) then
+		local response1 = response[1];
+		for i=2,10 do
+			if response[i] ~= nil then
+				response1 = response1 .. response[i]
+			else
+				break
+			end
+		end
+		local result, decoded = pcall(json.decode, response1)
+		if (not result) then
+			error("JSON decode failed: " .. decoded)
+		elseif (decoded.ErrorID == 0) then
+			startUTC = decoded.NextStartUTC
+			return decoded.Messages
+		else
+			error("Gateway message retrieval error... ErrorID: " .. tostring(ErrorID))
+		end
+	else
+		error("Gateway message retrieval error... OK?" .. tostring(ok) .. ", code: " .. tostring(code))
+	end
+	return nil
+end
+
+-- Converts timestamp (unsigned int) to its equivalent string representation
+-- <br /><br />
+-- See <span style="font-family:monospace">ISOToEpoch</span> which has the opposite affect
+-- @tparam number timestamp the timestamp to convert to string
+-- @treturn string the string representation of the timestamp
+local function EpochToISO(timestamp)
+	return os.date("%Y-%m-%d %H:%M:%S", timestamp)
+end
+
+-- converts date in yyyy-MM-dd hh:mm:ss format to timestamp (unsigned int)
+-- <br /><br />
+-- See <span style="font-family:monospace">EpochToISO</span> which has the opposite affect
+-- @tparam string s string representation of date in "yyyy-MM-dd hh:mm:ss" format
+-- @treturn number the corresponding timestamp
+local function ISOToEpoch(s)
+	local year, month, day, hour, min, sec = s:match("(%d%d%d%d)-(%d%d)-(%d%d) (%d%d):(%d%d):(%d%d)")
+	return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+end
+
+-- Returns a number representing current gateway time
+local function getGatewayTime()
+	local decoded = getGatewayResource("info_utc_time")
+	return ISOToEpoch(decoded)
+end
+
+local function getTerminalResponse(payload, checkFunction, cbfParam)
+	gateway.setHighWaterMark()
+	gateway.submitForwardMessage(payload)
+	return gateway.getReturnMessage(checkFunction, cbfParam)
+end
+
+function framework.firstCallHouseKeeping()
+	if not calledGateway then
+		calledGateway = true
+		local gatewayTime = getGatewayTime()
+		local localTime = os.time()
+		timeOffset = gatewayTime - localTime
+		gatewayVersion = getGatewayResource("info_version")
+		gateway.setHighWaterMark()
+
+		gateway.submitForwardMessage{SIN = 16, MIN = 1}
+		local msg = gateway.getReturnMessage(
+			function(msg)
+				if not msg then
+					print "Unable to retrieve terminal info. Tests will continue."
+					return false
+				end
+				local colmsg = framework.collapseMessage(msg)
+				if colmsg.Payload.SIN == 16 and colmsg.Payload.MIN == 1 then
+					return true
+				end
+			end
+		)
+		if msg then
+			local colmsg = framework.collapseMessage(msg)
+			if debugLevel == 2 then
+				terminalInfo = "Terminal info: " .. framework.dump(colmsg.Payload);
+			else
+				terminalInfo = colmsg.Payload.packageVersion and "Terminal package: " .. colmsg.Payload.packageVersion or "LSF Version: " .. colmsg.Payload.LSFVersion
+			end
+		end
+	end
+end
+
+-----------------Test Framework Helper Functions-----------------
+
+framework.version = "1.3." .. getRevision()
+framework.failureCount = 0
+
+--- Gets string representation of a table; normally used to print tables.
+-- @return string representation of Lua object
+-- @tparam table var object whose string representation is desired; need not be a table
+-- @tparam[opt=0] ?number depth #spaces to indent table
+-- @usage
+-- local x = {1, "a", {"b"}}
+-- print(framework.dump(x))
+-- -- this prints:
+-- {
+--     1 = 1
+--     2 = "a"
+--     3 = {
+--         1 = "b"
+--     }
+-- }
+-- @within TestHelpers
+function framework.dump(var, depth)
+	depth = depth or 0
+	if type(var) == "string" then
+		return '"' .. var .. '"\n'
+	elseif type(var) == "table" then
+		depth = depth + 1
+		out = "{\n"
+		for k,v in pairs(var) do
+			out = out .. (" "):rep(depth*4) .. tostring(k) .." = " .. framework.dump(v, depth)
+		end
+		return out .. (" "):rep((depth-1)*4) .. "}\n"
+	else
+		return tostring(var) .. "\n"
+	end
+end
+
+
+--- Returns a function that can then be passed to <span style="font-family:monospace">getReturnMessage</span>
+-- or <span style="font-family:monospace">filterReturnMessages</span> as the callback function; the callback function
+-- verifies the SIN and MIN specified here.<br /><br />
+-- NOTE: In general, callback functions are written by users to match precise criteria.<br /><br />
+-- NOTE: Use GUI tool MessageEditor to automatically generate useful callback functions.
+-- @tparam number sin SIN to check for
+-- @tparam number min MIN to check for
+-- @usage
+-- -- send a to-mobile message with SIN 16, MIN 3; no additional data required for this simple message
+-- local payload = {SIN=16, MIN=3}
+-- gateway.submitForwardMessage(payload)
+-- -- verify that from-mobile message with (SIN, MIN) = (16, 3) is received; (serviceList)
+-- local msg = gateway.getReturnMessage(framework.checkMessageType(16, 3))
+-- print(framework.dump(msg))
+-- @within TestHelpers
+function framework.checkMessageType(sin, min)
+	return function(msg)
+		assert(msg, string.format("Message - (sin, min) = (%d, %d) - expected but not received.", sin, min))
+		local colmsg = framework.collapseMessage(msg)
+		return colmsg.Payload.SIN == sin and colmsg.Payload.MIN == min
+	end
+end
+
+--- Sleep specified number of seconds before executing next line of code
+-- @number seconds duration to sleep
+-- @within TestHelpers
+function framework.delay(seconds)
+	socket.sleep(seconds)
+end
+
+--- Data fields in to-or-from terminal messages are encoded in base64 format; this function encodes string data to base64 format
+-- @param data string or array or numbers in range [0, 255]: the data to encode
+-- @treturn string base64-encoded data
+-- @usage
+-- -- These are equivalent calls:
+-- framework.base64Encode({65, 66, 67})
+-- framework.base64Encode("ABC")
+-- @within TestHelpers
+function framework.base64Encode(data)
+	local data1 = data
+	if type(data) == "table" then
+		data1 = string.char(unpack(data))
+	end
+
+		return ((data1:gsub('.', function(x)
+				local r,b='',x:byte()
+				for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+				return r;
+		end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+				if (#x < 6) then return '' end
+				local c=0
+				for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+				return b64map:sub(c+1,c+1)
+		end)..({ '', '==', '=' })[#data1%3+1])
+end
+
+local function base64Decode(data)
+		data = string.gsub(data, '[^'..b64map..'=]', '')
+		return (data:gsub('.', function(x)
+				if (x == '=') then return '' end
+				local r,f='',(b64map:find(x)-1)
+				for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+				return r;
+		end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+				if (#x ~= 8) then return '' end
+				local c=0
+				for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+				return string.char(c)
+		end))
+end
+
+--- Decode base64 string data, complementary to base64Encode
+-- @tparam string data string data to decode
+-- @treturn table table of numbers in range [0, 255] (byte representation of decoded string)
+-- @treturn string decoded string
+-- @usage
+-- -- This is how getSinList uses b64dec to decode data represented in b64 format:
+-- local payload = {SIN=16, MIN=3}
+-- gateway.submitForwardMessage(payload)
+-- local msg = gateway.getReturnMessage(framework.checkMesssageType(16, 3))
+-- local sinList = msg.Payload.sinList
+-- sinList = framework.base64Decode(sinList)
+-- @within TestHelpers
+function framework.base64Decode(data)
+		local str = base64Decode(data)
+	return {str:byte(1, str:len())}, str
+end
+
+local function collapseMsg(tbl)
+	for k,v in pairs(tbl) do
+		if k == "Index" and type(v) == "number" then
+			tbl[k] = nil
+		elseif k == "Fields" then
+			for k2,v2 in pairs(collapseFields(v)) do
+				tbl[k2] = v2
+			end
+			tbl[k] = nil
+		end
+	end
+
+	for k,v in pairs(tbl) do
+		if type(v) == "table" then
+			tbl[k] = framework.collapseMessage(v)
+		end
+	end
+end
+
+--- Simplify a to-or-from gateway message (or array of messages) for printing and accessing fields
+-- @tparam table tbl the table to collapse
+-- @treturn table collapsed table
+-- @usage
+-- -- This gets return messages from the gateway and makes them more readable
+-- local msgs = getReturnMessages()
+-- for _, msg in ipairs(msgs) do
+-- 	msg = framework.collapseMessage(msg)
+--	print(framework.dump(msg))
+-- end
+-- -- or simply:
+-- framework.dump(getReturnMessages())
+-- @within TestHelpers
+function framework.collapseMessage(tbl)
+	local t2 = {}
+	for k,v in pairs(tbl) do
+		if k == "Index" and type(v) == "number" then
+			-- ignore key/value
+		elseif k == "Fields" then
+			for k2,v2 in pairs(collapseFields(v)) do
+				t2[k2] = v2
+			end
+		else
+			t2[k] = v
+		end
+	end
+	for k,v in pairs(t2) do
+		if type(v) == "table" then
+			t2[k] = framework.collapseMessage(v)
+		end
+	end
+	return t2
+end
+
+
+--- Filter the return messages that conform to a check function
+-- @tparam table msgs output of getReturnMessages()
+-- @tparam function checkFunction function that determines whether each message is of the type that is being checked for
+-- @tparam[opt] ?AnyType checkParam parameter to pass to the call back function; if >1 parameters needed, pass a table.
+-- @usage
+-- -- get return messages from gateway and determine how many are position reports (SIN 20, MIN 1)
+-- local msgs = gateway.getReturnMessages()
+-- local matching = framework.filterMessages(msgs, checkMessageType (20, 1))
+-- @within TestHelpers
+function framework.filterMessages(msgs, checkFunction, checkParam)
+	local filtered = {}
+	for _, msg in ipairs(msgs) do
+		local success, retVal = pcall(checkFunction, msg, checkParam)
+		if success and retVal == true then
+			filtered[#filtered + 1] = msg
+		end
+	end
+	return filtered
+end
+
+--- Test suite run can be looped multiple times. This function prints statistics after the test run; call after runTests().
+-- See TestSuiteExample0X for details.
+-- @tparam[opt=false] bool ?testSuiteSuccess
+-- @within TestHelpers
+function framework.printResults(testSuiteSuccess)
+	if not testSuiteSuccess then
+		framework.failureCount = framework.failureCount + 1
+	end
+	print()
+	print("--------------------------------")
+	msgTypes = {}
+	local printTitle = true
+	for k,v in ipairs(gateway.returnMsgList) do
+		v.name = v.name and v.name or "<Unnamed>"
+		msgTypes[v.name] = msgTypes[v.name] and msgTypes[v.name] + 1 or 1
+	end
+	print "Return messages statistics:"
+	for k,v in pairs(msgTypes) do
+		print("Received " .. tostring(v) .. " " .. k .. " messages.")
+	end
+	print("")
+	local diff = os.time() - testStartTime
+	print("Time to run tests: " .. os.date("!%H:%M:%S", diff) .. ".")
+	print("")
+	printf("Framework version: %s \n", framework.version)
+	if gatewayVersion then
+		printf("Gateway version: %s \n", gatewayVersion)
+	end
+
+	if terminalInfo then		--if debugLevel == 2 then all msgs are logged automatically
+		print(terminalInfo)
+	end
+
+	--resetStats
+	testStartTime = os.time()
+	gateway.returnMsgList = {}
+	print("\r\n\r\n");
+end
+
+
+--------------------Message Gateway Functions--------------------
+
+--- Submits a forward message payload. Specify only the payload - message metadata can be configured in the TestConfiguration file.
+-- @tparam table payload the payload field of the forward message
+-- @tparam[opt=false] ?boolean raw nil regarded as false; if true, this specifies the message's RawPayload field.
+-- @usage
+-- -- Submit (SIN, MIN) = (16, 1) (getTerminalInfo) message to terminal
+-- gateway.submitForwardMessage{SIN = 16, MIN = 1}
+-- @within GatewayMessages
+function gateway.submitForwardMessage(payload, raw)
+	framework.firstCallHouseKeeping()
+	local msg = { DestinationID = cfg.MOBILE_ID, UserMessageID = lastForwardID+1}
+	lastForwardID = lastForwardID + 1
+	if raw then
+		msg.RawPayload = payload
+	else
+		msg.Payload = payload
+	end
+
+	local msgs = { ["accessID"] = cfg.ACCESS_ID, ["password"] =  cfg.PASSWORD, ["messages"] = { msg } }
+	local encoded = json.encode(msgs)
+	local source = ltn12.source.string(encoded);
+
+	local response = {}
+	local sink = ltn12.sink.table(response)
+	local headers = {
+		["Content-Type"] = "application/json",
+		["content-length"] = #encoded
+	}
+	local ok, code
+	ok, code, headers = http.request {
+		url = cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX .. "/submit_messages.json/",
+		proxy = cfg.HTTP_PROXY,
+		method = "POST", headers = headers, source = source, sink = sink
+	}
+	if not raw then
+		if trace2 == dummyFunc then
+			trace1("Submitted: " .. oneLineDump(payload))
+		else
+			trace2("Submitted: " .. framework.dump(framework.collapseMessage(payload)))
+		end
+	end
+
+	-- retry submission if gateway temporarily unavailable.
+	while code == 503 do
+		print "Gateway temporarily unavailable; retry submission."
+		framework.delay(2)
+		ok, code, headers = http.request {
+			url = cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX .. "/submit_messages.json/",
+			proxy = cfg.HTTP_PROXY,
+			method = "POST", headers = headers, source = source, sink = sink
+		}
+	end
+
+	if ok and code == 200 then
+		local response1 = response[1];
+		local decoded = json.decode(response1)
+
+		local submitResult = decoded.SubmitForwardMessages_JResult
+		if submitResult.ErrorID == 0 then
+			local submissions = submitResult.Submissions
+			local submission = submissions[1]
+			if submission.ErrorID == 0 then
+				return submission
+			else
+				error("Forward message not submitted; Error ID: " .. tostring(submission.ErrorID))
+			end
+		end
+	end
+	error("Forward message not submitted; HTTP error code : " .. tostring(code))
+	return nil
+end
+
+--- Polls the gateway every 3 seconds; records every message retrieved from gateway; and returns the first instance of message that matches criteria
+-- <br /><br />
+-- NOTE: table hierarchy of each message is collapsed to a simpler table before being returned by calling framework.collapseMessage()
+
+-- tparam function checkFunction function to call to determine if criteria matches; should throw exception if criteria doesn't match
+-- tparam[opt=nil] ?AnyType checkParam callback function parameter; use table if >1 parameter needed
+-- traram[opt=DEFAULT] ?number timeout parameter to control the timeout for this funciton
+-- @treturn table the first message that matches criteria; nil otherwise
+
+-- @usage
+-- device.setIO(1, 1)
+-- -- If EIO service was configured to send port alarm when Port 1 switched on, the following verifies that port alarm is received:
+-- local msg = gateway.getReturnMessage(checkPortAlarm, 1)
+-- device.setIO(1, 0)
+-- -- If EIO service was NOT configured to send port alarm when Port 1 switched off, the following verifies that no port alarm is received:
+-- gateway.getReturnMessage(checkNoPortAlarm)
+-- -- See TestSuiteExample02_IO for more details...
+-- gateway.getReturnMessage(<your own callback or framework.checkMessageType>)
+-- @within GatewayMessages
+function gateway.getReturnMessage(
+			checkFunction,
+			checkParam,
+			timeout
+		)
+	assert(checkFunction, "checkFunction not provided to getReturnMessage")
+	time1 = os.time()
+	timeout = timeout and timeout or cfg.GATEWAY_TIMEOUT
+	while(true) do
+		local msgs = getReturnMessages()
+		for i, msg in ipairs(msgs) do
+			colmsg = framework.collapseMessage(msg)
+			colmsg.Payload = colmsg.Payload and colmsg.Payload or {}
+			recordAndPrintMsg(colmsg)
+			if checkFunction(msg, checkParam) then
+				return msg
+			end
+		end
+		if(os.time() - time1 >= timeout) then
+			checkFunction(nil, checkParam)
+			break;
+		end
+		framework.delay(3)
+	end
+	return nil
+end
+
+--- Retrieves return messages from the gateway. Also records them for statistics records.
+-- @tparam[opt=DEFAULT] ?number timeout number of seconds to wait before requesting messages from gateway; DEFAULT=cfg.GATEWAY_TIMEOUT
+-- @treturn table array of messages retrieved from gateway
+-- @within GatewayMessages
+function gateway.getReturnMessages(timeout)
+	timeout = timeout and timeout or cfg.GATEWAY_TIMEOUT
+	framework.delay(timeout)
+	local msgs = getReturnMessages()
+	local retMsgs = {}
+	for i,msg in ipairs(msgs) do
+		msg = framework.collapseMessage(msg)
+		local colmsg = framework.collapseMessage(msg)
+		colmsg.Payload = colmsg.Payload and colmsg.Payload or {}
+		recordAndPrintMsg(colmsg)
+		retMsgs[#retMsgs+1] = msg
+	end
+	return retMsgs
+end
+
+--- Update the high water mark so that only newer messages are retrieved
+-- @tparam[opt=os.time()] number _date date/time to which to update the high water mark (number of secs since epoch - os.time())
+-- @within GatewayMessages
+function gateway.setHighWaterMark(_date)
+	local _time = _date and _date or os.time()
+	startUTC = EpochToISO(_time + timeOffset)
+end
+
+--- Get Test Framework's high water mark.
+-- @treturn number timestamp of current high water mark
+-- @within GatewayMessages
+function gateway.getHighWaterMark()
+	startUTC = EpochToISO(startUTC - timeOffset)
+end
+
+--------------------------LSF Functions--------------------------
+
+--- Set a service's property(s)
+-- @tparam number sin SIN of affected service
+-- @tparam table settings array of settings: <span style="font-family:monospace">{pin, value, valType}</span>
+-- OR a single setting: <span style="font-family:monospace">{pin, value, valType}</span>
+-- <br /><br />
+-- NOTE: valType can take following values: "unsignedint", "signedint", "string", "boolean", "enum", "data".
+-- <br />
+-- valType is optional if it is unsignedint
+-- @usage gateway.setProperties(20, {{17, true, "boolean"}, {15, 10}})
+-- @usage gateway.setProperties(20, {15, 10, "unsignedint"})
+-- @within LSFMessages
+function lsf.setProperties(sin, settings)
+	if type(value) == "boolean" then
+		value = value and "True" or "False"
+	end
+	local payload = {SIN=16, MIN=9, Fields={
+	{Elements={
+		{Fields={{Name="sin",Value=sin},{Name="propList", Elements=getSettingsTable(settings)}},Index=0}
+		},
+		Name="list"
+	},
+	{Name="save",Value="False"}
+	}}
+	local messageID = gateway.submitForwardMessage(payload)
+end
+
+-- send a shell command (string) to terminal
+local function shellCommand(cmd)
+	local rawPayload = {26, 1, 0, cmd:len()}
+	for i=1,cmd:len() do
+		rawPayload[i+4] = string.byte(cmd, i)
+	end
+	trace2("submit shell command: " .. cmd)
+	return gateway.submitForwardMessage(rawPayload, true)
+end
+
+--- Get property values for a given service
+-- @number sin service identifier
+-- @tparam table pinList array of PINs corresponding to properties being requested
+-- @treturn array array of: {pin="x", value="y"}
+-- @usage local props = lsf.getProperties(20, {1, 2})
+-- @within LSFQueries
+function lsf.getProperties(sin, pinList)
+	if type(pinList) ~= "table" then
+		pinList = {pinList}
+	end
+
+	local b64str = framework.base64Encode(string.char(unpack(pinList)))
+	local payload={Fields={{Elements={{Fields={{Name="sin",Value=sin},{Name="pinList",Value=b64str}},Index=0}},Name="list"}},MIN=8,Name="getProperties",SIN=16}
+	local msg = getTerminalResponse(payload, checkPropValResponse)
+	if msg == nil then
+		error("Property Values response from gateway not received!!")
+	end
+	msg = framework.collapseMessage(msg)
+	return msg.Payload.list[1].propList
+end
+
+--- Get SIN of enabled and disabled services on the terminal
+-- @treturn table <span style="font-family:monospace">{sinList=&lt;array of installed SINs&gt;, disabledList=&lt;array of disabled SINs&gt;}</span>
+-- @within LSFQueries
+function lsf.getSinList()
+	local payload = {SIN=16, MIN=3}
+	local msg = getTerminalResponse(payload, framework.checkMessageType(16, 3))
+	if msg == nil then return nil end
+	msg = framework.collapseMessage(msg)
+	local sinList = msg.Payload.sinList
+	local disabledList = msg.Payload.disabledList
+	sinList = framework.base64Decode(sinList)
+	disabledList = framework.base64Decode(disabledList)
+	return {sinList = sinList, disabledList = disabledList}
+end
+
+--- Restart specified service
+-- @number sin SIN of service being restarted
+-- @within LSFMessages
+function lsf.restartService(sin)
+	assertSinRange(sin)
+	payload={Fields={{Name="sin",Value=sin}},MIN=5,SIN=16}
+	gateway.submitForwardMessage(payload)
+end
+
+--params: sin - Service being affected
+--        min - 10 (reset), or 11 (save), or 12 (revert)
+local function systemPropertyCall(sin, min)
+	assertSinRange(sin)
+	local payload={Fields={{Elements={{Fields={{Name="sin",Value=sin}},Index=0}},Name="list"}},MIN=min,SIN=16}
+	gateway.submitForwardMessage(payload)
+end
+
+--- Reset all properties of a given service to their default values.
+-- @number sin SIN of service whose properties are to be reset
+-- @within LSFMessages
+function lsf.resetProperties(sin)
+	systemPropertyCall(sin, 10)
+end
+
+--- Save all properties of a given service.
+-- @number sin SIN of service whose properties are to be saved
+-- @within LSFMessages
+function lsf.saveProperties(sin)
+	systemPropertyCall(sin, 11)
+end
+
+--- Revert all properties of a given service to their last saved values.
+-- @number sin SIN of service whose properties are to be reverted
+-- @within LSFMessages
+function lsf.revertProperties(sin)
+	systemPropertyCall(sin, 12)
+end
+
+--- Submits a getPosition request and responds with position report.<br /><br />
+-- NOTE: Call this function with forceNewFix = true to ensure a new GPS fix is requested.
+-- @tparam[opt=false] ?boolean forceNewFix indicates whether new fix is needed or if recent data will suffice
+-- @treturn table position message containing lat/long/alt/speed etc.
+-- @within LSFQueries
+function lsf.getPosition(forceNewFix)
+	forceNewFix = forceNewFix and forceNewFix or false
+	framework.delay(2)
+	local age = forceNewFix and 1 or 30
+	payload={Fields={{Name="fixType",Value="3D"},{Name="timeout",Value=cfg.GATEWAY_TIMEOUT},{Name="age",Value=age}},MIN=1,Name="getPosition",SIN=20}
+	gateway.submitForwardMessage(payload)
+
+	local msg = gateway.getReturnMessage(
+		function(msg)
+			if msg == nil then return false end
+			local colmsg = framework.collapseMessage(msg)
+			if colmsg.Payload.SIN == 20 and colmsg.Payload.MIN == 1 then
+				return true
+			end
+		end
+	)
+	return msg
+end
+
+--- Sends a shell command and responds with the result if needed
+-- @string shellCmd shell command to execute
+-- @tparam[opt=false] ?bool needResponse whether to wait for a response to the shell command
+-- @return returns first shell response received if result needed; immediately returns true if result not requested; returns false if result requested but not received
+-- @usage
+-- -- this prints the output of "mem" command on the terminal; note: since the response contains "%" character, you cannot use trace0 here.
+-- print(lsf.shellCommand("mem", true))
+-- @within LSFQueries
+function lsf.shellCommand(shellCmd, needResponse)
+	needResponse = needResponse and needResponse or false
+	gateway.setHighWaterMark()
+	shellCommand(shellCmd)
+	if not needResponse then
+		return true
+	end
+	local msg = gateway.getReturnMessage(checkShellResponse)
+	msg = framework.collapseMessage(msg)
+	return msg and msg.Payload and msg.Payload.output
+end
+
+-------------------------Device Functions------------------------
+
+local function configureDevice(device, typ, port, value)
+	local source = ltn12.source.string(null);
+	local response = {}
+	local sink = ltn12.sink.table(response)
+
+	local headers = {
+		["Content-Type"] = "application/json",
+		["Content-Length"] = 0
+	}
+	local url = cfg.DEVICE_URL .. "/" .. device .. "/" .. cfg.PORTMAP[port] .. "/" .. typ .. "/" .. value
+	print(url)
+	ok, code, headers = http.request {
+		url = url,
+		proxy = cfg.HTTP_PROXY,
+		method = "POST", headers = headers, source = source, sink = sink
+	}
+
+	if (ok and code == 200) then
+		return true
+	end
+	error("Unable to configure device. HTTP error code: " .. tostring(code))
+end
+
+--- Write 0 or 1 to the external device port.
+-- @number port range 1-4; IDP terminal I/O port
+-- @bool value the value (true=1 or false=0) to write to the port (can pass 0 or 1)
+-- @usage  -- switch on port 1 (line must be configured as digital input)
+-- device.setIO(1, 1)
+-- @within DeviceMessages
+function device.setIO(port, value)
+	if type(value) == "boolean" then
+		value = value and "1" or "0"
+	end
+	trace1("set device port %d value to %s", port, tostring(value))
+	return configureDevice("GPIO", "value", port, value)
+end
+
+-- For Raspberry Pi only: Configure external device port function.
+-- port: range [1, 4] - IDP terminal port
+-- func: "in" or "out"
+function device.setPortFunction(port, func)
+	assert(func == "in" or func == "out", "Function must be one of two string values: 'in' or 'out'")
+	trace1("set device port %d function to %s", port, func)
+	return configureDevice("GPIO", "function", port, func)
+end
+
+--- Raise motion or shock event for accel service with axis and direction
+-- @usage device.setAccel("motion", "X+")
+-- @usage device.setAccel("shock", "Z-")
+-- @within DeviceMessages
+function device.setAccel(
+			id, 				-- string: possible values: 'motion' or 'shock'
+			value				-- string: possible values: 'X+', 'X-', 'Y+', 'Y-', 'Z+', 'Z-'
+		)
+	assert(id == "motion" or id == "shock", "setAccel id must be 'motion' or 'shock'")
+	local possibleVals = {"X+", "X-", "Y+", "Y-", "Z+", "Z-"}
+	value = value:upper()
+	local found = false
+	for _, v in pairs(possibleVals) do
+		if v == value then
+			found = true
+			break
+		end
+	end
+	if not found then
+		error("setAccel accepts these values: " .. "'X+', 'X-', 'Y+', 'Y-', 'Z+', 'Z-'")
+	end
+	trace1("set accel id %d value to %s", id, value)
+	return configureDevice("accel", "value", id, value)	-- TODO: "value" is redundant; shouldn't need to pass
+end
+
+--- Configure power service parameters
+-- @usage -- set battery voltage to 15V
+-- device.setPower(3, 15000)
+-- @tparam number id power service property ID to change (corresponds to PID of power service)
+--
+-- 3 - battery voltage, 4 - battery temp, 8 - external power present
+--
+-- 9 - external power voltage, 18 - pre-load voltage, 19 - post-load voltage
+-- @tparam number value to assign (0|1 for boolean values)
+-- @within DeviceMessages
+function device.setPower(id, value)
+	-- TODO: error checking.
+	return configureDevice("power", "value", id, value)	-- TODO: "value" is redundant; shouldn't need to pass
+end
+
+--- Get external device IO port value.
+-- @number port range 1-4, 30 (temperature), 31 (power)
+--
+-- Note: can also pass strings "temperature" and "power"
+-- @treturn number I/O port value, or temperature in *C or power in millivolts
+-- @usage local port1value = device.getIO(1)
+-- @usage local temp = device.getIO("temperature")
+-- @usage local power = device.getIO(31)
+-- @within DeviceMessages
+function device.getIO(port)
+	return webServiceGet(cfg.DEVICE_URL .. "/GPIO/" .. cfg.PORTMAP[port] .. "/value")
+end
+
+--- Get accelerometer state.
+-- @string id "motion" or "shock"
+-- @treturn number 0 if disarmed, 1 if armed.
+-- @usage local armed = device.getAccel("shock")
+-- @within DeviceMessages
+function device.getAccel(id)
+	return webServiceGet(cfg.DEVICE_URL .. "/accel/" .. id .. "/value")
+end
+
+--- Get external device port value.
+-- @number id power service property ID to change (corresponds to PID of power service)
+--
+-- 3 - battery voltage, 4 - battery temp, 8 - external power present
+--
+-- 9 - external power voltage, 18 - pre-load voltage, 19 - post-load voltage
+-- @treturn number 0|1 for boolean values, *C for temperatures, millivolts for voltage values
+-- @usage local batteryTemp = device.getPower(4)
+-- @within DeviceMessages
+function device.getPower(id)
+	return webServiceGet(cfg.DEVICE_URL .. "/power/" .. id .. "/value")
+end
+
+---------------------GPS Simulator Functions---------------------
+
+local function setGPS(resource, params)
+	return webServiceGetRsc(cfg.GPS_URL, resource, params, false)
+end
+
+-- set GPS simulator fix type
+-- fixType valid values: (0, 1, 2, 3) = (no time, no fix, 2d fix, 3d fix)
+local function gpsSetFixType(fixType)
+	assert(fixType >= 0 and fixType <= 3, "ERROR - gpsSetFixType: fix type should be between 0 and 3.")
+	local retval, code = setGPS("set_fix_type", {fix_type = fixType})
+	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
+end
+
+-- set location on the GPS simulator
+local function gpsSetLocation(
+			latitude, 		-- number: valid range [-90.0, 90.0]
+			longitude, 		-- number: valid range [-180.0, 180.0]
+			altitude		-- ?number: meters above sea level TODO: must be integer?
+		)
+	assert(type(latitude) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": latitude should be a number")
+	assert(type(longitude) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": longitude should be a number")
+	assert(altitude == nil or type(altitude) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": altitude should be a number")
+	altitude=altitude and altitude or 0
+	local retval, code = setGPS("set_location", {latitude = latitude, longitude = longitude, altitude = altitude})
+	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
+end
+
+-- set speed and heading on the GPS simulator
+local function gpsSetSpeedHeading(
+			speed,				-- number: speed GPS speed in km/h
+			heading,			-- integer: heading in degrees valid range [0 - 360]
+			linMotion			-- ?bool: whether to update the lat/long values according to the movement and heading
+		)
+	if linMotion == nil then
+		linMotion = true
+	end
+	assert(type(speed) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": speed should be a number")
+	assert(type(heading) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": heading should be a number")
+	assert(type(linMotion) == "boolean", "ERROR - " .. debug.getinfo(1, "n").name .. ": linMotion should be true or false")
+	local retval, code = setGPS("set_speed_heading", {speed = speed, heading = heading, simulate_linear_motion = tostring(linMotion)})
+	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
+
+end
+local lastVals = {latitude = 0, longitude = 0, altitude = 0, speed = 0, heading = 0, simulateLinearMotion = false, fixType = "3D"}
+local acceptedKeys = {latitude = gpsSetLocation, longitude = gpsSetLocation, altitude = gpsSetLocation,
+		speed = gpsSetSpeedHeading, heading = gpsSetSpeedHeading, simulateLinearMotion = gpsSetSpeedHeading,
+		fixType = gpsSetFixType}
+
+--- set one ore more of: {fixType, latitude, longitude, altitude, speed, heading, and simulateLinearMotion} on the GPS simulator
+-- @usage
+-- -- This sets the speed to 50km/h, heading to East, and updates lat/long according to movement
+-- gpsSet({speed=50, heading=90, simulateLinearMotion=true})
+-- @within GPSMessages
+function gps.set(parameters)
+	local callFunction = {}
+	for k1, v1 in pairs(parameters) do
+		local found = false
+		for k2, v2 in pairs(acceptedKeys) do
+			if k1 == k2 then
+				callFunction[v2] = true
+				lastVals[k1] = v1
+				found = true
+				break
+			end
+		end
+		if not found then
+			trace0("*** Unknown parameter passed to gps.set(): %s. Accepted parameters:", k1)
+			trace0("fixType, latitude, longitude, altitude, speed, heading, simulateLinearMotion")
+		end
+	end
+	for k, _ in pairs(callFunction) do
+		if k == gpsSetFixType then
+			k(lastVals.lastFixType)
+		elseif k == gpsSetLocation then
+			k(lastVals.latitude, lastVals.longitude, lastVals.altitude)
+		elseif k == gpsSetSpeedHeading then
+			k(lastVals.speed, lastVals.heading, lastVals.simulateLinearMotion)
+		end
+	end
+end
+
+return function() return cfg, framework, gateway, lsf, device, gps end
