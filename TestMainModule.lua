@@ -32,8 +32,8 @@ local gpsReadInterval   = 1 -- used to configure the time interval of updating t
 function suite_setup()
 
  lsf.setProperties(20,{
-                        {15,gpsReadInterval}    -- setting the continues mode of position service (SIN 20, PIN 15)
-                                                 -- gps will be read every second with this setting
+                        {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                                 -- gps will be read every gpsReadInterval (in seconds)
                       }
                     )
 
@@ -51,10 +51,14 @@ end
 -- executed before each unit test
 function setup()
 --- the setup function ensures that the terminal is not in the moving state
-
-  local movingDebounceTime = 1
-  local stationaryDebounceTime = 1 -- to make sure AVL will quickly go to non moving state
-  local stationarySpeedThld = 5
+  -- setting values specific for the TC
+  local movingDebounceTime = 1          -- seconds
+  local stationaryDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  -- gps settings
+  gps_heading = 90        -- degrees
+  gps_latitude = 1        -- degrees
+  gps_longitude = 1       -- degrees
 
   --setting properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -65,8 +69,9 @@ function setup()
                     )
 
   -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
-  gps.set{speed=0}
-  framework.delay(stationaryDebounceTime+gpsReadInterval)
+  local gps_speed = 0
+  gps.set{speed = gps_speed, heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude, altitude = gps_altitude}
+  framework.delay(stationaryDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   --print(framework.dump(avlStatesProperty)) -- just for debugging for now, will be removed
@@ -105,6 +110,11 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
+  -- gps settings
+  gps_heading = 90        -- degrees
+  gps_latitude = 1        -- degrees
+  gps_longitude = 1       -- degrees
+
 
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -114,14 +124,14 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
                    )
 
   gateway.setHighWaterMark() -- to get the newest messages
-
-  gps.set{speed=stationarySpeedThld+1}
-  framework.delay(movingDebounceTime+gpsReadInterval)
+  local gps_speed = stationarySpeedThld+1 -- one kmh above the threshold
+  gps.set{speed = gps_speed, heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude} -- gps settings sent to simulator
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- MovingStart Message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingStart))
-  avlHelperFunctions.reportVerification(message, "MovingStart") -- verification of the report fields
-
+  avlHelperFunctions.reportVerification(message, "MovingStart", 0, 361, gps_longitude, gps_latitude) -- verification of the report fields
+                                                                                                     -- speed is 0, and heading is 361 for stationary state
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
@@ -129,7 +139,8 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
 
 end
 
-function test_Moving_WhenBelowThldForPeriodAboveThld_MovingEndMessageSent()
+
+function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
   -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
   -- simulate terminal speed to 6 kmh and wait for 1 second to get the moving state
   -- after that speed is reduced to 4 kmh and the MovingEnd event should appear
@@ -140,6 +151,11 @@ function test_Moving_WhenBelowThldForPeriodAboveThld_MovingEndMessageSent()
   local movingDebounceTime = 1       -- seconds
   local stationaryDebounceTime = 1   -- seconds
   local stationarySpeedThld = 5      -- kmh
+  -- gps settings
+  gps_heading = 90        -- degrees
+  gps_latitude = 1        -- degrees
+  gps_longitude = 1       -- degrees
+
 
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -151,38 +167,133 @@ function test_Moving_WhenBelowThldForPeriodAboveThld_MovingEndMessageSent()
 
   -- first terminal is put into moving state
   gateway.setHighWaterMark() -- to get the newest messages
-  gps.set{speed=stationarySpeedThld+1}
-  framework.delay(movingDebounceTime+gpsReadInterval)
+  local gps_speed = stationarySpeedThld+1 -- one kmh above threshold
+  gps.set{speed = gps_speed, heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude}
+
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- MovingStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingStart))
-  avlHelperFunctions.reportVerification(message, "MovingStart") -- verification of the report fields
-
+  --message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingStart))
+  --avlHelperFunctions.reportVerification(message, "MovingStart", gps_speed, gps_heading, gps_longitude, gps_latitude)
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   -- when the termoinal is in the moving state the speed is reduced and moving state should change to false after that
   gateway.setHighWaterMark() -- to get the newest messages
-  gps.set{speed=stationarySpeedThld-1}
-  framework.delay(stationaryDebounceTime+gpsReadInterval)
-
+  gps_speed = stationarySpeedThld-1 -- one kmh below threshold
+  gps.set{speed = gps_speed,  heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude}
+  framework.delay(stationaryDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- MovingEnd message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingEnd))
-  avlHelperFunctions.reportVerification(message, "MovingEnd") -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, "MovingEnd", gps_speed, gps_heading, gps_longitude, gps_latitude)  -- verification of the report fields
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
-  --debugging
-  --print(framework.dump(avlStatesProperty))
-
 
 end
 
 
+function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent()
+  -- set movingDebounceTime to 30 seconds and stationarySpeedThld to 5 kmh
+  -- simulate terminal speed to 6 kmh and wait for 3 seconds (shorten than movingDebounceTime)
+  -- check if the state of the AVL agent has not changed to moving and MovingStart
+  -- message is not sent from mobile
+
+
+  local movingDebounceTime = 30      -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  -- gps settings
+  gps_heading = 90        -- degrees
+  gps_latitude = 1        -- degrees
+  gps_longitude = 1       -- degrees
+
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+  local gps_speed = stationarySpeedThld+1 -- one kmh above the threshold
+  gps.set{speed = gps_speed, heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude} -- gps settings sent to simulator
+  framework.delay(gpsReadInterval+2) -- time shorter than movingDebounceTime
+
+  -- MovingStart Message is not expected
+  local message = gateway.getReturnMessages(5)
+  local colmsg = framework.collapseMessage(message)
+  if (next(colmsg)) then -- checking if table is empty
+  assert_false(colmsg.Payload.MIN == 6 and colmsg.Payload.SIN == 126, "MovingStart message incorrectly sent") -- if not empty
+  end                                                                                                         -- checking type of message
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)           -- checking state of terminal
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
+
+end
+
+
+function test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSent()
+  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
+  -- simulate terminal speed to 6 kmh and wait for 1 second to get the moving state
+  -- after that speed is reduced to 4 kmh for 3 seconds (shorter than stationaryDebounceTime)
+  -- check if the state of the AVL agent has NOT changed to moving=false and MovingEnd
+  -- report has NOT sent from mobile
+
+  local movingDebounceTime = 1       -- seconds
+  local stationaryDebounceTime = 30  -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  -- gps settings
+  gps_heading = 90        -- degrees
+  gps_latitude = 1        -- degrees
+  gps_longitude = 1       -- degrees
+
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime}
+                                             }
+                   )
+
+  -- first terminal is put into moving state
+  gateway.setHighWaterMark() -- to get the newest messages
+  local gps_speed = stationarySpeedThld+1 -- one kmh above threshold
+  gps.set{speed = gps_speed, heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude}
+
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+
+  -- when the terminal is in the moving state the speed is reduced for short time (seconds)
+  gateway.setHighWaterMark() -- to get the newest messages
+  gps_speed = stationarySpeedThld-1 -- one kmh below threshold
+  gps.set{speed = gps_speed,  heading = gps_heading, latitude = gps_latitude, longitude = gps_longitude}
+  framework.delay(gpsReadInterval+2) --
+
+
+  -- MovingEnd message is not expected
+  message = gateway.getReturnMessages(5)
+  local colmsg = framework.collapseMessage(message)
+  if (next(colmsg)) then -- checking if table is empty
+  assert_false(colmsg.Payload.MIN == 7 and colmsg.Payload.SIN == 126, "MovingStart message incorrectly sent") -- if not empty
+  end                                                                                                         -- checking type of message
+
+
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly not in the moving state")
+
+end
+
+
+
 --[[Start the tests]]
-for i=1, 3, 1 do     -- to check the reliability, will be removed
+for i=1, 1, 1 do     -- to check the reliability, will be removed
 lunatest.run()
 end
 framework.printResults()
