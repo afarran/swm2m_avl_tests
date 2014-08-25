@@ -84,7 +84,7 @@ function avlHelperFunctions.stateDetector(avlStatesArray)
   local avlStatesPropertyBinary =  avlHelperFunctions.decimalToBinary(tonumber(avlStatesArray[1].value))
   for stateIdx = 1, #avlAgentCons.avlStateNames do
   stateNameString = avlAgentCons.avlStateNames[stateIdx]
-  avlStates[stateNameString] = (avlStatesPropertyBinary[stateIdx] and avlStatesPropertyBinary[stateIdx]==1)
+  avlStates[stateNameString] = (avlStatesPropertyBinary[stateIdx]==1)
   end
   return avlStates
 end
@@ -99,19 +99,20 @@ end
 -- Message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingStart))
 -- avlHelperFunctions.reportVerification(message, "MovingStart")
 -- @within TestHelpers
-function avlHelperFunctions.reportVerification(message, messageName)
+function avlHelperFunctions.reportVerification(message, messageName, speed, heading, longitude, latitude, eventTime)
 
   colmsg = framework.collapseMessage(message) -- message collapsed for easier usege
+  -- print(framework.dump(message))
+  -- print(framework.dump(colmsg))
+  -- verification of the fields of report message)
 
-  -- verification of the fields of report message
-  assert_true(colmsg.Payload.Name==messageName, "Message name is wrong")
-  assert_true(colmsg.Payload.Heading, "Heading value is missing in report")
-  assert_true(colmsg.Payload.GpsFixAge, "GpsFixAge value is missing in report")
-  assert_true(colmsg.Payload.Longitude, "Longitude value is missing in report")
-  assert_true(colmsg.Payload.Latitude, "Latitude value is missing in report")
-  assert_true(colmsg.Payload.Speed, "Speed value is missing in report")
-  assert_true(colmsg.Payload.EventTime, "EventTime value is missing in report")
-
+  assert_true(colmsg.Payload.Name == messageName, "Message name is wrong")
+  assert_true(tonumber(colmsg.Payload.Heading) == heading, "Heading value is wrong in report")
+  --assert_true(colmsg.Payload.GpsFixAge, "GpsFixAge value is missing in report") -- TO DO
+  assert_true(tonumber((colmsg.Payload.Longitude)/60000) == longitude, "Longitude value is wrong in report")
+  assert_true(tonumber((colmsg.Payload.Latitude)/60000) == latitude, "Latitude value is wrong rteport")
+  assert_true(tonumber(colmsg.Payload.Speed) == speed, "Speed value is wrong in report")
+  --assert_true(colmsg.Payload.EventTime, "EventTime value is missing in report") -- TO DO
 end
 
 
