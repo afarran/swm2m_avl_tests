@@ -17,7 +17,7 @@ local avlHelperFunctions = {}
 --- Converts decimal value to the table of its binary representation
 -- it always returns 32 bits
 -- @tparam decimal number num value to be converted
--- @return table of bits of the binary representation of the decimal
+-- @treturn table - table of bits of the binary representation of the decimal
 -- @usage
 -- local x = 4
 -- print(avlHelperFunctions.decimalToBinary(x))
@@ -31,7 +31,7 @@ local avlHelperFunctions = {}
 --     .
 --     32 = 0
 -- }
--- @within TestHelpers
+-- @within AvlhelperFunctions
 function avlHelperFunctions.decimalToBinary(num)
 
   local tableOfBits={}
@@ -51,8 +51,8 @@ end
 
 --- Given the AvlStates property (PIN 41) array { PIN = "41, value="x"} this
 -- function returns the table of the states with current status
--- @param table containing the AvlStates property to be analysed
--- @return table string with the names of states and current status
+-- @tparam table - table containing the AvlStates property to be analysed
+-- @treturn table - table with the names of states and current status
 -- @usage
 -- local avlStatesProperty = lsf.getProperties(avlAgentSIN,avlPropertiesPINs.avlStates)
 -- print(avlHelperFunctions.stateDetector(avlStatesProperty))
@@ -77,7 +77,7 @@ end
 --   AirCommunicationBlocked = false
 --   GPSJammed = false
 -- }
--- @within TestHelpers
+-- @within AvlhelperFunctions
 function avlHelperFunctions.stateDetector(avlStatesArray)
 
   avlStates = {}
@@ -92,28 +92,34 @@ end
 
 --- Given the report message and the expected name of the report
 -- this function verifies if the report is complete according to specification
--- and has correct name
--- @param message - from mobile message sent by agent after occurance of event
--- @tparam name string - from mobile message sent by agent after occurance of event
+-- and if all the reported fields have correct values
+-- @tparam message array - from mobile message sent by agent after occurance of event
+-- @tparam expectedValues table - table containing expectedValues of the fields
 -- @usage
--- Message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingStart))
--- avlHelperFunctions.reportVerification(message, "MovingStart")
--- @within TestHelpers
-function avlHelperFunctions.reportVerification(message, messageName, speed, heading, longitude, latitude, eventTime)
+-- local gpsSettings={
+--                  speed = stationarySpeedThld+1,  -- one kmh above threshold
+--                  heading = 90,                   -- degrees
+--                  latitude = 1,                   -- degrees
+--                  longitude = 1                   -- degrees
+--                   }
+-- local expectedValues={
+--                    gps = gpsSettings,            -- gps settings table
+--                    messageName = "MovingEnd",    -- expected message name
+--                    currentTime = os.time()       -- current time to check against EventTime field
+--                      }
+-- message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingEnd))
+-- avlHelperFunctions.reportVerification(message, expectedValues)
+-- @within AvlhelperFunctions
+function avlHelperFunctions.reportVerification(message, expectedValues)
 
-  colmsg = framework.collapseMessage(message) -- message collapsed for easier usege
-  -- print(framework.dump(message))
-  -- print(framework.dump(colmsg))
-  -- verification of the fields of report message)
+  assert_equal(expectedValues.messageName, colmsg.Payload.Name, "Message name is not correct")
+  assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
+  --assert_true(colmsg.Payload.GpsFixAge, "GpsFixAge value is missing in report")-- issue with setFixType reported, to be updated
+  assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  --multiplied by 60000 for conversion from miliminutes
+  assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct report")  --multiplied by 60000 for conversion from miliminutes
+  assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
+  assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),30, "EventTime value is not correct in the report") -- 30 seconds of tolerance
 
-  assert_true(colmsg.Payload.Name == messageName, "Message name is wrong")
-  assert_true(tonumber(colmsg.Payload.Heading) == heading, "Heading value is wrong in report")
-  --assert_true(colmsg.Payload.GpsFixAge, "GpsFixAge value is missing in report") -- TO DO
-  assert_true(tonumber((colmsg.Payload.Longitude)/60000) == longitude, "Longitude value is wrong in report")
-  assert_true(tonumber((colmsg.Payload.Latitude)/60000) == latitude, "Latitude value is wrong rteport")
-  assert_true(tonumber(colmsg.Payload.Speed) == speed, "Speed value is wrong in report")
-  --assert_true(colmsg.Payload.EventTime, "EventTime value is missing in report") -- TO DO
 end
-
 
 return function() return avlHelperFunctions end
