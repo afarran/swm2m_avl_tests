@@ -7,6 +7,7 @@ avlPropertiesPINs = {
 			defaultSpeedLimit = 5,
       speedingTimeOver = 6,
       speedingTimeUnder = 7,
+      lpmTrigger = 31,
       avlStates = 41
 
 									}
