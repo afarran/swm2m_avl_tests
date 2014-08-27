@@ -119,6 +119,12 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
   assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct report")  --multiplied by 60000 for conversion from miliminutes
   assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
   assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),30, "EventTime value is not correct in the report") -- 30 seconds of tolerance
+  if(expectedValues.SpeedLimit) then                                                                                            -- checking speed limit if that parameter has been passed
+  assert_equal(expectedValues.speedLimit,tonumber(colmsg.Payload.Speedlimit),30, "EventTime value is not correct in the report") -- in the expectedValues table
+  end
+  if(expectedValues.maximumSpeed) then                                                                                            -- checking maximumSpeed if that parameter has been passed
+  assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed),30, "EventTime value is not correct in the report") -- in the expectedValues table
+  end
 
 end
 
