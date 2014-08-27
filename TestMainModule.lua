@@ -30,6 +30,16 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
 
 -- executed before each test suite
 function suite_setup()
+--- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
+ -- * actions performed:
+ -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+ -- lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
+ -- function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
+ -- *initial conditions:
+ -- running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
+ -- GPS Web Service switched on
+ -- *Expected results:
+ -- gpsReadInterval and lpmTrigger set correctly and terminal is not in the Low Power mode
 
  lsf.setProperties(20,{
                         {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
@@ -37,9 +47,14 @@ function suite_setup()
                       }
                     )
 
-  -- to perform GPS related test cases terminal cannot be in low power mode, checking the AVL states
+ -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.lpmTrigger, 0},
+                                             }
+                    )
+  -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "is incorrectly in low power mode")
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
 end
 
@@ -54,8 +69,16 @@ end
 
 -- executed before each unit test
 function setup()
---- the setup function ensures that the terminal is not in the moving state and is not in low power mode
-  -- setting values specific for the TC
+--- the setup function puts terminal into the stationary state and check if that state has been correctly obtained
+  -- *actions performed:
+  -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
+  -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
+  -- *initial conditions:
+  -- terminal not in the low power mode
+  -- *expected results:
+  -- terminal correctly put in the stationary state
+
+
   local stationaryDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5         -- kmh
   -- gps settings table
@@ -73,17 +96,19 @@ function setup()
   -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
-  framework.delay(5)                                       -- this delay is for reliability reasons
+  --framework.delay(5)                                       -- this delay is for reliability reasons
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
+
+
 
 end
 -----------------------------------------------------------------------------------------------
 -- executed after each unit test
 function teardown()
 
--- nothing here for now
+--- nothing here for now
 
 end
 
@@ -94,11 +119,18 @@ end
 
 --]]
 
+
 function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent()
-  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
-  -- simulate terminal speed to 6 kmh and wait for 2 seconds
-  -- check if the state of the AVL agent has changed to moving and correct and
-  -- report sent from mobile
+--- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh then wait for time longer than
+  -- movingDebounceTime and check if the MovingStart message has been sent and verify if then
+  -- fields in the report have correct values and terminal is correctly in the moving state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal correctly put in the moving state, MovingStart message sent and report fields
+  -- have correct values
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -139,12 +171,18 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
 end
 
 function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
-  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
-  -- simulate terminal speed to 6 kmh and wait for 1 second to get the moving state
-  -- after that speed is reduced to 4 kmh and the MovingEnd event should appear
-  -- check if the state of the AVL agent has changed to moving=false and correct
-  -- report sent from mobile
-
+--- TC checks if MovingEnd message is correctly sent when speed is below threshold for time above threshold
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh then wait for time longer than
+  -- movingDebounceTime and check if the  moving state has been obtained; after that
+  -- reduce speed to one kmh below threshold for time longer than  stationaryDebounceTime and
+  -- check if MovingEnd message is sent, report fields have correct values and terminal is put
+  -- into the stationary state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal correctly put in the stationary state, MovingEnd message sent and report fields
+  -- have correct values
 
   local movingDebounceTime = 1       -- seconds
   local stationaryDebounceTime = 1   -- seconds
@@ -196,12 +234,16 @@ end
 
 
 function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent()
-  -- set movingDebounceTime to 60 seconds and stationarySpeedThld to 5 kmh
-  -- simulate terminal speed to 15 kmh and wait for 3 seconds (shorter than movingDebounceTime)
-  -- check if the state of the AVL agent has not changed to moving and MovingStart
-  -- message has not been sent from mobile
+--- TC checks if MovingStart message is not sent when speed is above threshold for time below threshold
+  -- *actions performed:
+  -- set movingDebounceTime to 15 seconds and stationarySpeedThld to 5 kmh then wait for time shorter than
+  -- movingDebounceTime and check if the MovingStart message has not been been sent
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal not put into moving state, MovingStart message not sent
 
-  local movingDebounceTime = 60      -- seconds
+  local movingDebounceTime = 15      -- seconds
   local stationarySpeedThld = 5      -- kmh
 
   -- gps settings table to be sent to simulator
@@ -234,15 +276,20 @@ end
 
 
 function test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSent()
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh and
-  -- stationaryDebounceTime to 60 seconds
-  -- simulate terminal speed to 15 kmh and wait for 1 second to obtain  the moving state
-  -- after that speed is reduced to 4 kmh for 3 seconds (shorter than stationaryDebounceTime)
-  -- check if the state of the AVL agent has NOT changed to moving=false and MovingEnd
-  -- report has NOT been sent from mobile
+--- TC checks if MovingEnd message is not sent when terminal is in the moving state and
+  -- speed is below threshold for time below threshold
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second, stationaryDebounceTime to 15 and stationarySpeedThld to 5 kmh
+  -- then wait for time longer than movingDebounceTime and check if the  moving state has been obtained
+  -- after that reduce speed to one kmh below threshold for time shorter than  stationaryDebounceTime and
+  -- check if MovingEnd message is not sent
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal not put in the stationary state, MovingEnd message not sent
 
   local movingDebounceTime = 1       -- seconds
-  local stationaryDebounceTime = 60  -- seconds
+  local stationaryDebounceTime = 15  -- seconds
   local stationarySpeedThld = 5      -- kmh
   -- gps settings table to be sent to simulator
   local gpsSettings={
@@ -286,10 +333,15 @@ end
 
 
 function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingStartMessageNotSent()
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 10 kmh
-  -- simulate terminal speed to 5 kmh and wait for 7 seconds
-  -- after that check if MovingState report has not been sent and terminal has not get
-  -- the moving state
+--- TC checks if MovingStart message is not sent if speed is below threshold for time above threshold
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second and stationarySpeedThld to 10 kmh
+  -- then set speed below stationarySpeedThld and wait for time longer than movingDebounceTime
+  -- check if the  moving state has not been obtained and MovingStart message not sent
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal not put in the moving state, MovingStart message not sent
 
   local movingDebounceTime = 1        -- seconds
   local stationarySpeedThld = 10      -- kmh
@@ -323,13 +375,16 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingStartMessageNotS
 end
 
 function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSent()
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh and
-  -- stationaryDebounceTime to 60 seconds
-  -- simulate terminal speed to 15 kmh and wait for 1 second to obtain  the moving state
-  -- after that speed is reduced to 6 kmh (that is above stationarySpeedThld) for 8 seconds
-  -- (that is longer than stationaryDebounceTime) after that
-  -- check if the state of the AVL agent has NOT changed to moving=false and MovingEnd
-  -- report has NOT been sent from mobile
+--- TC checks if MovingEnd message is not sent if speed is above stationarySpeedThld for time above threshold
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
+  -- then set speed above stationarySpeedThld and wait for time longer than movingDebounceTime to get the moving state
+  -- then reduce speed to 6 kmh (above stationarySpeedThld) and wait longer than stationaryDebounceTime
+  -- check if terminal is still in the moving state and MovingEnd message has not been sent
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal not put in the stationary state, MovingEnd message not sent
 
   local movingDebounceTime = 1       -- seconds
   local stationaryDebounceTime = 1  -- seconds
@@ -373,6 +428,157 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSen
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the stationary state") -- terminal should be in moving state
 
 end
+
+
+
+
+function test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSent()
+--- TC checks if SpeedingStart message is correctly sent when speed is above defaultSpeedLimit for period above speedingTimeOver
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeOver to 3 seconds
+  -- set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+  -- and check if terminal gets moving state; then increase speed to one kmh
+  -- above the defaultSpeedLimit for time longer than speedingTimeOver and check if SpeedingStart message is
+  -- correctly sent; verify if fields of report have correct values and terminal is put into the speeding state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal correctly put in the speeding state, SpeedingStart message sent and report fields
+  -- have correct values
+
+  local defaultSpeedLimit = 80       -- kmh
+  local speedingTimeOver = 3         -- seconds
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+1,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
+                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+  -- checking if terminal is in the moving state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  gpsSettings.speed = defaultSpeedLimit+1  -- one kmh above the speed limit threshold
+  gps.set(gpsSettings)
+  framework.delay(speedingTimeOver+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+ -- SpeedingStart Message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingStart))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SpeedingStart",
+                  currentTime = os.time(),
+                  speedLimit = defaultSpeedLimit
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
+
+end
+
+function test_Speeding_WhenSpeedBelowThldForPeriodAboveThld_SpeedingEndMessageSent()
+--- TC checks if SpeedingEnd message is correctly sent when speed is below defaultSpeedLimit for period above SpeedingTimeUnder
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeUnder to 3 seconds
+  -- increase speed above stationarySpeedThld and wait longer than movingDebounceTime and then check if terminal goes into moving state;
+  -- then increase speed to 10 kmh above the defaultSpeedLimit for time longer than speedingTimeOver to get the Speeding state;
+  -- after that reduce speed one kmh under defaultSpeedLimit for time longer than speedingTimeUnder and check if SpeedingEnd
+  -- message has been correctly sent, verify if fields of report have correct values and terminal is put into the non-speeding state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal correctly put out of the speeding state, SpeedingEnd message sent and report fields
+  -- have correct values
+
+  local defaultSpeedLimit = 80       -- kmh
+  local speedingTimeOver = 3         -- seconds
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local speedingTimeUnder = 3
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+1,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
+                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
+                                                {avlPropertiesPINs.speedingTimeUnder, speedingTimeUnder},
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+  -- checking if terminal is in the moving state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+
+  local maxSpeedTC = defaultSpeedLimit+10  -- 10 kmh above the speed limit threshold, maximum speed of terminal in the test case
+  gpsSettings.speed = maxSpeedTC
+  gps.set(gpsSettings)
+  framework.delay(speedingTimeOver+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+  -- checking if terminal is correctly in the speeding state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  gpsSettings.speed = defaultSpeedLimit-1  -- one kmh above the speed limit threshold
+  gps.set(gpsSettings)
+  framework.delay(speedingTimeUnder+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+ -- SpeedingEnd Message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingEnd))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SpeedingEnd",
+                  currentTime = os.time(),
+                  maximumSpeed = maxSpeedTC
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the speeding state")
+
+end
+
 
 
 --[[Start the tests]]
