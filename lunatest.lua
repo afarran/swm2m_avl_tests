@@ -13,7 +13,7 @@
 --
 -- The above copyright notice and this permission notice shall be
 -- included in all copies or substantial portions of the Software.
--- 
+--
 -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 -- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 -- OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -39,6 +39,7 @@
 --  - used print instead of io.write
 --  - declared a custom os.exit function if one doesn't exist
 --  - made a modification to the assert_random() where the original variable "passed" was not declared
+
 local random, arg = nil, nil
 os.exit = os.exit or function(code) print("Exit ", code) end
 ------------------------------------------------------------------------
@@ -126,7 +127,7 @@ end
 -- ###########
 
 local function msec(t)
-   if t and type(t) == "number" then 
+   if t and type(t) == "number" then
       return fmt(" (%.2fms)", t * 1000)
    else
       return ""
@@ -478,7 +479,7 @@ end
 --        "10,30 [aeiou]" means between 10-30 vowels.<br>
 --    function: Just call (as f()) and return result.<br>
 --    table or userdata: Call v.__random() and return result.<br>
--- @usage 
+-- @usage
 function assert_random(opt, f, ...)
    -- Stub. Exported to the same namespace, but code appears below.
 end
@@ -619,7 +620,7 @@ end
 ---Add a file as a test suite.
 -- @param modname The module to load as a suite. The file is
 -- interpreted in the same manner as require "modname".
--- Which functions are tests is determined by is_test_key(name). 
+-- Which functions are tests is determined by is_test_key(name).
 function suite(modname)
    local ok, err = pcall(
       function()
@@ -739,7 +740,7 @@ local function run_suite(hooks, opts, results, sname, tests)
             results.err[sname] = Error{msg=msg}
          end
       end
-      
+
       if run_suite and count(tests) > 0 then
          local setup, teardown = tests.setup, tests.teardown
          tests.setup, tests.teardown = nil, nil
@@ -941,7 +942,7 @@ function random_string(spec)
    if diff == 0 then ct = info.low else
       ct = random_int(diff) + info.low
    end
-   
+
    local acc = {}
    for i=1,ct do
       acc[i] = info.gen()
@@ -1073,7 +1074,7 @@ local function run_randtest(seed, f, args, r, limit)
       else error("unmatched")
       end
    end
-   
+
    seed = new_seed(limit)
    r.ts = r.ts + 1
    local str_args = {}
@@ -1116,7 +1117,7 @@ local function assert_random(opt, f, ...)
       f = opt
       opt = {}
    end
-      
+
    setmetatable(opt, { __index=random_test_defaults })
 
    local seed = opt.seed or os.time() or sys.uptime.terminal("*s")
@@ -1141,7 +1142,7 @@ local function assert_random(opt, f, ...)
       end
    end
    local overall_status = (#r.ps == count and "PASS" or "FAIL")
-   
+
    report_trial(r, opt)
 end
 
