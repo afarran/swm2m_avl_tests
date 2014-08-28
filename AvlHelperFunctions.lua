@@ -112,19 +112,32 @@ end
 -- @within AvlhelperFunctions
 function avlHelperFunctions.reportVerification(message, expectedValues)
 
+  print(framework.dump(message))
+
   assert_equal(expectedValues.messageName, colmsg.Payload.Name, "Message name is not correct")
+  assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  -- multiplied by 60000 for conversion from miliminutes
+  assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct report")        -- multiplied by 60000 for conversion from miliminutes
+  assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),20, "EventTime value is not correct in the report")    -- 30 seconds of tolerance
+
+  -- normally GpsFixAge is not reported, it should be included only when fix is older than 5 seconds; this condition allows to check it in the report
+  if(expectedValues.GpsFixAge) then
+    assert_equal(expectedValues.GpsFixAge, tonumber(colmsg.Payload.GpsFixAge), 1, "GpsFixAge value is not correct in report")       -- if GpsFixAge is not passed in expectedValues table
+  else                                                                                                                             -- it is expected not to be in the report
+    assert_nil(colmsg.Payload.GpsFixAge, "GpsFixAge value not expected in the report")                                             --  otherwise a check of value is performed
+  end
+
+  if(expectedValues.SpeedLimit) then                                                                                               -- checking speed limit if that parameter has been passed
+    assert_equal(expectedValues.speedLimit,tonumber(colmsg.Payload.Speedlimit), "SpeedLimit value is not correct in the report")   -- in the expectedValues table
+  end
+
+ if(expectedValues.maximumSpeed) then                                                                                              -- checking maximumSpeed if that parameter has been passed
+    assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed), "MaximumSpeed value is not correct in the report")  -- in the expectedValues table
+  end
+
   assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
-  --assert_true(colmsg.Payload.GpsFixAge, "GpsFixAge value is missing in report")-- issue with setFixType reported, to be updated
-  assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  --multiplied by 60000 for conversion from miliminutes
-  assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct report")  --multiplied by 60000 for conversion from miliminutes
   assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
-  assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),30, "EventTime value is not correct in the report") -- 30 seconds of tolerance
-  if(expectedValues.SpeedLimit) then                                                                                            -- checking speed limit if that parameter has been passed
-  assert_equal(expectedValues.speedLimit,tonumber(colmsg.Payload.Speedlimit),30, "EventTime value is not correct in the report") -- in the expectedValues table
-  end
-  if(expectedValues.maximumSpeed) then                                                                                            -- checking maximumSpeed if that parameter has been passed
-  assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed),30, "EventTime value is not correct in the report") -- in the expectedValues table
-  end
+
+
 
 end
 
