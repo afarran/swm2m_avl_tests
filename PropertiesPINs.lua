@@ -8,7 +8,13 @@ avlPropertiesPINs = {
       speedingTimeOver = 6,
       speedingTimeUnder = 7,
       lpmTrigger = 31,
-      avlStates = 41
+      avlStates = 41,
+      digStatesDefBitmap=46,
+      funcDigInp1 = 47,
+      port1Config = 1,
+      port1EdgeDetect = 4
+
+
 
 									}
 return avlPropertiesPINs
