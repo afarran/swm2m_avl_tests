@@ -21,7 +21,6 @@
 -- @field PASSWORD 		Simulated gateway access password; don't change
 -- @field MOBILE_ID 	Simulated mobile ID; don't change
 -- @field GATEWAY_TIMEOUT Seconds framework waits for a particular message from gateway before timing out
-
 cfg = {
 	HTTP_PROXY 		= nil,                                  -- Uncomment if not snooping on traffic using Fiddler
 	--HTTP_PROXY = "http://127.0.0.1:8888",                 -- Uncomment if using Fiddler to snoop traffic
