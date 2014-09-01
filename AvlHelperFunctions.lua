@@ -49,6 +49,9 @@ function avlHelperFunctions.decimalToBinary(num)
 end
 
 
+
+
+
 --- Given the AvlStates property (PIN 41) array { PIN = "41, value="x"} this
 -- function returns the table of the states with current status
 -- @tparam table - table containing the AvlStates property to be analysed
@@ -90,6 +93,8 @@ function avlHelperFunctions.stateDetector(avlStatesArray)
 end
 
 
+
+
 --- Given the report message and the expected name of the report
 -- this function verifies if the report is complete according to specification
 -- and if all the reported fields have correct values
@@ -111,8 +116,6 @@ end
 -- avlHelperFunctions.reportVerification(message, expectedValues)
 -- @within AvlhelperFunctions
 function avlHelperFunctions.reportVerification(message, expectedValues)
-
-  print(framework.dump(message))
 
   assert_equal(expectedValues.messageName, colmsg.Payload.Name, "Message name is not correct")
   assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  -- multiplied by 60000 for conversion from miliminutes
