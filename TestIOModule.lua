@@ -2,20 +2,12 @@
 
   TestIOModule.lua
 
-  Test main.lua module
-
---  Module :      $URL: https://ott-svn1.skywavemobile.com/svn/M2M/Agents/Source/J1939/trunk/featureTests/TestMainModule.lua $
---  Revision:     $Revision: 1226 $
---  Last Updated By:  $Author: shawn_l $
---  Last Updated:   $Date: 2014-04-01 09:19:40 -0400 (Tue, 01 Apr 2014) $
-
 
 ]]
 
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
-local bit                   = require "bit"
 local avlMessagesMINs       = require("MessagesMINs")           -- the MINs of the messages are taken from the external file
 local avlPopertiesPINs      = require("PropertiesPINs")         -- the PINs of the properties are taken from the external file
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
@@ -71,6 +63,34 @@ end
   -- *expected results:
   -- terminal correctly put in the stationary state
 function setup()
+  --[[
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL PropertiesPINs
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2}      -- line number 1 set for Ignition function
+                                             }
+                   )
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+
+  if(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON) then
+  device.setIO(1, 0) -- to make sure port has low state
+  else
+  framework.delay(3)
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+
+  --]]
+
+
+
 
   lsf.setProperties(20,{
                         {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
@@ -120,33 +140,35 @@ end
 
 --- THIS IS DRAFT VERSION
 -- this is only to check handling of the IOs and configuration of the ports
-function test_Ignition_WhenPortValueTogglesIgnitionOnMessageSent()
+function test_Ignition_WhenPortValueHighIgnitionOnMessageSent()
 
   local gpsSettings={
-              speed = 0,  -- one kmh above threshold
+              speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+              longitude = 1,                  -- degrees
                      }
+
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
                                                 {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- for both rising and falling edge
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL PropertiesPINs
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2} -- for ignition
+                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- this is default value
                                              }
                    )
 
   device.setIO(1, 0) -- to make sure port has low state
-  framework.delay(3)
+  framework.delay(2)
   device.setIO(1, 1) -- that should trigger IgnitionOn
 
   --IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
 
-  gpsSettings.heading = 361   -- for stationary state
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
                   gps = gpsSettings,
