@@ -117,6 +117,7 @@ end
 -- @within AvlhelperFunctions
 function avlHelperFunctions.reportVerification(message, expectedValues)
 
+  colmsg = framework.collapseMessage(message)
   assert_equal(expectedValues.messageName, colmsg.Payload.Name, "Message name is not correct")
   assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  -- multiplied by 60000 for conversion from miliminutes
   assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct report")        -- multiplied by 60000 for conversion from miliminutes
@@ -133,7 +134,7 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_equal(expectedValues.speedLimit,tonumber(colmsg.Payload.Speedlimit), "SpeedLimit value is not correct in the report")   -- in the expectedValues table
   end
 
- if(expectedValues.maximumSpeed) then                                                                                              -- checking maximumSpeed if that parameter has been passed
+  if(expectedValues.maximumSpeed) then                                                                                              -- checking maximumSpeed if that parameter has been passed
     assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed), "MaximumSpeed value is not correct in the report")  -- in the expectedValues table
   end
 
