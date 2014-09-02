@@ -12,7 +12,8 @@ avlPropertiesPINs = {
       digStatesDefBitmap =  46,
       funcDigInp1 = 47,
       port1Config = 1,
-      port1EdgeDetect = 4
+      port1EdgeDetect = 4,
+      maxIdlingTime = 23,
 
 
 
