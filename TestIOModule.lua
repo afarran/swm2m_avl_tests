@@ -556,7 +556,7 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccursMovingE
   local movingDebounceTime = 20       -- seconds
   local stationarySpeedThld = 5       -- kmh
 
-  -- gps settings table to be sent to simulator
+  --  gps settings table to be sent to simulator
   local gpsSettings={
               speed = stationarySpeedThld+1,  -- one kmh above threshold
               heading = 90,                   -- degrees
