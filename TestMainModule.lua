@@ -111,7 +111,7 @@ end
 
 --]]
 
-
+--[[
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- *actions performed:
@@ -1042,6 +1042,88 @@ function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldTerminalNotIn
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the speeding state")
 
 end
+
+--]]
+--- TC checks if SpeedingEnd message is sent when terminal goes to stationary state (speed = 0)
+  -- even if speedingTimeUnder has not passed
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 50 kmh and speedingTimeOver to 1 second
+  -- set gps speed above defaultSpeedLimit and wait for time longer than speedingTimeOver to get the speeding state;
+  -- then simulate terminal stop (speed = 0) and check if MovingEnd and SpeedingEnd is sent before speedingTimeUnder passes
+  -- and verify if terminal is no longer in moving and speeding state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal put in the speeding state false, SpeedingEnd message sent
+function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrueSpeedingEndMessageSentBeforeMovingEnd()
+
+  local defaultSpeedLimit = 50       -- kmh
+  local stationarySpeedThld = 5      -- kmh
+  local speedingTimeOver = 1         -- seconds
+  local speedingTimeUnder = 20       -- seconds
+  local movingDebounceTime = 1       -- seconds
+  local stationaryDebounceTime = 1   -- seconds
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = defaultSpeedLimit+1,    -- that is above stationary and speeding thresholds
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
+                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
+                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
+                                                {avlPropertiesPINs.speedingTimeUnder, speedingTimeUnder},
+
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+  gps.set(gpsSettings)
+  framework.delay(speedingTimeOver+gpsReadInterval+2) -- that is longer than speedingTimeOver and longer than movingDebounceTime
+
+
+  --checking the state of terminal, speeding state is  ecpected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
+
+  gpsSettings.speed = 0   -- terminal suddenly stops
+  gps.set(gpsSettings)
+  framework.delay(stationaryDebounceTime+gpsReadInterval+5)
+
+
+  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
+  -- looking for MovingEnd and SpeedingEnd messages
+  local movingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingEnd))
+  local speedingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingEnd))
+
+  -- checking if expected messages has been received
+  assert_not_nil(next(movingEndMessage), "MovingEnd message not received")              -- if MovingEnd message not received assertion fails
+  assert_not_nil(next(speedingEndMessage), "SpeedingEnd message not received")          -- if SpeedingEnd message not received assertion fails
+
+  -- comparison of Timestamps in IgnitionOffMessage and MovingEndMessage - those are expected to be the same
+  assert_equal(speedingEndMessage[1].Payload.EventTime, movingEndMessage[1].Payload.EventTime, 0, "Timestamps of SpeedingEnd and MovingEnd messages expected to be equal")
+
+  -- TODO:
+  -- in the future this TC should check the exact times of receiving messages of SpeedingEnd and MovingEnd to verify if SpeedingEnd message is sent
+  -- before Moving End, in eg.: SpeedingEnd ReceiveUTC = "2014-09-03 07:56:37" and MovingEned MessageUTC = "2014-09-03 07:56:42" - that is correct
+
+  -- checking the state of terminal, speeding state is not ecpected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the speeding state")
+  -- checking the state of terminal, moving state is not ecpected
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
+
+
+
+end
+
 
 
 
