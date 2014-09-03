@@ -9,6 +9,8 @@ messagesMINs = {
   speedingEnd = 9,
   idlingStart = 21,
   idlingEnd = 41,
+  seatbeltViolationStart = 19,
+  seatbeltViolationEnd = 20,
 
 	        			}
 return messagesMINs
