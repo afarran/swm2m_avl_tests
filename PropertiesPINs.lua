@@ -11,11 +11,16 @@ avlPropertiesPINs = {
       avlStates = 41,
       digStatesDefBitmap =  46,
       funcDigInp1 = 47,
+      funcDigInp2 = 48,
+      funcDigInp3 = 49,
+      funcDigInp4 = 50,
       port1Config = 1,
+      port1EdgeSampleCount = 5,
       port1EdgeDetect = 4,
+      port2Config = 12,
+      port2EdgeDetect = 15,
       maxIdlingTime = 23,
-
-
+      seatbeltDebounceTime = 115,
 
 									}
 return avlPropertiesPINs
