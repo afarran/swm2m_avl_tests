@@ -145,9 +145,12 @@ function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSent()
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
                      }
 
   gps.set(gpsSettings)
+
+  framework.delay(10)
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -180,6 +183,68 @@ function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSent()
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
+end
+
+
+--- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- *actions performed:
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line
+  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+  -- wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
+  -- and check if terminal entered IgnitionOn state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
+  -- have correct values
+function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSentGpsFixAgeReported()
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 1,                    -- no valid fix provided, gps signal loss simulated
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(7)          -- to make sure gpsFix age is above 5 seconds
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- high state is expected to trigger Ignition on
+                                             }
+                   )
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
+
+  --IgnitionOn message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IgnitionOn",
+                  currentTime = os.time(),
+                  GpsFixAge = 8
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
 
 end
 
@@ -205,6 +270,7 @@ function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSent()
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
                      }
 
   gps.set(gpsSettings)
@@ -250,6 +316,76 @@ function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSent()
 end
 
 
+--- TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- *actions performed:
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line
+  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and check if
+  -- terminal enters IgnitionOn state; then simulate port 1 value change to low state and
+  -- wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
+  -- and check if terminal is no longer in IgnitionOn state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
+  -- have correct values
+function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSentGpsFixAgeReported()
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 1,                    -- no valid fix provided, gps signal loss simulated
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(5)          -- to make sure gpsFix age is above 5 seconds
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- high state is expected to trigger Ignition on
+                                             }
+                   )
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+  -- checking if terminal correctly goes to IgnitionOn state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+  device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
+  framework.delay(5)                 -- wait for report to be generated
+
+  --IgnitionOff message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IgnitionOff",
+                  currentTime = os.time(),
+                  GpsFixAge = 13
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- checking if terminal correctly goes to IgnitionOn false state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+end
+
+
 --- TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
   -- for longer than maxIdlingTime
   -- *actions performed:
@@ -264,15 +400,16 @@ end
   -- *expected results:
   -- terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingMessageSent()
+function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSent()
 
-  local maxIdlingTime = 20  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local maxIdlingTime = 1  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, good quality of gps signal
                      }
 
   gps.set(gpsSettings)
@@ -291,32 +428,119 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
                                              }
                    )
+  gateway.setHighWaterMark()
+  device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
+  framework.delay(maxIdlingTime+5)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
 
-  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(5)                 -- waiting for IgnitionOn report generated
+  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- IgnitionOn state expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
-  gateway.setHighWaterMark()
-   framework.delay(maxIdlingTime+2)       -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  --IdlingStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+  -- flitering received messages to find IdlingEnd message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+
+  --IdlingStart message not expected
+  assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingEnd message was received, if not that is not correct
+
+  idlingStartMessage = filteredMessages[1]
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IdlingStart",
-                  currentTime = os.time()
+                  currentTime = os.time(),
                         }
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(idlingStartMessage, expectedValues ) -- verification of the report fields
 
-  -- checking if terminal correctly goes to EngineIdling state
+  -- checking if terminal has not entered EngineIdling state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
+
 
 end
+
+
+--- TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- for longer than maxIdlingTime
+  -- *actions performed:
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line
+  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and  wait until IgnitionOn is true;
+  -- then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
+  -- verify reported fields and check if terminal entered EngineIdling state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
+  -- have correct values
+function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSentGpsFixAgeReported()
+
+  local maxIdlingTime = 1  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 1,                    -- no valid fix provided, gps signal loss simulated
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(6)
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.funcDigInp1, 2},              -- line number 1 set for Ignition function
+                                              {avlPropertiesPINs.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
+                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
+
+                                             }
+                   )
+  gateway.setHighWaterMark()
+  device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
+  framework.delay(maxIdlingTime+avlAgentCons.coldFixDelay+2)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
+
+  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+
+  -- IgnitionOn state expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  -- flitering received messages to find IdlingEnd message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+
+  --IdlingStart message not expected
+  assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingEnd message was received, if not that is not correct
+
+  idlingStartMessage = filteredMessages[1]
+
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IdlingStart",
+                  currentTime = os.time(),
+                  GpsFixAge = 6
+                        }
+  avlHelperFunctions.reportVerification(idlingStartMessage, expectedValues ) -- verification of the report fields
+
+  -- checking if terminal has not entered EngineIdling state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
+
+
+end
+
+
 
 --- TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and IgnitionOn state becomes false
   -- *actions performed:
@@ -340,6 +564,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
+              GpsFixAge = 3,                  -- valid fix provided, good quality of gps signal
                      }
 
   gps.set(gpsSettings)
@@ -383,6 +608,94 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                   gps = gpsSettings,
                   messageName = "IdlingEnd",
                   currentTime = os.time()
+                        }
+  avlHelperFunctions.reportVerification(idlingEndMessage, expectedValues ) -- verification of the all report fields
+  end
+
+  -- checking if terminal correctly goes out of EngineIdling state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
+
+end
+
+
+--- TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and IgnitionOn state becomes false
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- *actions performed:
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
+  -- of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+  -- wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
+  -- then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
+  -- state becomes false; also verify the fields of the IdlingEnd report
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
+  -- have correct values
+function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSentGpsFixReported()
+
+  local maxIdlingTime = 1 -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+
+  -- configuration of GPS settings
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 1,                    -- valid fix provided, good quality of gps signal
+                     }
+
+  gps.set(gpsSettings)
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.funcDigInp1, 2},           -- line number 1 set for Ignition function
+                                              {avlPropertiesPINs.digStatesDefBitmap, 3},    -- high state is expected to trigger Ignition on
+                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
+
+                                             }
+                   )
+
+  device.setIO(1, 1)                                         -- port 1 to high level - that should trigger IgnitionOn
+  framework.delay(maxIdlingTime+5) -- wait longer than maxIdlingTime to trigger the IdlingStart event
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
+
+  --simulating gps signal loss,
+  local gpsSettings={
+                    speed = 0,                      -- terminal in stationary state
+                    latitude = 1,                   -- degrees
+                    longitude = 1,                  -- degrees
+                    fixType = 1,                    -- no valid fix provided, gps signal loss simulated
+                     }
+
+  gps.set(gpsSettings)
+
+  device.setIO(1, 0)                                      -- port 1 to LOW level - that should trigger IgnitionOff
+  framework.delay(avlAgentCons.coldFixDelay+3)          -- coldFixDelay taken into consideration
+
+  -- IgnitionOff and IdlingEnd messages expected
+  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+
+  -- flitering received messages to find IdlingEnd message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingEnd))
+  local idlingEndMessage = filteredMessages[1]              -- that is performed because of the structure of the filteredMessages
+  assert_true((next(idlingEndMessage)), "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
+
+  if((next(idlingEndMessage))) then              -- if IdlingEnd message has been received it is verified
+  gpsSettings.heading = 361                       -- 361 is reported for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IdlingEnd",
+                  currentTime = os.time(),
+                  GpsFixAge = 13
                         }
   avlHelperFunctions.reportVerification(idlingEndMessage, expectedValues ) -- verification of the all report fields
   end
@@ -556,7 +869,7 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccursMovingE
   local movingDebounceTime = 20       -- seconds
   local stationarySpeedThld = 5       -- kmh
 
-  --  gps settings table to be sent to simulator
+  -- gps settings table to be sent to simulator
   local gpsSettings={
               speed = stationarySpeedThld+1,  -- one kmh above threshold
               heading = 90,                   -- degrees
@@ -868,6 +1181,436 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   -- checking if terminal has not entered EngineIdling state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
+
+end
+
+
+
+--- TC checks if SeatbeltViolationStart message is correctly sent when terminal is moving and SeatbeltOFF line
+  -- is active for time longer than seatbeltDebounceTime
+  -- *actions performed:
+  -- configure port 2 as a digital input and associate this port with SeatbeltOFF line
+  -- (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+  -- active; then simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+  -- and check if terminal goes to moving state; after that wait for longer than seatbeltDebounceTime
+  -- and check if terminal goes to SeatbeltViolation state, SeatbeltViolationStart message is sent and
+  -- reported fields have correct values
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
+  -- have correct values
+function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  local seatbeltDebounceTime = 10       -- seconds
+
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbelOFF function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+                                             }
+                   )
+
+
+  device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
+
+  -- terminal should be put in the moving state
+  local gpsSettings={
+              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90                    -- deegres
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+3)
+
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
+  gateway.setHighWaterMark()         -- to get the newest messages
+  framework.delay(seatbeltDebounceTime) -- to make sure seatbeltDebounceTime passes
+
+  -- SeatbeltViolationStart message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SeatbeltViolationStart",
+                  currentTime = os.time()
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- verification of the state of terminal - SeatbeltViolation true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
+
+
+end
+
+--- TC checks if SeatbeltViolationStart message is not sent when terminal is moving and SeatbeltOFF line
+  -- is active for time shorter than seatbeltDebounceTime
+  -- *actions performed:
+  -- configure port 2 as a digital input and associate this port with SeatbeltOFF line
+  -- (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+  -- and check if terminal goes to moving state; after that simulate port 2 value change to high state to make SeatbeltOff
+  -- line active but for time shorter than seatbeltDebounceTime;
+  -- check if SeatbeltViolationStart message is not sent and terminal does not go to SeatbeltViolation state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal not put in the SeatbeltViolation state, SeatbeltViolationStart message not sent
+function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent()
+
+  -- moving state related properties
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  local seatbeltDebounceTime = 15        -- seconds
+
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOFF
+                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime}     -- movingDebounceTime - moving related
+                                             }
+                   )
+
+
+  -- terminal should be put in the moving state
+  local gpsSettings={
+              speed = stationarySpeedThld+10,      -- speed above stationarySpeedThld
+              latitude = 1,                        -- degrees
+              longitude = 1,                       -- degrees
+              fixType = 3,                         -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90                         -- deegres
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+4)
+
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
+
+  gateway.setHighWaterMark()               -- to get the newest messages
+
+  device.setIO(2, 1)                       -- port 2 to high level - that triggers SeatbeltOff true
+  framework.delay(seatbeltDebounceTime-5)  -- time shorter than seatbeltDebounceTime
+  device.setIO(2, 0)                       -- port 2 to low level - that triggers SeatbeltOff false
+
+  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+
+  -- flitering received messages to find IdlingEnd message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+
+  --SeatbeltViolationStart message not expected
+  assert_false(next(filteredMessages), "SeatbeltViolationStart message not expected")  -- checking if SeatbeltViolationStart message was received, if not that is not correct
+
+  -- checking if terminal has not entered SeatbeltViolation state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolationf state")
+
+end
+
+
+--- TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
+  -- and SeatbeltOff line becomes inactive (driver fastened belt)
+  -- *actions performed:
+  -- configure port 2 as a digital input and associate this port with SeatbeltOFF line
+  -- (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+  -- active; then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime
+  -- and check if terminal goes to SeatbeltViolation state;  then simulate port 2 value change to low
+  -- (SeatbeltOff line becomes inactive) and check if terminal goes out of SeatbeltViolation state,
+  -- SeatbeltViolationEnd message is sent and reported fields have correct values
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+  -- have correct values
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndSeatbeltOffLineBecomesInactiveSeatbeltltViolationEndMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  local seatbeltDebounceTime = 1       -- seconds
+
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+                                             }
+                   )
+
+
+  device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
+
+  -- terminal should be put in the moving state
+  local gpsSettings={
+              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90                    -- deegres
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+5)
+
+  -- verification of the state of terminal - SeatbeltViolation true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
+
+  gateway.setHighWaterMark()           -- to get the newest messages
+  device.setIO(2, 0)                   -- port 2 to low level - that triggers SeatbeltOff false, belt fastened
+   framework.delay(3)                  -- wait for the message to be processed
+
+  -- SeatbeltViolationEnd message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SeatbeltViolationEnd",
+                  currentTime = os.time()
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolationStart state")
+
+
+end
+
+
+
+--- TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
+  -- and it stops moving (movingEng message sent)
+  -- *actions performed:
+  -- configure port 2 as a digital input and associate this port with SeatbeltOFF line
+  -- (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+  -- active; then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime and check if
+  -- terminal goes to SeatbeltViolation state; then simulate speed = 0 (terminal stops) and check if
+  -- terminal goes out of SeatbeltViolation state, SeatbeltViolationEnd message is sent and reported fields have
+  -- correct values
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+  -- have correct values
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndMovingStateBecomesFalseSeatbeltltViolationEndMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  local seatbeltDebounceTime = 1        -- seconds
+
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+                                             }
+                   )
+
+
+  device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
+
+  -- terminal should be put in the moving state
+  local gpsSettings={
+              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+5)
+
+  -- verification of the state of terminal - SeatbeltViolation true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolationStart state")
+
+  gateway.setHighWaterMark()           -- to get the newest messages
+
+  gpsSettings.speed = 0                -- terminal stops
+  gps.set(gpsSettings)
+  framework.delay(6)                                      -- wait for the messages to be processed
+  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+
+  -- flitering received messages to find IdlingEnd message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
+
+  seatbeltViolationEndMessage = filteredMessages[1]   -- that is due to structure of the filteredMessages
+  gpsSettings.heading = 361                            -- 361 is for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SeatbeltViolationEnd",
+                  currentTime = os.time()
+                        }
+
+  avlHelperFunctions.reportVerification(seatbeltViolationEndMessage, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
+
+
+end
+
+
+--- TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
+  -- and it IgnitionOff event occurs
+  -- *actions performed:
+  -- configure port 2 as a digital input and associate this port with SeatbeltOFF line
+  -- (funcDigInp2 = 3); configure port 1 as a digital input and associate this port with IgnitionOn line
+  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for these two lines activation
+  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state to make terminal IgnitionON = true
+  -- and simulate port 2 value change to high state to make SeatbeltOff line active;
+  -- then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime and check if
+  -- terminal goes to SeatbeltViolation state; then simulate port 1 value change to low to generate IgnitionOff event
+  -- and  and check if terminal goes out of SeatbeltViolation state, SeatbeltViolationEnd message is sent and reported
+  -- fields have correct values
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+  -- have correct values
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 15          -- seconds
+  local stationarySpeedThld = 5          -- kmh
+  local seatbeltDebounceTime = 15        -- seconds
+
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
+                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+                                             }
+                   )
+
+  device.setIO(1, 1)                         -- port 1 to high level - that should trigger IgnitionOn
+  device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
+
+  -- terminal should be put in the moving state
+  local gpsSettings={
+              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+17)     -- movingDebounceTime plus time for messages to be processed
+
+  -- verification of the state of terminal - SeatbeltViolation true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolationStart state")
+
+  gateway.setHighWaterMark()                              -- to get the newest messages
+
+  device.setIO(1, 0)                                      -- port 1 to low level - that should trigger IgnitionOff
+  local timeOfEvent = os.time()
+  framework.delay(10)                                     -- wait for the messages to be processed
+  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+
+  -- flitering received messages to find IdlingEnd message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
+
+  seatbeltViolationEndMessage = filteredMessages[1]   -- that is due to structure of the filteredMessages
+
+  gpsSettings.heading = 361                           -- 361 is for stationary state
+  gpsSettings.speed = 0                               -- after IgnitionOff stationary state is expected
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SeatbeltViolationEnd",
+                  currentTime = timeOfEvent
+                        }
+
+  avlHelperFunctions.reportVerification(seatbeltViolationEndMessage, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
+
 
 end
 
