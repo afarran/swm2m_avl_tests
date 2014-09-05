@@ -1,10 +1,7 @@
---[[
-
-  GPSModule.lua
-
-description of the GPS module to be added
-
-]]
+-----------
+-- GPS test module
+-- - contains gps related test cases
+-- @module TestGPSModule
 
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
@@ -17,9 +14,9 @@ local avlAgentCons          = require("AvlAgentCons")
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 
--------------------------
+
 -- Setup and Teardown
--------------------------
+
 
 --- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
  -- executed before each test suite
@@ -104,14 +101,10 @@ function teardown()
 
 end
 
---[[
-    START OF TEST CASES
 
-    Each test case is a global function whose name begins with "test"
-
---]]
-
-
+-------------------------
+-- Test Cases
+-------------------------
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- *actions performed:
