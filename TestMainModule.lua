@@ -111,7 +111,7 @@ end
 
 --]]
 
---[[
+
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- *actions performed:
@@ -1043,7 +1043,7 @@ function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldTerminalNotIn
 
 end
 
---]]
+
 --- TC checks if SpeedingEnd message is sent when terminal goes to stationary state (speed = 0)
   -- even if speedingTimeUnder has not passed
   -- *actions performed:
