@@ -1,0 +1,507 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><strong>TestGPSModule</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>TestGPSModule</code></h1>
+<p>GPS test module
+ - contains gps related test cases</p>
+<p></p>
+
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    <dl class="function">
+    <dt>
+    <a name = "suite_setup"></a>
+    <strong>suite_setup ()</strong>
+    </dt>
+    <dd>
+    suite_setup function ensures that terminal is not in the moving state and not in the low power mode
+ executed before each test suite
+ * actions performed:
+ lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
+ function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
+ *initial conditions:
+ running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
+ GPS Web Service switched on
+ *Expected results:
+ lpmTrigger set correctly and terminal is not in the Low Power mode
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "setup"></a>
+    <strong>setup ()</strong>
+    </dt>
+    <dd>
+    the setup function puts terminal into the stationary state and checks if that state has been correctly obtained
+ it also sets gpsReadInterval (in position service) to the value of gpsReadInterval
+ executed before each unit test
+ *actions performed:
+ setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+ function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
+ then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
+ *initial conditions:
+ terminal not in the low power mode
+ *expected results:
+ terminal correctly put in the stationary state
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "teardown"></a>
+    <strong>teardown ()</strong>
+    </dt>
+    <dd>
+    teardown function executed after each unit test
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent"></a>
+    <strong>test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
+ *actions performed:
+ set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh; increase speed one kmh above threshold
+ then wait for time longer than movingDebounceTime; then check if the MovingStart message has been sent and verify
+ if the fields in the report have correct values and terminal is correctly in the moving state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal correctly put in the moving state, MovingStart message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSentGpsFixAgeReported"></a>
+    <strong>test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
+ and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ set gpsReadInterval to value of specialGpsReadInterval (15 seconds)
+ set movingDebounceTime to 7 seconds and stationarySpeedThld to 5 kmh, increase simulated speed tp 15 kmh
+ and  wait for time longer than movingDebounceTime; then check if the MovingStart message has been sent and
+ verify if fields in the report have correct values and terminal is correctly in the moving state
+ GpsFixAge should be verified in this TC as it should be included in the report
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode
+ *expected results:
+ terminal correctly put in the moving state, MovingStart message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent"></a>
+    <strong>test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingEnd message is correctly sent when speed is below threshold for time above threshold
+ *actions performed:
+ set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh then wait for time longer than
+ movingDebounceTime and check if the  moving state has been obtained; after that
+ reduce speed to one kmh below threshold for time longer than  stationaryDebounceTime and
+ check if MovingEnd message is sent, report fields have correct values and terminal is put
+ into the stationary state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal correctly put in the stationary state, MovingEnd message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent"></a>
+    <strong>test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingStart message is not sent when speed is above threshold for time below threshold
+ *actions performed:
+ set movingDebounceTime to 15 seconds and stationarySpeedThld to 5 kmh then wait for time shorter than
+ movingDebounceTime and check if the MovingStart message has not been been sent
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put into moving state, MovingStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSent"></a>
+    <strong>test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingEnd message is not sent when terminal is in the moving state and
+ speed is below threshold for time below threshold
+ *actions performed:
+ set movingDebounceTime to 1 second, stationaryDebounceTime to 15 and stationarySpeedThld to 5 kmh
+ then wait for time longer than movingDebounceTime and check if the  moving state has been obtained
+ after that reduce speed to one kmh below threshold for time shorter than  stationaryDebounceTime and
+ check if MovingEnd message is not sent
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put in the stationary state, MovingEnd message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingStartMessageNotSent"></a>
+    <strong>test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingStartMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingStart message is not sent if speed is below threshold for time above threshold
+ *actions performed:
+ set movingDebounceTime to 1 second and stationarySpeedThld to 10 kmh
+ then set speed below stationarySpeedThld and wait for time longer than movingDebounceTime
+ check if the  moving state has not been obtained and MovingStart message not sent
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put in the moving state, MovingStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSent"></a>
+    <strong>test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingEnd message is not sent if speed is above stationarySpeedThld for time above threshold
+ *actions performed:
+ set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
+ then set speed above stationarySpeedThld and wait for time longer than movingDebounceTime to get the moving state
+ then reduce speed to 6 kmh (above stationarySpeedThld) and wait longer than stationaryDebounceTime
+ check if terminal is still in the moving state and MovingEnd message has not been sent
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put in the stationary state, MovingEnd message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSent"></a>
+    <strong>test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingStart message is correctly sent when speed is above defaultSpeedLimit for period above speedingTimeOver
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeOver to 3 seconds
+ set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+ and check if terminal gets moving state; then increase speed to one kmh
+ above the defaultSpeedLimit for time longer than speedingTimeOver and check if SpeedingStart message is
+ correctly sent; verify if fields of report have correct values and terminal is put into the speeding state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal correctly put in the speeding state, SpeedingStart message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedBelowSpeedingThldForPeriodAboveThld_SpeedingEndMessageSent"></a>
+    <strong>test_Speeding_WhenSpeedBelowSpeedingThldForPeriodAboveThld_SpeedingEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingEnd message is correctly sent when speed is below defaultSpeedLimit for period above SpeedingTimeUnder
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeUnder to 3 seconds
+ increase speed above stationarySpeedThld and wait longer than movingDebounceTime and then check if terminal goes into moving state;
+ then increase speed to 10 kmh above the defaultSpeedLimit for time longer than speedingTimeOver to get the Speeding state;
+ after that reduce speed one kmh under defaultSpeedLimit for time longer than speedingTimeUnder and check if SpeedingEnd
+ message has been correctly sent, verify if fields of report have correct values and terminal is put into the non-speeding state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal correctly put out of the speeding state, SpeedingEnd message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedAboveSpeedingThldForPeriodBelowThld_SpeedingStartMessageNotSent"></a>
+    <strong>test_Speeding_WhenSpeedAboveSpeedingThldForPeriodBelowThld_SpeedingStartMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingStart message is not sent when speed is above defaultSpeedLimit for period below speedingTimeOver
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeOver to 5 seconds
+ set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+ and check if terminal gets moving state; then increase speed to 10 kmh above the defaultSpeedLimit for time
+ shorter than speedingTimeOver and check if SpeedingStart message is not sent and terminal does not goes to
+ speeding state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put in the speeding state, SpeedingStart message sent not
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedBelowSpeedingThldForPeriodBelowThld_SpeedingEndMessageNotSent"></a>
+    <strong>test_Speeding_WhenSpeedBelowSpeedingThldForPeriodBelowThld_SpeedingEndMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingEnd message is not sent when speed is below defaultSpeedLimit for period below speedingTimeOver
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeOver to 3 seconds
+ set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+ and check if terminal gets moving state; then increase speed to 10 kmh above the defaultSpeedLimit for time
+ longer than speedingTimeOver and check if terminal goes to the speeding state;
+ after that reduce speed below defaultSpeedLimit but for time shorter than speedingTimeUnder and check if SpeedingEnd message has not been
+ sent and terminal is still in SpeedingState
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal correctly does not loeave the speeding state, SpeedingEnd message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSentGpsFixAgeReported"></a>
+    <strong>test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingStart message is correctly sent when speed is above defaultSpeedLimit for period above speedingTimeOver
+ and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeOver to 7 seconds
+ set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+ and check if terminal gets moving state; then increase speed to 10 kmh above the defaultSpeedLimit for time longer than
+ speedingTimeOver (meanwhile change fixType to 'no fix') and check if SpeedingStart message is
+ correctly sent; verify if fields of report have correct values and terminal is put into the speeding state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal correctly put in the speeding state, SpeedingStart message sent and report fields (with GpsFixAge)
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThld_SpeedingEndMessageNotSent"></a>
+    <strong>test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThld_SpeedingEndMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingEnd message is not sent when speed is above defaultSpeedLimit for period above speedingTimeOver
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 100 kmh and speedingTimeOver to 3 seconds
+ set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+ and check if terminal gets moving state; then increase speed to 10 kmh above the defaultSpeedLimit for time
+ longer than speedingTimeOver and check if terminal goes to the speeding state;
+ after that reduce speed to 1 kmh above defaultSpeedLimit for time longer than speedingTimeUnder and check if SpeedingEnd
+ message has not been sent and terminal is still in SpeedingState
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal does not leave the speeding state, SpeedingEnd message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldForSpeedingFeatureDisabled_SpeedingStartMessageNotSent"></a>
+    <strong>test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldForSpeedingFeatureDisabled_SpeedingStartMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingStart message is not sent when speed is above defaultSpeedLimit for period above speedingTimeOver
+ for setting DefaultSpeedLimit = 0 (speeding feature disabled)
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 80 kmh and speedingTimeOver to 5 seconds
+ set gps speed above stationarySpeedThld wait for time longer than movingDebounceTime
+ and check if terminal gets moving state; then increase speed to 150 kmh above the defaultSpeedLimit for time
+ longer than speedingTimeOver and check if SpeedingStart message is not sent and terminal does not goes to
+ speeding state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put in the speeding state, SpeedingStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldTerminalNotInMovingStateSpeedingMessageNotSent"></a>
+    <strong>test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldTerminalNotInMovingStateSpeedingMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingStart message is not sent when speed is above defaultSpeedLimit for period above speedingTimeOver
+ for terminal which is not in the moving stare (SpeedingStart cannot be sent before MovingStart)
+ *actions performed:
+ set movingDebounceTime to 20 seconds,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 5 kmh and speedingTimeOver to 1 seconds
+ set gps speed above stationarySpeedThld wait for time longer than speedingTimeOver but shorter than movingDebounceTime
+ and check if terminal gets speeding state;
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal not put in the speeding state, SpeedingStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Speeding_WhenTerminalStopsWhileSpeedingStateTrueSpeedingEndMessageSentBeforeMovingEnd"></a>
+    <strong>test_Speeding_WhenTerminalStopsWhileSpeedingStateTrueSpeedingEndMessageSentBeforeMovingEnd ()</strong>
+    </dt>
+    <dd>
+    TC checks if SpeedingEnd message is sent when terminal goes to stationary state (speed = 0)
+ even if speedingTimeUnder has not passed
+ *actions performed:
+ set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, defaultSpeedLimit to 50 kmh and speedingTimeOver to 1 second
+ set gps speed above defaultSpeedLimit and wait for time longer than speedingTimeOver to get the speeding state;
+ then simulate terminal stop (speed = 0) and check if MovingEnd and SpeedingEnd is sent before speedingTimeUnder passes
+ and verify if terminal is no longer in moving and speeding state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ *expected results:
+ terminal put in the speeding state false, SpeedingEnd message sent
+
+
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

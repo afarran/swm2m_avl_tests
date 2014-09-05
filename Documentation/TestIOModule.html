@@ -1,0 +1,736 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><strong>TestIOModule</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>TestIOModule</code></h1>
+<p>IO test module
+ - contains digital input/output related test cases</p>
+<p></p>
+
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    <dl class="function">
+    <dt>
+    <a name = "suite_setup"></a>
+    <strong>suite_setup ()</strong>
+    </dt>
+    <dd>
+    suite_setup function ensures that terminal is not in the moving state and not in the low power mode
+ executed before each test suite
+ * actions performed:
+ lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
+ function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
+ *initial conditions:
+ running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
+ GPS Web Service switched on
+ *Expected results:
+ lpmTrigger set correctly and terminal is not in the Low Power mode
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "setup"></a>
+    <strong>setup ()</strong>
+    </dt>
+    <dd>
+    setup function puts terminal into the stationary state and checks if that state has been correctly obtained
+ it also sets gpsReadInterval (in position service) to the value of gpsReadInterval, sets all 4 ports to low state
+ and checks if terminal is not in the IgnitionOn state
+ executed before each unit test
+ *actions performed:
+ setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+ function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
+ then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
+ set all 4 ports to low state and check if terminal is not in the IgnitionOn state
+ *initial conditions:
+ terminal not in the low power mode
+ *expected results:
+ terminal correctly put in the stationary state and IgnitionOn false state
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "teardown"></a>
+    <strong>teardown ()</strong>
+    </dt>
+    <dd>
+    teardown function executed after each unit test
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSent"></a>
+    <strong>test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+ wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
+ and check if terminal entered IgnitionOn state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSentGpsFixAgeReported"></a>
+    <strong>test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
+ and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+ wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
+ and check if terminal entered IgnitionOn state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSent"></a>
+    <strong>test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state and check if
+ terminal enters IgnitionOn state; then simulate port 1 value change to low state and
+ wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
+ and check if terminal is no longer in IgnitionOn state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSentGpsFixAgeReported"></a>
+    <strong>test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
+ and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state and check if
+ terminal enters IgnitionOn state; then simulate port 1 value change to low state and
+ wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
+ and check if terminal is no longer in IgnitionOn state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSent"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
+ for longer than maxIdlingTime
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state and  wait until IgnitionOn is true;
+ then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
+ verify reported fields and check if terminal entered EngineIdling state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSentGpsFixAgeReported"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
+ and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ for longer than maxIdlingTime
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state and  wait until IgnitionOn is true;
+ then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
+ verify reported fields and check if terminal entered EngineIdling state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSent"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and IgnitionOn state becomes false
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
+ of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+ wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
+ then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
+ state becomes false; also verify the fields of the IdlingEnd report
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSentGpsFixReported"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSentGpsFixReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and IgnitionOn state becomes false
+ and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
+ of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+ wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
+ then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
+ state becomes false; also verify the fields of the IdlingEnd report
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesTrueIdlingEndMessageSent"></a>
+    <strong>test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesTrueIdlingEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and it starts moving (MovingStart sent)
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
+ of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+ wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
+ after that simulate gps speed above stationarySpeedThld for longer then movingDebounceTime to put the terminal into moving state
+ check if IdlingEnd message is correctly sent and EngineIdling state becomes false; also verify the fields of the IdlingEnd report
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxIdlingTimeIdlingMessageNotSent"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxIdlingTimeIdlingMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingStart message is not sent when terminal is in stationary state and IgnitionON state is true
+ for time shorter than maxIdlingTime
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2);
+ set the high state of the port to be a trigger for line activation (digStatesDefBitmap = 3);
+ then simulate port 1 value change to high state to get the IgnitionOn state is true; then wait shorter
+ than maxIdlingTime and check if message IdlingStart has not been sent and check if terminal has not entered EngineIdling state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal does not enter the EngineIdling state, IdlingStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccursMovingEndMessageSent"></a>
+    <strong>test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccursMovingEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingEnd message is sent when terminal is in moving state and IgnitionOff event occurs
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3);set movingDebounceTime to 20 seconds and stationarySpeedThld to 5 kmh
+ then then simulate port 1 value change to high state to get the IgnitionOn state true;
+ after that simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+ and check if the moving state has been obtained; when terminal is in the moving state simulate
+ port 1 change to low level to trigger IgnitionOff event and check if MovingEnd message is sent
+ and terminal is no longer in the moving state after that
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval,
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the stationary and IgnitionOFF state, MovingEnd message sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccursMovingEndAndSpeedingEndMessagesSent"></a>
+    <strong>test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccursMovingEndAndSpeedingEndMessagesSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if MovingEnd and SpeedingEnd messages are sent when terminal is in speeding state and IgnitionOff event occurs
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); set movingDebounceTime to 5 seconds,  stationarySpeedThld to 5 kmh
+ defaultSpeedLimit to 80  kmh and SpeedingTimeOver to 20 seconds
+ then simulate port 1 value change to high state to get the IgnitionOn state true;
+ after that simulate speed above defaultSpeedLimit for time longer than speedingTimeOver
+ and check if the speeding state has been obtained; when terminal is in the speeding state simulate
+ port 1 change to low level to trigger IgnitionOff event and check if MovingEnd and SpeedingEnd messages are sent
+ and terminal is no longer in the speeding state after that
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval,
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the stationary and IgnitionOFF state, SpedingEnd and MovingEnd messages sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndServiceMeterLineBecomesActiveIdlingEndMessageSent"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndServiceMeterLineBecomesActiveIdlingEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and one of Service Meters lines
+ goes to active state
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
+ of the port to be a trigger for line activation (digStatesDefBitmap = 5); configure port 2 as a digital input and associate
+ this port with SM1 line (funcDigInp2 = 5);  then simulate port 1 value change to high state and wait until IgnitionOn is true;
+ then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
+ then simulate port 2 change to high level (SM1 = ON) and check if IdlingEnd message is correctly sent and EngineIdling state becomes false;
+ also verify the fields of the IdlingEnd report
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeButServiceMeterLineActiveIdlingMessageNotSent"></a>
+    <strong>test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeButServiceMeterLineActiveIdlingMessageNotSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if IdlingStart message is not sent when terminal is in stationary state and IgnitionON state is true
+ for time longer than maxIdlingTime but one Service Meter line (SM1) is active
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2),
+ set the high state of the port to be a trigger for line activation (digStatesDefBitmap = 5);
+ configure port 2 as a digital input and associate this port with SM1 line (funcDigInp2 = 5);
+ simulate port 1 value change to high (SM1 = ON) and then change port 1 value to high state to get the IgnitionOn state and
+ wait longer than maxIdlingTime; after that check if message IdlingStart has not been sent and check if terminal has not
+ entered EngineIdling state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+ none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal does not enter the EngineIdling state, IdlingStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationStart message is correctly sent when terminal is moving and SeatbeltOFF line
+ becomes active and stays active for time longer than seatbeltDebounceTime (driver unfastens belt during the ride)
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+ active; then simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+ and check if terminal goes to moving state; after that wait for longer than seatbeltDebounceTime
+ and check if terminal goes to SeatbeltViolation state, SeatbeltViolationStart message is sent and
+ reported fields have correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationStart message is correctly sent when terminal starts moving and SeatbeltOFF line
+ is active for time longer than seatbeltDebounceTime (driver starts ride and does not fasten seatbelt)
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+ active; then simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+ and check if terminal goes to moving state; after that wait for longer than seatbeltDebounceTime
+ and check if terminal goes to SeatbeltViolation state, SeatbeltViolationStart message is sent and
+ reported fields have correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSentGpsFixAgeReported"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationStart message is correctly sent when terminal is moving and SeatbeltOFF line is active for time
+ longer than seatbeltDebounceTime and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+ active; then simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+ and check if terminal goes to moving state; after that wait for longer than seatbeltDebounceTime
+ and check if terminal goes to SeatbeltViolation state, SeatbeltViolationStart message is sent and
+ reported fields have correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationStart message is not sent when terminal is moving and SeatbeltOFF line
+ is active for time shorter than seatbeltDebounceTime
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); simulate speed above stationarySpeedThld for time longer than movingDebounceTime
+ and check if terminal goes to moving state; after that simulate port 2 value change to high state to make SeatbeltOff
+ line active but for time shorter than seatbeltDebounceTime;
+ check if SeatbeltViolationStart message is not sent and terminal does not go to SeatbeltViolation state
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal not put in the SeatbeltViolation state, SeatbeltViolationStart message not sent
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndSeatbeltOffLineBecomesInactiveSeatbeltltViolationEndMessageSent"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndSeatbeltOffLineBecomesInactiveSeatbeltltViolationEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
+ and SeatbeltOff line becomes inactive (driver fastened belt)
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+ active; then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime
+ and check if terminal goes to SeatbeltViolation state;  then simulate port 2 value change to low
+ (SeatbeltOff line becomes inactive) and check if terminal goes out of SeatbeltViolation state,
+ SeatbeltViolationEnd message is sent and reported fields have correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndMovingStateBecomesFalseSeatbeltltViolationEndMessageSent"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndMovingStateBecomesFalseSeatbeltltViolationEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
+ and it stops moving (movingEng message sent)
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); then simulate port 2 value change to high state to make SeatbeltOff line
+ active; then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime and check if
+ terminal goes to SeatbeltViolation state; then simulate speed = 0 (terminal stops) and check if
+ terminal goes out of SeatbeltViolation state, SeatbeltViolationEnd message is sent and reported fields have
+ correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSent"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSent ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
+ and it IgnitionOff event occurs
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3); configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for these two lines activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state to make terminal IgnitionON = true
+ and simulate port 2 value change to high state to make SeatbeltOff line active;
+ then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime and check if
+ terminal goes to SeatbeltViolation state; then simulate port 1 value change to low to generate IgnitionOff event
+ and  and check if terminal goes out of SeatbeltViolation state, SeatbeltViolationEnd message is sent and reported
+ fields have correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSentGpsFixAgeReported"></a>
+    <strong>test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSentGpsFixAgeReported ()</strong>
+    </dt>
+    <dd>
+    TC checks if SeatbeltViolationEnd message is correctly sent (for terminal is in SeatbeltViolation state) when
+ IgnitionOff event occurs and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+ *actions performed:
+ configure port 2 as a digital input and associate this port with SeatbeltOFF line
+ (funcDigInp2 = 3); configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for these two lines activation
+ (digStatesDefBitmap = 3); then simulate port 1 value change to high state to make terminal IgnitionON = true
+ and simulate port 2 value change to high state to make SeatbeltOff line active;
+ then simulate speed above stationarySpeedThld for time longer than seatbeltDebounceTime and check if
+ terminal goes to SeatbeltViolation state; then simulate port 1 value change to low to generate IgnitionOff event
+ and  and check if terminal goes out of SeatbeltViolation state, SeatbeltViolationEnd message is sent and reported
+ fields have correct values
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
+ have correct values
+
+
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
