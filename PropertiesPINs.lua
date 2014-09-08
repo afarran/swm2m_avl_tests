@@ -21,6 +21,8 @@ avlPropertiesPINs = {
       port2EdgeDetect = 15,
       maxIdlingTime = 23,
       seatbeltDebounceTime = 115,
+      lpmEntryDelay = 32,
+
 
 									}
 return avlPropertiesPINs
