@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><strong>TestLPMModule</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>TestLPMModule</code></h1>
+<p>Low Power Mode test module
+ - contains Low Power Mode related test cases</p>
+<p></p>
+
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    <dl class="function">
+    <dt>
+    <a name = "suite_setup"></a>
+    <strong>suite_setup ()</strong>
+    </dt>
+    <dd>
+    suite_setup function ensures that terminal is not in the moving state and not in the low power mode
+ executed before each test suite
+ * actions performed:
+ lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
+ function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
+ *initial conditions:
+ running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
+ GPS Web Service switched on
+ *Expected results:
+ lpmTrigger set correctly and terminal is not in the Low Power mode
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "setup"></a>
+    <strong>setup ()</strong>
+    </dt>
+    <dd>
+    setup function puts terminal into the stationary state and checks if that state has been correctly obtained
+ it also sets gpsReadInterval (in position service) to the value of gpsReadInterval, sets all 4 ports to low state
+ and checks if terminal is not in the IgnitionOn state
+ executed before each unit test
+ *actions performed:
+ setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+ function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
+ then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
+ set all 4 ports to low state and check if terminal is not in the IgnitionOn state
+ *initial conditions:
+ terminal not in the low power mode
+ *expected results:
+ terminal correctly put in the stationary state and IgnitionOn false state
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEntryDelayTerminalPutToLowPowerMode"></a>
+    <strong>test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEntryDelayTerminalPutToLowPowerMode ()</strong>
+    </dt>
+    <dd>
+    TC checks if terminal is put into Low Power Mode if the trigger of LPM is set to IgnitionOff and
+ the trigger is active for period above the lpmEntryDelay
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); set lpmEntryDelay to one minute and IgnitionOff as the trigger of Low Power Mode;
+ simulate port 1 value change to high state and check if terminal entered IgnitionOn state
+ then simulate port 1 value change to low state and check if terminal entered IgnitionOff state
+ wait for time longer than lpmEntryDelay and check if after this period terminal is in Low Power Mode
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put in the Low Power Mode
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEntryDelayTerminalNotPutToLowPowerMode"></a>
+    <strong>test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEntryDelayTerminalNotPutToLowPowerMode ()</strong>
+    </dt>
+    <dd>
+    TC checks if terminal is not put into Low Power Mode if the trigger of LPM is set to IgnitionOff and
+ the trigger is active for period below the lpmEntryDelay time
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line
+ (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+ (digStatesDefBitmap = 3); set lpmEntryDelay to one minute and IgnitionOff as the trigger of low power mode;
+ simulate port 1 value change to high state and check if terminal entered IgnitionOn state
+ then simulate port 1 value change to low state and check if terminal entered IgnitionOff state
+ wait for time shorter than lpmEntryDelay and check if  terminal is not put in Low Power Mode
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal not put in the Low Power Mode
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "test_LPM_whenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrueTerminalPutOutOfLowPowerMode"></a>
+    <strong>test_LPM_whenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrueTerminalPutOutOfLowPowerMode ()</strong>
+    </dt>
+    <dd>
+    TC checks if terminal is put out of Low Power Mode if the trigger of LPM is set to IgnitionOff and
+ IgnitionOn state becomes true
+ *actions performed:
+ configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2)
+ set the high state of the port to be a trigger for line activation (digStatesDefBitmap = 3);
+ set lpmEntryDelay to one minute and IgnitionOff as the trigger of low power mode;
+ simulate port 1 value change to high state and check if terminal entered IgnitionOn state
+ then simulate port 1 value change to low state and check if terminal entered IgnitionOff state
+ wait for time longer than lpmEntryDelay and check if after this period terminal is not in Low Power Mode
+ after that simulate IgnitionOn and check if terminal is put out of the Low Power Mode
+ *initial conditions:
+ terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+ gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+ *expected results:
+ terminal correctly put out of the Low Power Mode
+
+
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
