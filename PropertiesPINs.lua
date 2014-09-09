@@ -22,7 +22,11 @@ avlPropertiesPINs = {
       maxIdlingTime = 23,
       seatbeltDebounceTime = 115,
       lpmEntryDelay = 32,
-
+      funcDigInp13 = 59,
+      extPowerPresentStateDetect = 5,
+      extPowerPresent = 8,
+      turnThreshold = 16,
+      turnDebounceTime = 17,
 
 									}
 return avlPropertiesPINs
