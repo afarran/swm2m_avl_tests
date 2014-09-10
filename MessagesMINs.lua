@@ -7,11 +7,14 @@ messagesMINs = {
   movingEnd = 7,
   speedingStart = 8,
   speedingEnd = 9,
+  turn = 14,
   idlingStart = 21,
-  idlingEnd = 41,
   seatbeltViolationStart = 19,
   seatbeltViolationEnd = 20,
-  turn = 14,
+  idlingEnd = 41,
+  stationaryIntervalSat = 49,
+  movingIntervalSat = 22,
+  position = 16,
 
 	        			}
 return messagesMINs
