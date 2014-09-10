@@ -70,16 +70,16 @@ function setup()
 
   local stationaryDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5         -- kmh
-  local turnThreshold = 1               -- degrees
-  local turnDebounceTime = 1            -- seconds
+  --local turnThreshold = 1               -- degrees
+ -- local turnDebounceTime = 1            -- seconds
 
 
   --setting properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                               {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                               {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
-                                              {avlPropertiesPINs.turnThreshold, turnThreshold},
-                                              {avlPropertiesPINs.turnDebounceTime, turnDebounceTime},
+   --                                           {avlPropertiesPINs.turnThreshold, turnThreshold},
+   --                                           {avlPropertiesPINs.turnDebounceTime, turnDebounceTime},
                                              }
                     )
 
@@ -113,6 +113,8 @@ end
 -------------------------
 -- Test Cases
 -------------------------
+
+--[[
 
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
@@ -962,15 +964,8 @@ function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldForSpeedingFe
   gps.set(gpsSettings)
   framework.delay(movingDebounceTime+gpsReadInterval+5) -- one second is added to make sure the gps is read and processed by agent
 
-  -- checking if terminal is in the moving state
- -- local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  --assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   gateway.setHighWaterMark() -- to get the newest messages
-
- -- gpsSettings.speed = defaultSpeedLimit+150            -- 150 kmh above the speed limit threshold
-  --gps.set(gpsSettings)
- -- framework.delay(speedingTimeOver+gpsReadInterval+1)  -- wait for time longer than speedingTimeOver
 
 
   -- SpeedingStart Message is not expected
@@ -1121,12 +1116,13 @@ function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrueSpeedingEndMessage
 
 end
 
+
 --- TC checks if Turn message is correctly sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime
   -- *actions performed:
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 10 degrees and turnDebounceTime to 2 seconds
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 10 degrees and turnDebounceTime to 1 second
   -- set heading to 90 degrees and speed one kmh above threshold and wait for time longer than movingDebounceTime;
   -- check if terminal is the moving state; then change heading to 102 (2 degrees above threshold) and wait longer than turnDebounceTime
-  -- check if Turn message has been correctly sent and verify field of the report
+  -- check if Turn message has been correctly sent and verify field of the report; after that set heading of the terminal back to 90
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
@@ -1136,7 +1132,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
   local turnThreshold = 10           -- in degrees
-  local turnDebounceTime = 0         -- in seconds, feature disabled
+  local turnDebounceTime = 1         -- in seconds, feature disabled
 
 
   --applying properties of the service
@@ -1157,7 +1153,6 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
               longitude = 1                   -- degrees
                      }
 
-  gateway.setHighWaterMark() -- to get the newest messages
 
   gps.set(gpsSettings)
   framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
@@ -1165,14 +1160,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
-  turnDebounceTime = 2
-
-  --applying properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                               {avlPropertiesPINs.turnDebounceTime, turnDebounceTime},
-
-                                             }
-                   )
+  gateway.setHighWaterMark() -- to get the newest messages
 
   gpsSettings.heading = 102     -- change in heading above turnThreshold
   gps.set(gpsSettings)          -- applying gps settings
@@ -1190,14 +1178,21 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                   }
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
+  -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
+  gpsSettings.heading = 90     -- terminal put back to initial heading
+  gps.set(gpsSettings)         -- applying gps settings
+
+
 end
+
+
 
 --- TC checks if Turn message is not sent when heading difference is above TurnThreshold and is maintained below TurnDebounceTimes
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 10 degrees and turnDebounceTime to 10 seconds
   -- set heading to 90 degrees and speed one kmh above threshold and wait for time longer than movingDebounceTime;
   -- check if terminal is the moving state; then change heading to 110 (20 degrees above threshold) and wait shorter than turnDebounceTime
-  -- check if Turn message has not been sent
+  -- check if Turn message has not been sent;
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
@@ -1207,7 +1202,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTime
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
   local turnThreshold = 10           -- in degrees
-  local turnDebounceTime = 0         -- (feature disabled) in seconds
+  local turnDebounceTime = 10         -- (feature disabled) in seconds
 
 
   --applying properties of the service
@@ -1233,8 +1228,6 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTime
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
-
-  turnDebounceTime = 10
 
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -1265,7 +1258,7 @@ end
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 10 degrees and turnDebounceTime to 2 seconds
   -- set heading to 10 degrees and speed one kmh above threshold and wait for time longer than movingDebounceTime;
   -- check if terminal is the moving state; then change heading to 15 (1 degree below threshold) and wait longer than turnDebounceTime
-  -- check if Turn message has not been sent
+  -- check if Turn message has not been sent; after that set heading of the terminal back to 90
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
@@ -1317,15 +1310,19 @@ function test_Turn_WhenHeadingChangeIsBelowTurnThldAndLastsAboveTurnDebounceTime
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.turn))
   assert_false(next(matchingMessages), "Turn report not expected")    -- assertion fails if any Turn message has been received
 
+  -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
+  gpsSettings.heading = 90                              -- terminal put back to initial heading
+  gps.set(gpsSettings)                                  -- applying gps settings
+
 end
 
 
 --- TC checks if Turn message is not sent when feature is disabled (turnThreshold = 0)
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 0 degrees and turnDebounceTime to 2 seconds
-  -- set heading to 10 degrees and speed one kmh above threshold and wait for time longer than movingDebounceTime;
-  -- check if terminal is the moving state; then change heading to 90 (80 degrees change) and wait longer than turnDebounceTime
-  -- check if Turn message has not been sent
+  -- set heading to 90 degrees and speed to one kmh above threshold and wait for time longer than movingDebounceTime;
+  -- check if terminal is the moving state; then change heading to 120 (30 degrees change) and wait longer than turnDebounceTime
+  -- check if Turn message has not been sent; after that set heading of the terminal back to 90
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
@@ -1374,17 +1371,20 @@ function test_Turn_ForTurnFeatureDisabledWhenHeadingChangeIsAboveTurnThldAndLast
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.turn))
   assert_false(next(matchingMessages), "Turn report not expected")    -- assertion fails if any Turn message has been received
 
+  -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
+  gpsSettings.heading = 90                              -- terminal put back to initial heading
+  gps.set(gpsSettings)                                  -- applying gps settings
+
 end
 
 
-
------ NOT FINISHED NOT FINISHED ----- NOT FINISHED NOT FINISHED ----- NOT FINISHED NOT FINISHED ----- NOT FINISHED NOT FINISHED
 --- TC checks if Turn message is correctly sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 10 degrees and turnDebounceTime to 2 seconds
   -- set heading to 90 degrees and speed one kmh above threshold and wait for time longer than movingDebounceTime;
   -- check if terminal is the moving state; then change heading to 102 (2 degrees above threshold) and wait longer than turnDebounceTime
+  -- meanwhile change fixType to 1 (no fix provided) to make the GpsFixAge higher than 5
   -- check if Turn message has been correctly sent and verify field of the report
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
@@ -1439,10 +1439,428 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                   gps = gpsSettings,
                   messageName = "Turn",
                   currentTime = os.time(),
-                  GpsFixAge = 8,
+                  GpsFixAge = 11,
                   }
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-  print(framework.dump(message))
+
+  turnDebounceTime = 1        -- in seconds
+
+  -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+
+                                                {avlPropertiesPINs.turnDebounceTime, turnDebounceTime},
+                                             }
+                   )
+  gpsSettings.heading = 90                              -- terminal put back to initial heading
+  gps.set(gpsSettings)                                  -- applying gps settings
+
+end
+
+
+--- TC checks if StationaryIntervalSat message is sent periodically when terminal is in stationary state
+  -- *actions performed:
+  -- check if terminal is in stationary state, set stationaryIntervalSat to 10 seconds, wait for
+  -- 20 seconds and collect all the receive messages during that time; count the number of receivedMessages
+  -- stationaryIntervalSat reports in collected messages; verify alle the fields of single report
+  -- set stationaryIntervalSat to 0 to disable reports (not to cause eny troubles in other TCs)ate
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- StationaryIntervalSat reports received periodically, content of the report is correct
+function test_Stationary_WhenTerminalStationaryStationaryIntervalSatReportsMessageSentPeriodically()
+
+  local gpsSettings={
+              speed = 0,                      -- for stationary state
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+
+  local stationaryIntervalSat = 10       -- seconds
+  local numberOfReports = 2              -- number of expected reports received during the TC
+
+  -- check if terminal is in the stationary state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                             }
+                   )
+
+  gateway.setHighWaterMark()                                -- to get the newest messages
+  local timeOfEventTc = os.time()                          -- time of receiving first stationaryIntervalSat report
+  framework.delay(stationaryIntervalSat*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.stationaryIntervalSat))
+
+  gpsSettings.heading = 361 -- for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "StationaryIntervalSat",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received stationaryIntervalSat reports is incorrect")
+
+  -- back to stationaryIntervalSat = 0 to get no more reports
+  local stationaryIntervalSat = 0       -- seconds
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                             }
+                   )
+
+
+end
+
+
+
+--- TC checks if StationaryIntervalSat message is sent periodically when terminal is in stationary state
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- *actions performed:
+  -- check if terminal is in stationary state, set stationaryIntervalSat to 5 seconds, wait for coldFixDelay plus
+  -- 20 seconds and collect all the receive messages during that time; count the number of receivedMessages
+  -- stationaryIntervalSat reports in collected messages; verify alle the fields of single report
+  -- set stationaryIntervalSat to 0 to disable reports (not to cause eny troubles in other TCs)ate
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- StationaryIntervalSat reports received periodically, content of the report is correct
+function test_Stationary_WhenTerminalStationaryStationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
+
+  local gpsSettings={
+              speed = 0,                      -- for stationary state
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+                     }
+  gps.set(gpsSettings)
+
+  local stationaryIntervalSat = 5        -- seconds
+  local numberOfReports = 5              -- number of expected reports received during the TC
+
+  -- check if terminal is in the stationary state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
+
+                         --  to get fix older than 5 seconds
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                             }
+                   )
+
+  gps.set({fixType = 1})                      -- no fix provided
+  framework.delay(avlAgentCons.coldFixDelay)
+
+  gateway.setHighWaterMark()                               -- to get the newest messages
+
+  local timeOfEventTc = os.time()                          -- time of receiving first stationaryIntervalSat report
+  framework.delay(stationaryIntervalSat*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
+
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.stationaryIntervalSat))
+
+  gpsSettings.heading = 361 -- for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "StationaryIntervalSat",
+                  currentTime = timeOfEventTc,
+                  GpsFixAge = 51,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues ) -- verification of the report fields
+
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received stationaryIntervalSat reports is incorrect")
+
+  -- back to stationaryIntervalSat = 0 to get no more reports
+  local stationaryIntervalSat = 0       -- seconds
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                             }
+                   )
+
+end
+
+
+
+--- TC checks if MovingIntervalSat message is periodically sent when terminal is in moving state
+  -- *actions performed:
+  -- set movingIntervalSat to 10 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
+  -- increase speed one kmh above threshold; wait for time longer than movingDebounceTime; then check if terminal is
+  -- correctly in the moving state then wait for 20 seconds and check if movingIntervalSat messages have been
+  -- sent and verify the fields of single report; after verification set movingIntervalSat to 0 not get more reports
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  MovingIntervalSat message sent periodically and fields of the reports have correct values
+function test_Moving_WhenTerminalInMovingStateMovingIntervalSatMessageSentPeriodically()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local movingIntervalSat = 10       -- seconds
+  local numberOfReports = 2          -- number of expected reports received during the TC
+
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+1,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.movingIntervalSat, movingIntervalSat},
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+  local timeOfEventTc = os.time()
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+  -- checking if terminal is moving state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+
+  framework.delay(movingIntervalSat*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingIntervalSat))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "MovingIntervalSat",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received MovingIntervalSat reports is incorrect")
+
+  -- back to movingIntervalSat = 0 to get no more reports
+  movingIntervalSat = 0       -- seconds
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.movingIntervalSat, movingIntervalSat},
+                                             }
+                   )
+
+
+end
+
+
+--- TC checks if MovingIntervalSat message is periodically sent when terminal is in moving state
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- *actions performed:
+  -- set movingIntervalSat to 10 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
+  -- increase speed one kmh above threshold; wait for time longer than movingDebounceTime; then check if terminal is
+  -- correctly in the moving state; then change fixType to 1 (no fix) and  wait for coldFixDelay plus 20 seconds
+  -- after that check if movingIntervalSat messages have been sent and verify the fields of single report;
+  -- after verification set movingIntervalSat to 0 not get more reports
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  MovingIntervalSat message sent periodically and fields of the reports have correct values
+function test_Moving_WhenTerminalInMovingStateMovingIntervalSatMessageSentPeriodicallyGpsFixReported()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local movingIntervalSat = 10       -- seconds
+  local numberOfReports = 2          -- number of expected reports received during the TC
+
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+1,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.movingIntervalSat, movingIntervalSat},
+                                             }
+                   )
+
+
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+
+  -- checking if terminal is moving state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+
+  gps.set({fixType = 1})    -- no fix displayed
+  framework.delay(avlAgentCons.coldFixDelay)
+  gateway.setHighWaterMark() -- to get the newest messages
+  local timeOfEventTc = os.time()
+  framework.delay(movingIntervalSat*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingIntervalSat))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "MovingIntervalSat",
+                  currentTime = timeOfEventTc,
+                  GpsFixAge = 43
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received MovingIntervalSat reports is incorrect")
+
+  -- back to movingIntervalSat = 0 to get no more reports
+  movingIntervalSat = 0       -- seconds
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.movingIntervalSat, movingIntervalSat},
+                                             }
+                   )
+
+end
+
+--]]
+
+--- TC checks if Position message is periodically sent according to positionMsgInterval
+  -- *actions performed:
+  -- set positionMsgInterval to 10 seconds and wait for 20 seconds; verify
+  -- if position messages has been received and check if fields of the single report are correct
+  -- after verification set positionMsgInterval to 0 not get more reports
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  Position messages sent periodically and fields of the reports have correct values
+function test_Moving_ForPositionMsgIntervalGreaterThanZeroPositionMessageSentPeriodically()
+
+  local positionMsgInterval = 15     -- seconds
+  local numberOfReports = 2          -- number of expected reports received during the TC
+
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 0,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+  local timeOfEventTc = os.time()
+  framework.delay(positionMsgInterval*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
+
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 2, "The number of received Position reports is incorrect")
+
+  gpsSettings.heading = 361                 -- that is for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "Position",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+  -- back to positionMsgInterval = 0 to get no more reports
+  positionMsgInterval = 0       -- seconds
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
+
+end
+
+
+--- TC checks if Position message is periodically sent according to positionMsgInterval
+  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
+  -- *actions performed:
+  -- set positionMsgInterval to 10 seconds, set fixType to 1 (no fix) and wait for coldFixDelay plus 20 seconds;
+  -- verify if position messages has been received and check if fields of the single report are correct
+  -- after verification set positionMsgInterval to 0 not get more reports
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  Position messages sent periodically and fields of the reports have correct values
+function test_Moving_ForPositionMsgIntervalGreaterThanZeroPositionMessageSentPeriodicallyGpsFixReported()
+
+  local positionMsgInterval = 10     -- seconds
+  local numberOfReports = 2          -- number of expected reports received during the TC
+
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 0,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
+  gps.set({fixType=1})            -- simulating no fix
+  framework.delay(avlAgentCons.coldFixDelay)
+  gateway.setHighWaterMark()      -- to get the newest messages
+  local timeOfEventTc = os.time()
+  framework.delay(positionMsgInterval*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
+
+  gpsSettings.heading = 361                 -- that is for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "Position",
+                  currentTime = timeOfEventTc,
+                  GpsFixAge = 50,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+
+  -- back to positionMsgInterval = 0 to get no more reports
+  positionMsgInterval = 0       -- seconds
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
 
 end
 
