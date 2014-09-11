@@ -7,6 +7,7 @@ avlAgentCons = {
                                       "Reserved", "SeatbeltViolation", "IgnitionON", "EngineIdling", "SM1Active", "SM2Active", "SM3Active", "SM4Active", "Geodwelling" },  -- table of states of agent
                       digitalStatesNames = {"IgnitionON", "SeatbeltOFF", "SM1Active", "SM2Active", "SM3Active", "SM4Active" },
                       EioSIN = 25,
+                      geofenceSIN = 21,
                       coldFixDelay = 40
               }
 
