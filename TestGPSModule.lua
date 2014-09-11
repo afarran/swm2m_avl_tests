@@ -70,16 +70,11 @@ function setup()
 
   local stationaryDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5         -- kmh
-  --local turnThreshold = 1               -- degrees
- -- local turnDebounceTime = 1            -- seconds
-
 
   --setting properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                               {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                               {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
-   --                                           {avlPropertiesPINs.turnThreshold, turnThreshold},
-   --                                           {avlPropertiesPINs.turnDebounceTime, turnDebounceTime},
                                              }
                     )
 
@@ -166,7 +161,6 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
 end
-
 
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
@@ -1740,7 +1734,6 @@ function test_Moving_WhenTerminalInMovingStateMovingIntervalSatMessageSentPeriod
 
 end
 
---]]
 
 --- TC checks if Position message is periodically sent according to positionMsgInterval
   -- *actions performed:
@@ -1864,7 +1857,131 @@ function test_Moving_ForPositionMsgIntervalGreaterThanZeroPositionMessageSentPer
 
 end
 
+--]]
 
+--- TC checks if ZoneEntry message is correctly sent when terminal enters defined zone and stays there for longer than
+  -- geofenceHisteresis period
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 second and
+  -- geofenceHisteresis to 1 second; simulate terminals initial position to latitude = 50, longitude = 2.9977 (that is edge of
+  -- zone 0); set heading to 90 (moving towards east) and simulate linear motion with the speed of 99 kmh;
+  -- wait until terminal enters zone 0 and then check if ZoneEntry message has been sent; verify the fields of the report
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal enters zone 0 and ZoneEntry message has been sent
+function test_Geofence_WhenTerminalEntersInDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriodZoneEntryMessageSent()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local geofenceEnabled = true       -- to enable geofence feature
+  local geofenceInterval = 10         -- in seconds
+  local geofenceHisteresis = 1       -- in seconds
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 99,                      -- one kmh above threshold
+              heading = 90,                    -- degrees
+              latitude = 50,                   -- degrees
+              longitude = 2.9977,              -- degrees
+              simulateLinearMotion = true,
+                     }
+
+  --applying properties of AVL service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+  gps.set(gpsSettings)
+  gateway.setHighWaterMark()         -- to get the newest messages
+  framework.delay(10)                -- waiting until terminal enters the zone and the report is generated
+  timeOfEventTc = os.time()          -- to get the correct value in the report
+  framework.delay(20)                -- to make sure the report is generated and received
+
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for zoneEntry messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+
+  gpsSettings.longitude = nil        -- not to check this value in this TC (terminal moving and this number was always different)
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ZoneEntry",
+                  currentTime = timeOfEventTc,
+                  CurrentZoneId = 0     -- the number of the zone defined in this area
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+end
+
+
+--- TC checks if ZoneEntry message is not sent when terminal enters defined zone and stays there shorter longer than
+  -- geofenceHisteresis period
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 50 seconds and
+  -- geofenceHisteresis to 1 second; simulate terminals initial position to latitude = 50, longitude = 2.9977 (that is edge of
+  -- zone 0); set heading to 90 (moving towards east) and simulate linear motion with the speed of 99 kmh;
+  -- let terminal go through the zone 0 (that takes ca 36 seconds) and then check if ZoneEntry message has not been sent;
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal goes through zone 0 and ZoneEntry message is not sent
+function test_Geofence_WhenTerminalEntersInDefinedGeozoneAndStaysThereShorterThanGeofenceHisteresisPeriodZoneEntryMessageNotSent()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local geofenceEnabled = false      -- to enable geofence feature
+  local geofenceInterval = 10        -- in seconds
+  local geofenceHisteresis = 50      -- in seconds
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 99,                      -- one kmh above threshold
+              heading = 90,                    -- degrees
+              latitude = 50,                   -- degrees
+              longitude = 2.9977,              -- degrees
+              simulateLinearMotion = true,
+                     }
+
+  --applying properties of AVL service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+  gps.set(gpsSettings)
+  gateway.setHighWaterMark()         -- to get the newest messages
+  framework.delay(32)                -- waiting until terminal enters the zone and the report is generated
+
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for zoneEntry messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  assert_false(next(matchingMessages), "ZoneEntry report not expected")   -- checking if any ZoneEntry message has been caught
+
+
+end
+
+
+
+--]]
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
