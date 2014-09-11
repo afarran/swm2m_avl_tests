@@ -35,6 +35,7 @@ function suite_setup()
                                               {avlPropertiesPINs.lpmTrigger, 0},
                                              }
                     )
+
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
@@ -108,8 +109,6 @@ end
 -------------------------
 -- Test Cases
 -------------------------
-
---[[
 
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
@@ -1980,8 +1979,6 @@ function test_Geofence_WhenTerminalEntersInDefinedGeozoneAndStaysThereShorterTha
 end
 
 
-
---]]
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
