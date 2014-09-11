@@ -15,6 +15,9 @@ messagesMINs = {
   stationaryIntervalSat = 49,
   movingIntervalSat = 22,
   position = 16,
+  zoneEntry = 10,
+  zoneExit = 11,
+  setGeoSpeedLimits = 7,
 
 	        			}
 return messagesMINs
