@@ -30,6 +30,9 @@ avlPropertiesPINs = {
       extPowerPresent = 8,
       turnThreshold = 16,
       turnDebounceTime = 17,
+      geofenceEnabled = 1,
+      geofenceInterval = 2,
+      geofenceHisteresis = 3,
 
 									}
 return avlPropertiesPINs
