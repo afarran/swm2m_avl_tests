@@ -119,8 +119,14 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
 
   colmsg = framework.collapseMessage(message)
   assert_equal(expectedValues.messageName, colmsg.Payload.Name, "Message name is not correct")
-  assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  -- multiplied by 60000 for conversion from miliminutes
-  assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct report")        -- multiplied by 60000 for conversion from miliminutes
+
+  if(expectedValues.gps.latitude) then                                                                                                   -- checking Latitude if that parameter has been passed
+    assert_equal(expectedValues.gps.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct in report")     -- multiplied by 60000 for conversion from miliminutes
+  end
+
+  if(expectedValues.gps.longitude) then                                                                                                  -- checking Longitude if that parameter has been passed
+    assert_equal(expectedValues.gps.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  -- multiplied by 60000 for conversion from miliminutes
+  end
 
   -- normally GpsFixAge is not reported, it should be included only when fix is older than 5 seconds; this condition allows to check it in the report
   if(expectedValues.GpsFixAge) then
@@ -137,6 +143,10 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
 
   if(expectedValues.maximumSpeed) then                                                                                              -- checking maximumSpeed if that parameter has been passed
     assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed), "MaximumSpeed value is not correct in the report")  -- in the expectedValues table
+  end
+
+  if(expectedValues.CurrentZoneId) then                                                                                               -- checking CurrentZoneId if that parameter has been passed
+    assert_equal(expectedValues.CurrentZoneId,tonumber(colmsg.Payload.CurrentZoneId), "CurrentZoneId value is not correct in the report") -- in the expectedValues table
   end
 
   assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
