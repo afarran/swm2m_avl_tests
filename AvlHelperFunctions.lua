@@ -142,15 +142,22 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
   end
 
   if(expectedValues.maximumSpeed) then                                                                                              -- checking maximumSpeed if that parameter has been passed
-    assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed), "MaximumSpeed value is not correct in the report")  -- in the expectedValues table
+    assert_equal(expectedValues.maximumSpeed,tonumber(colmsg.Payload.MaxSpeed), "MaximumSpeed value is not correct in the report")   -- in the expectedValues table
   end
 
-  if(expectedValues.CurrentZoneId) then                                                                                               -- checking CurrentZoneId if that parameter has been passed
+  if(expectedValues.CurrentZoneId) then                                                                                                  -- checking CurrentZoneId if that parameter has been passed
     assert_equal(expectedValues.CurrentZoneId,tonumber(colmsg.Payload.CurrentZoneId), "CurrentZoneId value is not correct in the report") -- in the expectedValues table
   end
 
+  if(expectedValues.PreviousZoneId) then                                                                                                    -- checking PreviousZoneId if that parameter has been passed
+    assert_equal(expectedValues.PreviousZoneId,tonumber(colmsg.Payload.PreviousZoneId), "PreviousZoneId value is not correct in the report") -- in the expectedValues table
+  end
+
+
   assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
   assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
+
+
 
 
 
