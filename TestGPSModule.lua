@@ -111,7 +111,6 @@ end
 -- Test Cases
 -------------------------
 
-
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- *actions performed:
   -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh; increase speed one kmh above threshold
@@ -2173,6 +2172,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
 end
 
 
+
 --- TC checks if SpeedingEnd message is sent when terminal is in speeding state and moves to geofence with speed limit higher than current speed
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to 1, geofenceInterval to 10 seconds, geofence0SpeedLimit to 90 kmh
@@ -2193,7 +2193,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   local geofenceHisteresis = 1       -- in seconds
   local geofence0SpeedLimit = 90     -- in kmh
   local geofence128SpeedLimit = 60   -- in kmh
-  local defaultSpeedLimit = 50       -- in kmh
   local speedingTimeOver = 1         -- in seconds
   local speedingTimeUnder = 1        -- in seconds
 
@@ -2217,7 +2216,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
                                                 {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
                                                 {avlPropertiesPINs.speedingTimeUnder, speedingTimeUnder},
                                              }
@@ -2232,14 +2230,14 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
                    )
 
   gps.set(gpsSettings)
-  framework.delay(speedingTimeOver+gpsReadInterval+5)  -- to get the speeding state outside geofence 0 (inside 128)
+  framework.delay(speedingTimeOver+gpsReadInterval+10)  -- to get the speeding state outside geofence 0 (inside 128)
 
 
   --checking the state of terminal, speeding state is ecpected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
-  -- gps settings: terminal inside geofence 0 and speed below geofence0SpeedLimit
+  -- gps settings: terminal inside geofence 0 and speed above geofence128SpeedLimit
   local gpsSettings={
               speed = geofence128SpeedLimit+10 ,    -- 10 kmh above speeding threshold but below geofence0SpeedLimit
               heading = 90,                         -- degrees
@@ -2249,9 +2247,10 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
                      }
 
   gateway.setHighWaterMark()                             -- to get the newest messages
+  timeOfEventTc = os.time()                              -- to get the correct value in the report
   gps.set(gpsSettings)
   framework.delay(speedingTimeUnder+geofenceInterval+15) -- waiting until terminal enters the zone and the speeding end report is generated
-  timeOfEventTc = os.time()                              -- to get the correct value in the report
+
 
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
@@ -2318,7 +2317,7 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
   gps.set(gpsSettings)                                       -- applying gps settings
   framework.delay(geofenceInterval+geofenceHisteresis)       -- waiting until terminal gets Moving state true
 
-  -- changing gps settings - inside the geofence 0
+  -- changing gps settings - outside the geofence 0
   local gpsSettings={
               speed = 5,                       -- one kmh above threshold
               heading = 90,                    -- degrees
@@ -2328,6 +2327,7 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
                      }
 
   gps.set(gpsSettings)                                     -- applying gps settings
+  timeOfEventTc = os.time()                                -- to get the correct value for verification
   gateway.setHighWaterMark()                               -- to get the newest messages
   framework.delay(geofenceInterval+geofenceHisteresis+5)   -- waiting longer than geofenceHisteresis
 
@@ -2339,7 +2339,7 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ZoneExit",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTc,
                   CurrentZoneId = 128,       -- no geofence defined in this area - expected ID 128
                   PreviousZoneId = 0         -- for latitude 50 and longitude 3 geofence ID is 0
 
@@ -2371,9 +2371,10 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   local geofence0SpeedLimit = 60     -- in kmh
   local geofence1SpeedLimit = 90     -- in kmh
   local speedingTimeUnder = 1        -- in seconds
+  local speedingTimeOver = 1        -- in seconds
 
 
-  -- gps settings: terminal outside geofence 0, moving with speed above defaultSpeedLimit threshold
+  -- gps settings: terminal inside geofence 0 and , moving with speed above geofence0SpeedLimit threshold
   local gpsSettings={
               speed = geofence0SpeedLimit+10,     -- 10 kmh above speeding threshold
               heading = 90,                       -- degrees
@@ -2392,7 +2393,6 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
                                                 {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
                                                 {avlPropertiesPINs.speedingTimeUnder, speedingTimeUnder},
                                              }
@@ -2428,6 +2428,83 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
 end
+
+
+--- TC checks if when terminal enters area of two overlapping geofences the ZoneEntry report contains the lower ID
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to 1, geofenceInterval to 10 seconds and geofenceHisteresis to 1 second;
+  -- simulate terminals initial position to latitude = 50.3, longitude = 1 (that is outside geofence 0 and 1) and speed above stationarySpeedThld to get moving state
+  -- then simulate terminals position to latitude = 50.3, longitude = 3 (inside geofence 0 and geofence 1) and check if the ZoneEntry report contains CurrentZoneId = 0
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal sends ZoneEntry message and reported CurrentZoneId is correct
+function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofencesLowerGeofenceIdIsReported()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local geofenceEnabled = true       -- to enable geofence feature
+  local geofenceInterval = 10        -- in seconds
+  local geofenceHisteresis = 1       -- in seconds
+
+
+  -- gps settings: terminal outside geofence 0, moving with speed above defaultSpeedLimit threshold
+  local gpsSettings={
+              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+              heading = 90,                       -- degrees
+              latitude = 50.3,                    -- degrees, this is outside geofence 0 and 1
+              longitude = 1,                      -- degrees, this is outside geofence 0 and 1
+              simulateLinearMotion = false,
+                     }
+
+  --applying properties of AVL service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+  gps.set(gpsSettings)                  -- applying gps settings
+  framework.delay(geofenceInterval+15)  -- to make sure terminal is outside geofence 0 and 1
+
+
+  -- gps settings: terminal inside geofence 0 and 1
+  local gpsSettings={
+              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+              heading = 90,                       -- degrees
+              latitude = 50.3,                    -- degrees, this is inside of two overlapping geofences (0 and 1)
+              longitude = 3,                      -- degrees, this is inside of two overlapping geofences (0 and 1)
+              simulateLinearMotion = false,
+                     }
+
+  timeOfEventTc = os.time()
+  gps.set(gpsSettings) -- applying gps settings
+  framework.delay(geofenceInterval+15)  -- wait until report is generated
+
+  -- receiving all messages
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for SpeedingStart messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ZoneEntry",
+                  currentTime = timeOfEventTc,
+                  CurrentZoneId = 0,         -- lower Id should be reported
+                       }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+end
+
 
 
 
