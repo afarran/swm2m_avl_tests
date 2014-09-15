@@ -107,6 +107,7 @@ function teardown()
 end
 
 
+
 -------------------------
 -- Test Cases
 -------------------------
@@ -2505,6 +2506,82 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofencesLowerGeofe
 
 end
 
+
+
+--- TC checks if when terminal exits area of two overlapping geofences the ZoneExit report contains the lower ID
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to 1, geofenceInterval to 10 seconds and geofenceHisteresis to 1 second;
+  -- simulate terminals initial position to latitude = 50.3, longitude = 3 (that is inside geofence 0 and 1) and speed above stationarySpeedThld to get moving state
+  -- then simulate terminals position to latitude = 50.3, longitude = 1 (outside geofence 0 and geofence 1) and check if the ZoneExit report contains PreviousZoneId = 0
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- terminal sends ZoneExit message and reported PreviousZoneId is correct
+function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofencesLowerGeofenceIdIsReported()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local geofenceEnabled = true       -- to enable geofence feature
+  local geofenceInterval = 10        -- in seconds
+  local geofenceHisteresis = 1       -- in seconds
+
+
+  -- gps settings: terminal inside geofence 0, moving with speed above defaultSpeedLimit threshold
+  local gpsSettings={
+              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+              heading = 90,                       -- degrees
+              latitude = 50.3,                    -- degrees, this is inside geofence 0 and 1
+              longitude = 3,                      -- degrees, this is inside geofence 0 and 1
+              simulateLinearMotion = false,
+                     }
+
+  --applying properties of AVL service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+  gps.set(gpsSettings)                  -- applying gps settings
+  framework.delay(geofenceInterval+15)  -- to make sure terminal is outside geofence 0 and 1
+
+
+  -- gps settings: terminal outside geofence 0 and 1
+  local gpsSettings={
+              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+              heading = 90,                       -- degrees
+              latitude = 50.3,                    -- degrees, this is outside of two overlapping geofences (0 and 1)
+              longitude = 1,                      -- degrees, this is outside of two overlapping geofences (0 and 1)
+              simulateLinearMotion = false,
+                     }
+
+  timeOfEventTc = os.time()
+  gps.set(gpsSettings) -- applying gps settings
+  framework.delay(geofenceInterval+15)  -- wait until report is generated
+
+  -- receiving all messages
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for SpeedingStart messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ZoneExit",
+                  currentTime = timeOfEventTc,
+                  PreviousZoneId = 0,         -- lower Id should be reported
+                       }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+end
 
 
 
