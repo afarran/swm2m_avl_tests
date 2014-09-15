@@ -19,6 +19,7 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
 
 
 --- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
+ -- it sends fences.dat file to the terminal
  -- executed before each test suite
  -- * actions performed:
  -- lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
@@ -28,6 +29,7 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
  -- GPS Web Service switched on
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
+ -- geofences file successfully send to the terminal
 function suite_setup()
 
  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
@@ -39,6 +41,12 @@ function suite_setup()
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
+
+
+  -- sending fences.dat file with definiton of geofences used in TCs
+  local message = {SIN = 24, MIN = 1}
+  message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnA=="}}
+ 	gateway.submitForwardMessage(message)
 
 end
 
