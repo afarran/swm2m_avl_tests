@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Geofence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <FileVersion>
+    <Major>1</Major>
+    <Minor>0</Minor>
+    <Patch>0</Patch>
+  </FileVersion>
+  <SDKVersion>
+    <Major>2</Major>
+    <Minor>0</Minor>
+    <Patch>5</Patch>
+  </SDKVersion>
+  <Fences>
+    <Fence xsi:type="RectangularFence">
+      <Name>ID = 0</Name>
+      <Latitude>50</Latitude>
+      <Longitude>3</Longitude>
+      <Width>1</Width>
+      <Height>80</Height>
+    </Fence>
+    <Fence xsi:type="CircularFence">
+      <Name>ID = 1</Name>
+      <Latitude>50.3</Latitude>
+      <Longitude>3</Longitude>
+      <Radius>20</Radius>
+    </Fence>
+  </Fences>
+</Geofence>
