@@ -1879,8 +1879,85 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
 
+end
+
+--- TC checks if ZoneExit message is sent and reported geofence ID is 128 when terminal leaves area with defined geofence and stays
+  -- there longer than geofenceHisteresis period
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 seconds and
+  -- geofenceHisteresis to 1 second; simulate terminals initial position to latitude = 50, longitude = 3 (that is inside of
+  -- zone 0); then change terminals position to latitude = 50, longitude = 1 (this is area with no defined geofence) and check
+  -- if in ZoneExit message reported CurrentZoneId is 128;
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- ZoneExit message is sent when terminal goes out of the area with defined geofence and reported id of zone is 128
+function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriodZoneId128IsReportedInZoneExitMessage()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local geofenceEnabled = true       -- to enable geofence feature
+  local geofenceInterval = 10        -- in seconds
+  local geofenceHisteresis = 1       -- in seconds
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 5,                       -- one kmh above threshold
+              heading = 90,                    -- degrees
+              latitude = 50,                   -- degrees
+              longitude = 3,                   -- degrees, that is inside geofence 0
+              simulateLinearMotion = false,
+                     }
+
+  --applying properties of AVL service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+  gps.set(gpsSettings)                                       -- applying gps settings
+  framework.delay(geofenceInterval+geofenceHisteresis)       -- waiting until terminal gets Moving state true
+
+  -- changing gps settings - inside the geofence 0
+  local gpsSettings={
+              speed = 5,                       -- one kmh above threshold
+              heading = 90,                    -- degrees
+              latitude = 50,                   -- degrees
+              longitude = 1,                   -- degrees, that is outside geofence 0, no defined geozone
+              simulateLinearMotion = false,
+                     }
+
+  gps.set(gpsSettings)                                     -- applying gps settings
+  gateway.setHighWaterMark()                               -- to get the newest messages
+  framework.delay(geofenceInterval+geofenceHisteresis+5)   -- waiting longer than geofenceHisteresis
+
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for zoneEntry messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
+  assert_true(next(matchingMessages), "ZoneExit report not received")   -- checking if any ZoneEntry message has been caught
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ZoneExit",
+                  currentTime = os.time(),
+                  CurrentZoneId = 128,       -- no geofence defined in this area - expected ID 128
+                  PreviousZoneId = 0         -- for latitude 50 and longitude 3 geofence ID is 0
+
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
 end
+
+
 
 
 --[[Start the tests]]
