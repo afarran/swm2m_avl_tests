@@ -18,6 +18,10 @@ messagesMINs = {
   zoneEntry = 10,
   zoneExit = 11,
   setGeoSpeedLimits = 7,
+  geoDwellStart = 30,
+  geoDwellEnd = 40,
+  setGeoDwellTimes = 9,
+
 
 	        			}
 return messagesMINs
