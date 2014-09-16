@@ -43,10 +43,22 @@ function suite_setup()
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
 
-  -- sending fences.dat file with definiton of geofences used in TCs
+  --sending fences.dat file with definiton of geofences used in TCs
   local message = {SIN = 24, MIN = 1}
   message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnA=="}}
  	gateway.submitForwardMessage(message)
+
+  framework.delay(5) -- to make sure file is saved
+
+  -- restaring geofences service, that is necessary after sending new fences.dat file
+  local message = {SIN = 16, MIN = 5}
+	message.Fields = {{Name="sin",Value=21}}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5) -- wait until geofences service is up again
+
+
+
 
 end
 
@@ -118,6 +130,7 @@ end
 -------------------------
 -- Test Cases
 -------------------------
+--[[
 
 --- TC checks if ZoneEntry message is correctly sent when terminal enters defined zone and stays there for longer than
   -- geofenceHisteresis period
@@ -180,6 +193,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
 
   local expectedValues={
                   gps = gpsSettings,
@@ -190,6 +204,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
 end
+
 
 
 --- TC checks if ZoneEntry message is not sent when terminal enters defined zone and stays there shorter longer than
@@ -267,6 +282,8 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
 
 end
 
+
+--]]
 --- TC checks if ZoneExit message is correctly sent when terminal exits defined zone and enters undefined zone
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 seconds and
@@ -310,7 +327,7 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
                      }
 
   gps.set(gpsSettings)                                       -- applying gps settings
-  framework.delay(geofenceHisteresis+geofenceInterval)       -- terminal enters geofence 0 and moving state true
+  framework.delay(geofenceHisteresis+geofenceInterval+10)    -- terminal enters geofence 0 and moving state true
 
   -- changing gps settings - terminal goes outside geofence 0  to undefined geofence (128)
   local gpsSettings={
@@ -324,12 +341,13 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
   local timeOfEventTc = os.time()
   gateway.setHighWaterMark()                              -- to get the newest messages
   gps.set(gpsSettings)                                    -- applying gps settings
-  framework.delay(geofenceHisteresis+geofenceInterval)    -- terminal enters geofence 128
+  framework.delay(geofenceHisteresis+geofenceInterval+10) -- terminal enters geofence 128
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneExit messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
-  print(framework.dump(matchingMessages))
+  assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ZoneExit",
@@ -400,27 +418,27 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
                    )
 
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+1)  -- to get the moving state outside geofence 0
+  framework.delay(movingDebounceTime+gpsReadInterval+10)  -- to get the moving state outside geofence 0
 
   -- gps settings: terminal inside geofence 0 and speed above geofence0SpeedLimit
   local gpsSettings={
               speed = geofence0SpeedLimit+10 , -- 10 kmh, above speeding threshold
               heading = 90,                    -- degrees
               latitude = 50,                   -- degrees
-              longitude = 3,                   -- degrees, iniside geofence 0
+              longitude = 3,                   -- degrees, inside geofence 0
               simulateLinearMotion = false,
                      }
 
   gateway.setHighWaterMark()                         -- to get the newest messages
   gps.set(gpsSettings)
-  framework.delay(speedingTimeOver+geofenceInterval) -- waiting until terminal enters the zone and the report is generated
-  timeOfEventTc = os.time()                          -- to get the correct value in the report
+  framework.delay(speedingTimeOver+geofenceInterval+10) -- waiting until terminal enters the zone and the report is generated
+  timeOfEventTc = os.time()                             -- to get the correct value in the report
 
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingStart messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingStart))
-
+  assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SpeedingStart",
@@ -518,7 +536,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingEnd messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingEnd))
-
+  assert_not_nil(next(matchingMessages), "SpeedingEnd message not received") -- checking if any SpeedingEnd message has been received
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SpeedingEnd",
@@ -591,13 +609,12 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
   gps.set(gpsSettings)                                     -- applying gps settings
   timeOfEventTc = os.time()                                -- to get the correct value for verification
   gateway.setHighWaterMark()                               -- to get the newest messages
-  framework.delay(geofenceInterval+geofenceHisteresis+5)   -- waiting longer than geofenceHisteresis
+  framework.delay(geofenceInterval+geofenceHisteresis+10)   -- waiting longer than geofenceHisteresis
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
-  assert_true(next(matchingMessages), "ZoneExit report not received")   -- checking if any ZoneEntry message has been caught
-
+  assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ZoneExit",
@@ -676,7 +693,7 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingStart messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingStart))
-
+  assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SpeedingStart",
@@ -755,7 +772,7 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofencesLowerGeofe
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingStart messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
-
+  assert_not_nil(next(matchingMessages), "ZoneEntry message not received") -- checking if any ZoneEntry message has been received
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ZoneEntry",
@@ -832,7 +849,7 @@ function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofencesLowerGeofen
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingStart messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
-
+  assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ZoneExit",
@@ -843,7 +860,6 @@ function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofencesLowerGeofen
 
 
 end
-
 
 
 --[[Start the tests]]
