@@ -153,6 +153,13 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_equal(expectedValues.PreviousZoneId,tonumber(colmsg.Payload.PreviousZoneId), "PreviousZoneId value is not correct in the report") -- in the expectedValues table
   end
 
+  if(expectedValues.DwellTimeLimit) then                                                                                                    -- checking DwellTimeLimit if that parameter has been passed
+    assert_equal(expectedValues.DwellTimeLimit,tonumber(colmsg.Payload.DwellTimeLimit), "DwellTimeLimit value is not correct in the report") -- in the expectedValues table
+  end
+
+
+
+
 
   assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
   assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
