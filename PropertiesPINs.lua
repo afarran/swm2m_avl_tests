@@ -33,6 +33,7 @@ avlPropertiesPINs = {
       geofenceEnabled = 1,
       geofenceInterval = 2,
       geofenceHisteresis = 3,
+      defaultGeoDwellTime = 25,
 
 									}
 return avlPropertiesPINs
