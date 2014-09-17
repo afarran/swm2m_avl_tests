@@ -143,9 +143,9 @@ end
   -- geofenceHisteresis period
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 second and
-  -- geofenceHisteresis to 1 second; simulate terminals initial position to latitude = 50, longitude = 2.9977 (that is edge of
-  -- zone 0); set heading to 90 (moving towards east) and simulate linear motion with the speed of 99 kmh;
-  -- wait until terminal enters zone 0 and then check if ZoneEntry message has been sent; verify the fields of the report
+  -- geofenceHisteresis to 1 second; simulate terminals initial position to latitude = 50, longitude = 0 (that is outside of
+  -- zone 0); change terminals position to inside of geofence 0 and wait fot time longer than geofenceHisteresis plus geofenceInterval and check
+  -- if ZoneEntry message has been sent; verify the fields of the report
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
@@ -217,14 +217,13 @@ end
 --- TC checks if ZoneEntry message is not sent when terminal enters defined zone and stays there shorter longer than
   -- geofenceHisteresis period
   -- *actions performed:
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 50 seconds and
-  -- geofenceHisteresis to 1 second; simulate terminals initial position to latitude = 50, longitude = 2.9977 (that is edge of
-  -- zone 0); set heading to 90 (moving towards east) and simulate linear motion with the speed of 99 kmh;
-  -- let terminal go through the zone 0 (that takes ca 36 seconds) and then check if ZoneEntry message has not been sent;
+  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 second and
+  -- geofenceHisteresis to 1 second; simulate terminals position to latitude = 50, longitude = 3 but for time shorter than geofenceHisteresis
+  -- and check if ZoneEntry message has not been sent
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
-  -- terminal goes through zone 0 and ZoneEntry message is not sent
+  -- terminal stays in zone 0 shorter than geofenceHisteresis and ZoneEntry message is not sent
 function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanGeofenceHisteresisPeriodZoneEntryMessageNotSent()
 
   local movingDebounceTime = 1       -- seconds
