@@ -1155,6 +1155,72 @@ end
 
 
 
+--- TC checks if GeoDwellStart message is correctly sent when terminal enters zone with defined DwellTimelimit and stays there for longer than
+  -- this limit
+  -- *actions performed:
+  -- set geofenceEnabled to true, geofenceInterval to 10 seconds, geofenceHisteresis to 1 second; send message setting DwellTimes for
+  -- geofence 2 = 1 minute, geofence 3 = 15 minutes and AllZonesTime = 240 minutes; then simulate terminals  position to latitude = 50.5, longitude = 4.5
+  -- (that is inside zone 2); wait longer than geofence2DwellTime (1 minute) and check if GeoDwellStart message is sent and reports fields
+  -- have correct values
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- position of terminal outside of any of the defined geofences
+  -- *expected results:
+  -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values
+function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriodZoneEntryMessageSent()
+
+  local geofenceEnabled = true      -- to enable geofence feature
+  local geofenceInterval = 10        -- in seconds
+  local geofenceHisteresis = 1       -- in seconds
+  local geofence2DwellTime = 1       -- in minutes
+  local geofence3DwellTime = 15      -- in minutes
+  local allZonesDwellTime = 240      -- in minutes
+
+  -- setting ZoneDwellTimes for geofences
+  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
+                                                    {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
+                                                    {Name="AllZonesTime",Value=240}}
+	gateway.submitForwardMessage(message)
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 5,                       -- one kmh above threshold
+              heading = 90,                    -- degrees
+              latitude = 50.5,                 -- degrees, that is inside geofence 2
+              longitude = 4.5,                 -- degrees, that is inside geofence 2
+              simulateLinearMotion = false,
+                     }
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+  gateway.setHighWaterMark()                      -- to get the newest messages
+  local timeOfEventTc = os.time()                -- to get correct value in the report
+  gps.set(gpsSettings)                            -- applying gps settings
+  framework.delay(geofence2DwellTime*60+10)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for zoneEntry messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "GeoDwellStart",
+                  currentTime = timeOfEventTc,
+                  DwellTimeLimit = geofence2DwellTime     -- DwellTimeLimit defined in geofence2
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+end
+
+
+
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
   lunatest.run()

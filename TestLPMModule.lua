@@ -317,6 +317,10 @@ function test_LPM_whenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue
 end
 
 
+end
+
+
+
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
   lunatest.run()
