@@ -42,14 +42,8 @@ function suite_setup()
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
-
-  --sending fences.dat file with definiton of geofences used in TCs
-  --local message = {SIN = 24, MIN = 1}
-  --message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnA=="}}
- 	--gateway.submitForwardMessage(message)
-
   local message = {SIN = 24, MIN = 1}
-	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Normal"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
+	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
 	gateway.submitForwardMessage(message)
 
 
@@ -94,14 +88,23 @@ function setup()
 
   local stationaryDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5         -- kmh
+                -- delete Geo-speeding limits
 
-  --setting properties of the service
+  -- setting properties of the AVL service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                               {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                               {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
+                                              {avlPropertiesPINs.deleteData, 3},      -- delete Geo-speeding limits
                                              }
-                    )
 
+                    )
+ framework.delay(1)   -- wait until message is processed
+
+ -- setting properties of the AVL service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.deleteData, 2},      -- delete Geo-dwell limits
+                                            }
+                   )
 
   -- gps settings table
   local gpsSettings={
@@ -134,6 +137,7 @@ end
 -------------------------
 -- Test Cases
 -------------------------
+
 
 --- TC checks if ZoneEntry message is correctly sent when terminal enters defined zone and stays there for longer than
   -- geofenceHisteresis period
@@ -889,7 +893,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
-                                                    {Name="AllZonesTime",Value=240}}
+                                                    {Name="AllZonesTime",Value=allZonesDwellTime}}
 	gateway.submitForwardMessage(message)
 
   -- gps settings table to be sent to simulator
@@ -974,7 +978,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
   --applying properties of geofence service
   lsf.setProperties(avlAgentCons.geofenceSIN,{
                                                 {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceIntferval, geofenceInterval},
                                                 {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
@@ -1027,7 +1031,7 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
   local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
-                                                    {Name="AllZonesTime",Value=240}}
+                                                    {Name="AllZonesTime",Value=allZonesDwellTime}}
 	gateway.submitForwardMessage(message)
 
   -- gps settings table to be sent to simulator
@@ -1152,6 +1156,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
+
 
 
 
