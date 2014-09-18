@@ -141,7 +141,6 @@ end
 -- Test Cases
 -------------------------
 
-
 --- TC checks if ZoneEntry message is correctly sent when terminal enters defined zone and stays there for longer than
   -- geofenceHisteresis period
   -- *actions performed:
@@ -153,7 +152,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal enters zone 0 and ZoneEntry message has been sent
-function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriodZoneEntryMessageSent()
+function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneEntryMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -216,87 +215,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 end
 
 
-
---- TC checks if ZoneEntry message is correctly sent when terminal enters defined zone and stays there for longer than
-  -- geofenceHisteresis period and GpsFixAge is reported for fix older than 5 seconds
-  -- *actions performed:
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 second and
-  -- geofenceHisteresis to 10 seconds; simulate terminals initial position to latitude = 50, longitude = 0 (that is outside of
-  -- zone 0); change terminals position to inside of geofence 0 and wait fot time longer than geofenceHisteresis plus geofenceInterval and check
-  -- if ZoneEntry message has been sent; verify the fields of the report
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- *expected results:
-  -- terminal enters zone 0 and ZoneEntry message has been sent
-function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneEntryMessageSentGpsFixAgeReported()
-
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 10       -- in seconds
-
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = 5,                       -- one kmh above threshold
-              heading = 90,                    -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                   -- degrees, that is outside geofence 0
-              simulateLinearMotion = false,
-                     }
-
-  --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                             }
-                   )
-
-  --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
-                                              }
-                   )
-
-  gps.set(gpsSettings)     -- applying gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2)       -- waiting until terminal gets Moving state true
-
-  -- changing gps settings
-  local gpsSettings={
-              speed = 5,                       -- one kmh above threshold
-              heading = 90,                    -- degrees
-              latitude = 50,                   -- degrees
-              longitude = 3,                   -- degrees, that is inside geofence 0
-              simulateLinearMotion = false,
-                     }
-
-  gps.set(gpsSettings)     -- applying gps settings
-  framework.delay(geofenceHisteresis-1)
-  gpsSettings.fixType = 1  -- no valid fix provided
-  local timeOfEventTc = os.time()              -- to get correct value in the report
-  gps.set(gpsSettings)     -- applying gps settings
-  framework.delay(geofenceHisteresis+geofenceInterval)       -- waiting for the ZoneEntry message to be generated
-
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for zoneEntry messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
-  assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ZoneEntry",
-                  currentTime = timeOfEventTc,
-                  CurrentZoneId = 0,     -- the number of the zone defined in this area
-                  GpsFixAge = 8
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
-
-end
-
-
-
 --- TC checks if ZoneEntry message is not sent when terminal enters defined zone and stays there shorter longer than
   -- geofenceHisteresis period
   -- *actions performed:
@@ -307,7 +225,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal stays in zone 0 shorter than geofenceHisteresis and ZoneEntry message is not sent
-function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanGeofenceHisteresisPeriodZoneEntryMessageNotSent()
+function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanGeofenceHisteresisPeriod_ZoneEntryMessageNotSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -382,7 +300,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal exits goefence 0 and ZoneExit message has been sent
-function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceHisteresisPeriodZoneExitMessageSent()
+function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceHisteresisPeriod_ZoneExitMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -461,7 +379,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal sends SpeedingStart message in geofence 0 and fields in report have correct values
-function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeedIsAboveThldForPeriodAboveThldSpeedingStartMessageSent()
+function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeedIsAboveThldForPeriodAboveThld_SpeedingStartMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -552,7 +470,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal sends SpeedingEnd message in geofence 0 and fields in report have correct values
-function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDefinedSpeedLimitAndSpeedIsBelowThldForPeriodAboveThlSpeedingEndSent()
+function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDefinedSpeedLimitAndSpeedIsBelowThldForPeriodAboveThl_SpeedingEndMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -650,7 +568,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- ZoneExit message is sent when terminal goes out of the area with defined geofence and reported id of zone is 128
-function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriodZoneId128IsReportedInZoneExitMessage()
+function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneId128IsReportedInZoneExitMessage()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -728,7 +646,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal sends SpeedingStart message and reported speed limit is the limit defined for geofence 0
-function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefinedByGofenceWithLowerIdAndSpeedingMessageIsSent()
+function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefinedByGofenceWithLowerIdAnd_SpeedingMessageIsSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -806,7 +724,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal sends ZoneEntry message and reported CurrentZoneId is correct
-function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofencesLowerGeofenceIdIsReported()
+function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeofenceIdIsReported()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1018,6 +936,78 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
 
 end
 
+--]]
+--- TC checks if GeoDwellStart message is correctly sent when terminal enters zone with defined DwellTimelimit and stays there for longer than
+  -- limit and GpsFixAge is reported for fixes older than 5 seconds
+  -- *actions performed:
+  -- set geofenceEnabled to true, geofenceInterval to 10 seconds, geofenceHisteresis to 1 second; send message setting DwellTimes for
+  -- geofence 2 = 1 minute, geofence 3 = 15 minutes and AllZonesTime = 240 minutes; then simulate terminals  position to latitude = 50.5, longitude = 4.5
+  -- (that is inside zone 2); change fixType to 1 (no valid fix provided) and wait longer than geofence2DwellTime (1 minute) and check if GeoDwellStart message is sent,
+  -- eports fields have correct values and Geodwelling is true
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- position of terminal outside of any of the defined geofences
+  -- *expected results:
+  -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values, terminal goes to Geodwelling true
+function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanDwellTimeLimitPeriod_GeoDwellStartMessageSentGpsFixAgeReported()
+
+  local geofenceEnabled = true      -- to enable geofence feature
+  local geofenceInterval = 10        -- in seconds
+  local geofenceHisteresis = 1       -- in seconds
+  local geofence2DwellTime = 1       -- in minutes
+  local geofence3DwellTime = 15      -- in minutes
+  local allZonesDwellTime = 240      -- in minutes
+
+  -- setting ZoneDwellTimes for geofences
+  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
+                                                    {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
+                                                    {Name="AllZonesTime",Value=allZonesDwellTime}}
+	gateway.submitForwardMessage(message)
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 5,                       -- kmh
+              heading = 90,                    -- degrees
+              latitude = 50.5,                 -- degrees, that is inside geofence 2
+              longitude = 4.5,                 -- degrees, that is inside geofence 2
+              simulateLinearMotion = false,
+                     }
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+  gateway.setHighWaterMark()                      -- to get the newest messages
+  local timeOfEventTc = os.time()                -- to get correct value in the report
+  gps.set(gpsSettings)                            -- applying gps settings
+  framework.delay(gpsReadInterval+3)              -- wait until position of terminal is read
+  gpsSettings.fixType = 1                         -- no valid fix provided
+  gps.set(gpsSettings)                            -- applying gps settings
+  framework.delay(geofence2DwellTime*60+40)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for GeoDwellStart messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "GeoDwellStart",
+                  currentTime = timeOfEventTc,
+                  DwellTimeLimit = geofence2DwellTime,     -- in minutes, DwellTimeLimit defined in geofence2
+                  GpsFixAge = 101,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+  -- checking the terminal state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
+
+end
 
 
 --- TC checks if GeoDwellStart message is not sent when terminal enters zone with defined DwellTimeLimit and stays there shorter than
@@ -1045,7 +1035,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
   local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
-                                                    {Name="AllZonesTime",Value=240}}
+                                                    {Name="AllZonesTime",Value=allZonesDwellTime}}
 	gateway.submitForwardMessage(message)
 
   -- gps settings table to be sent to simulator
@@ -1056,14 +1046,15 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
               longitude = 4.5,                 -- degrees, that is inside geofence 2
               simulateLinearMotion = false,
                      }
-
-  --applying properties of geofence service
+ --applying properties of geofence service
   lsf.setProperties(avlAgentCons.geofenceSIN,{
                                                 {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceIntferval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
                                                 {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
+
+
   gateway.setHighWaterMark()                      -- to get the newest messages
   local timeOfEventTc = os.time()                -- to get correct value in the report
   gps.set(gpsSettings)                            -- applying gps settings
@@ -1555,7 +1546,6 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
 
 
 end
-
 
 
 --[[Start the tests]]
