@@ -157,6 +157,9 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_equal(expectedValues.DwellTimeLimit,tonumber(colmsg.Payload.DwellTimeLimit), "DwellTimeLimit value is not correct in the report") -- in the expectedValues table
   end
 
+  if(expectedValues.totalDrivingTime) then                                                                                                    -- checking totalDrivingTime if that parameter has been passed
+    assert_equal(expectedValues.totalDrivingTime,tonumber(colmsg.Payload.TotalDrivingTime), "DwellTimeLimit value is not correct in the report") -- in the expectedValues table
+  end
 
 
 
