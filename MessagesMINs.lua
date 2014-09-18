@@ -21,6 +21,7 @@ messagesMINs = {
   geoDwellStart = 30,
   geoDwellEnd = 40,
   setGeoDwellTimes = 9,
+  longDriving = 29,
 
 
 	        			}
