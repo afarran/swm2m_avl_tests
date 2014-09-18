@@ -35,6 +35,10 @@ avlPropertiesPINs = {
       geofenceHisteresis = 3,
       defaultGeoDwellTime = 25,
       deleteData = 201,
+      maxDrivingTime = 20,
+      minRestTime = 21,
+
+
 
 									}
 return avlPropertiesPINs
