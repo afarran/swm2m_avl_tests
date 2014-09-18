@@ -112,6 +112,7 @@ end
 -- Test Cases
 -------------------------
 
+
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- *actions performed:
   -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh; increase speed one kmh above threshold
@@ -985,7 +986,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal not put in the speeding state, SpeedingStart message not sent
-function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldTerminalNotInMovingStateSpeedingMessageNotSent()
+function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldTerminalNotInMovingState_SpeedingMessageNotSent()
 
   local defaultSpeedLimit = 5        -- kmh, for value of 0 the speeding feature should be disabled
   local speedingTimeOver = 1         -- seconds
@@ -1043,7 +1044,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- terminal put in the speeding state false, SpeedingEnd message sent
-function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrueSpeedingEndMessageSentBeforeMovingEnd()
+function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrue_SpeedingEndMessageSentBeforeMovingEnd()
 
   local defaultSpeedLimit = 50       -- kmh
   local stationarySpeedThld = 5      -- kmh
@@ -1121,7 +1122,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- Turn message sent and report fields have correct values
-function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriodTurnMessageSent()
+function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1191,7 +1192,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- Turn message not sent
-function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTimePeriodTurnMessageNotSent()
+function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTimePeriod_TurnMessageNotSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1257,7 +1258,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- Turn message not sent
-function test_Turn_WhenHeadingChangeIsBelowTurnThldAndLastsAboveTurnDebounceTimePeriodTurnMessageNotSent()
+function test_Turn_WhenHeadingChangeIsBelowTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageNotSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1321,7 +1322,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- Turn message not sent
-function test_Turn_ForTurnFeatureDisabledWhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriodTurnMessageNotSent()
+function test_Turn_ForTurnFeatureDisabledWhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageNotSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1384,7 +1385,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- Turn message sent and report fields have correct values
-function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriodTurnMessageSentGpsFixAgeReported()
+function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageSentGpsFixAgeReported()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1462,7 +1463,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- StationaryIntervalSat reports received periodically, content of the report is correct
-function test_Stationary_WhenTerminalStationaryStationaryIntervalSatReportsMessageSentPeriodically()
+function test_Stationary_WhenTerminalStationary_StationaryIntervalSatReportsMessageSentPeriodically()
 
   local gpsSettings={
               speed = 0,                      -- for stationary state
@@ -1527,7 +1528,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- StationaryIntervalSat reports received periodically, content of the report is correct
-function test_Stationary_WhenTerminalStationaryStationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
+function test_Stationary_WhenTerminalStationary_StationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
 
   local gpsSettings={
               speed = 0,                      -- for stationary state
@@ -1586,7 +1587,6 @@ function test_Stationary_WhenTerminalStationaryStationaryIntervalSatMessageSentP
 end
 
 
-
 --- TC checks if MovingIntervalSat message is periodically sent when terminal is in moving state
   -- *actions performed:
   -- set movingIntervalSat to 10 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
@@ -1597,7 +1597,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
-function test_Moving_WhenTerminalInMovingStateMovingIntervalSatMessageSentPeriodically()
+function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentPeriodically()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1670,7 +1670,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
-function test_Moving_WhenTerminalInMovingStateMovingIntervalSatMessageSentPeriodicallyGpsFixReported()
+function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentPeriodicallyGpsFixReported()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1744,7 +1744,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  Position messages sent periodically and fields of the reports have correct values
-function test_Moving_ForPositionMsgIntervalGreaterThanZeroPositionMessageSentPeriodically()
+function test_Moving_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
 
   local positionMsgInterval = 15     -- seconds
   local numberOfReports = 2          -- number of expected reports received during the TC
@@ -1805,7 +1805,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  Position messages sent periodically and fields of the reports have correct values
-function test_Moving_ForPositionMsgIntervalGreaterThanZeroPositionMessageSentPeriodicallyGpsFixReported()
+function test_Moving_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodicallyGpsFixReported()
 
   local positionMsgInterval = 10     -- seconds
   local numberOfReports = 2          -- number of expected reports received during the TC
@@ -1854,6 +1854,74 @@ function test_Moving_ForPositionMsgIntervalGreaterThanZeroPositionMessageSentPer
                                                 {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
                                              }
                    )
+
+end
+
+
+--- TC checks if LongDriving message is sent when terminal is moving without brake for time longer than maxDrivingTime
+  -- *actions performed:
+  -- set movingDebounceTime to 1 second,  stationarySpeedThld to 5 kmh, maxDrivingTime to 1 minute and minRestTime to 1 minute
+  -- then wait for time longer than movingDebounceTime to get the moving state and after time of maxDrivingTime and check if LongDriving
+  -- message is sent and report fields have correct values
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- LongDriving message sent after exceeeding maxDrivingTime limit, report fields have correct values
+function test_LongDriving_WhenTerminalMovingWithoutBrakeForPeriodLongerThanMaxDrivingTime_LongDrivingMessageSent()
+
+  local movingDebounceTime = 1       -- seconds
+  local stationaryDebounceTime = 1   -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local maxDrivingTime = 1           -- minutes
+  local minRestTime = 1              -- minutes
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
+                                                {avlPropertiesPINs.maxDrivingTime, maxDrivingTime},
+                                                {avlPropertiesPINs.minRestTime, minRestTime}
+                                             }
+                   )
+    -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+1,  -- one kmh above threshold, to get moving state
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  -- first terminal is put into moving state
+  gps.set(gpsSettings)                                    -- gps settings applied
+  framework.delay(movingDebounceTime+gpsReadInterval+1)   -- one second is added to make sure the gps is read and processed by agent
+  --checking if terminal is in the moving state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+
+  gateway.setHighWaterMark()                 -- to get the newest messages
+  -- waiting until maxDrivingTime limit passes
+  framework.delay(maxDrivingTime*60+8)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
+  eventTimeTc = os.time()                    -- to get the correct value in the report
+  -- LongDriving message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.longDriving))
+  local expectedValues={
+                    gps = gpsSettings,
+                    messageName = "LongDriving",
+                    currentTime = eventTimeTc,
+                    totalDrivingTime = maxDrivingTime            -- in minutes, maxDrivingTime is expected
+                        }
+  avlHelperFunctions.reportVerification(message,expectedValues)  -- verification of the report fields
+
+  local maxDrivingTime = 0                                      -- in minutes, 0 not to get more LongDriving reports
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.maxDrivingTime, maxDrivingTime},
+                                             }
+                   )
+
+
 
 end
 
