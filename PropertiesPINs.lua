@@ -37,6 +37,10 @@ avlPropertiesPINs = {
       deleteData = 201,
       maxDrivingTime = 20,
       minRestTime = 21,
+      odometerDistanceIncrement = 14,
+      odometer = 15,
+      distanceCellThld = 18,
+      distanceSatThld = 19,
 
 
 

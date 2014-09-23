@@ -1609,7 +1609,7 @@ function test_Stationary_WhenTerminalStationary_StationaryIntervalSatMessageSent
 
 end
 
---]]
+
 
 --- TC checks if StationaryIntervalSat message is deffered by ZoneEntry message (for terminal in moving state)
   -- *actions performed:
@@ -2599,6 +2599,71 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDisconti
 
 end
 
+
+
+--- TC checks if DistanceSat message is sent when terminal travels distanceSatThld
+  -- *actions performed:
+  -- set distanceSatThld to 200 meters and odometerDistanceIncrement to 10 meters, simulate terminals linear movement with speed of 20 m/s
+  -- and after 45 seconds check if 4 DistanceSat messages has been sent by terminal
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- DistanceSat set after terminal travels distanceSatThld, content of the report is correct
+function test_Odometer_WhenTerminalTravelsDistanceSatThldDistanceSatMessageSent()
+
+  local distanceSatThld = 200            -- in meters
+  local stationarySpeedThld = 10         -- in kmh
+  local odometerDistanceIncrement = 10   -- in meters
+  local stationarySpeedThld = 20         -- in kmh
+  local movingDebounceTime = 1           -- in seconds
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.distanceSatThld, distanceSatThld},
+                                                {avlPropertiesPINs.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                             }
+                   )
+
+  local gpsSettings={
+              speed = 72,                     -- 20 m/s
+              heading = 30,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              simulateLinearMotion = true,   -- terminal not moving
+                     }
+  gps.set(gpsSettings)  -- number of expected reports received during the TC
+  local timeOfEventTc = os.time()
+  gateway.setHighWaterMark()           -- to get the newest messages
+  framework.delay(45) -- after 40 seconds terminal will travel 800 meters - 4 DistanceSat reports are expected
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
+
+  gpsSettings.latitude = nil    -- not to be checked in report
+  gpsSettings.longitude = nil   -- not to be checked in report
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "DistanceSat",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+  assert_equal(4, table.getn(matchingMessages) , 1, "The number of received DistanceSat reports is incorrect")
+
+  -- back to distanceSatThld = 0 to get no more reports
+  local distanceSatThld = 0       -- seconds
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.distanceSatThld, distanceSatThld},
+                                             }
+                   )
+
+
+end
 
 
 
