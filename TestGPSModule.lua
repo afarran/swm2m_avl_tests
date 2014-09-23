@@ -2609,7 +2609,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- DistanceSat set after terminal travels distanceSatThld, content of the report is correct
-function test_Odometer_WhenTerminalTravelsDistanceSatThldDistanceSatMessageSent()
+function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent()
 
   local distanceSatThld = 200            -- in meters
   local stationarySpeedThld = 10         -- in kmh
