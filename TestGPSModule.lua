@@ -41,21 +41,6 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
-  -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
-  -- for more details please go to Geofences.jpg file in Documentation
-  local message = {SIN = 24, MIN = 1}
-	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5) -- to make sure file is saved
-
-  -- restaring geofences service, that action is necessary after sending new fences.dat file
-  local message = {SIN = 16, MIN = 5}
-	message.Fields = {{Name="sin",Value=21}}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5) -- wait until geofences service is up again
-
 
 end
 
@@ -1486,7 +1471,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- StationaryIntervalSat reports received periodically, content of the report is correct
-function test_Stationary_WhenTerminalStationary_StationaryIntervalSatReportsMessageSentPeriodically()
+function test_SPeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryIntervalSatGreaterThenZero_StationaryIntervalSatReportsMessageSentPeriodically()
 
   local gpsSettings={
               speed = 0,                      -- for stationary state
@@ -1551,7 +1536,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- StationaryIntervalSat reports received periodically, content of the report is correct
-function test_Stationary_WhenTerminalStationary_StationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
+function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryIntervalSatGreaterThanZero_StationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
 
   local gpsSettings={
               speed = 0,                      -- for stationary state
@@ -1611,26 +1596,22 @@ end
 
 
 
---- TC checks if StationaryIntervalSat message is deffered by ZoneEntry message (for terminal in moving state)
+--- TC checks if StationaryIntervalSat message is deffered by Position message (for terminal in stationary state)
   -- *actions performed:
-  -- set stationaryIntervalSat to 30 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
-  -- increase speed one kmh above threshold; wait for time longer than movingDebounceTime to make terminal moving
-  -- then change position of terminal to inside of the defined geofence - ZoneEntry message is generated -
-  -- calculate difference in time between ZoneEntry message and MovingIntervalSat message - that should be equal to
-  -- movingIntervalSat period if the report has been correctly deffered
+  -- set stationaryIntervalSat to 10 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
+  -- simulate terminal in stationary state and send Position message request; then check if StationaryIntervalSat message
+  -- has been correctly deffered - calculate difference in time between Position message and MovingIntervalSat message - that
+  -- should be equal to full StationaryIntervalSat period if the report has been correctly deffered
+  -- in the end set stationaryIntervalSat to 0 to get no more reports
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
-  --  MovingIntervalSat message sent after full movingIntervalSat period (deffered by ZoneEntry message)
-function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentAfterFullMovingIntervalSatPeriodIfDeffered()
+  -- StationaryIntervalSat message sent after full StationaryIntervalSat period (deffered by Position message)
+function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPositionEventOccurs_StationaryIntervalSatMessageSentAfterFullStationaryIntervalSatPeriodIfDeffered()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
-  local stationaryIntervalSat = 30   -- seconds
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 3       -- in seconds
-
+  local stationaryIntervalSat = 10   -- seconds
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
@@ -1648,39 +1629,25 @@ function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentAfter
                                              }
                    )
 
-  --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
-                                              }
-                   )
+  gps.set(gpsSettings)                       -- applying gps settings
+  framework.delay(3)                         -- to make sure terminal is stationary
+  gateway.setHighWaterMark()                 -- to get the newest messages
+  local message = {SIN = 126, MIN = 1}      -- to trigger Position event
+	gateway.submitForwardMessage(message)
 
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+2)
-
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = 0,                      -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 50,                  -- degrees
-              longitude = 3                   -- degrees
-                     }
-  gps.set(gpsSettings)
-  gateway.setHighWaterMark()                -- to get the newest messages
-  framework.delay(stationaryIntervalSat+8)  -- wait longer than stationaryIntervalSat
+  framework.delay(stationaryIntervalSat+3)  -- wait longer than stationaryIntervalSat receive report
 
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for MovingEnd and SpeedingEnd messages
   local stationaryIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.stationaryIntervalSat))
-  local zoneEntryMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
 
   -- checking if expected messages has been received
   assert_not_nil(next(stationaryIntervalSatMessage), "stationaryIntervalSat message message not received")   -- if StationaryIntervalSat message not received assertion fails
-  assert_not_nil(next(zoneEntryMessage), "ZoneEntry message not received")                                   -- if ZoneEntry message not received assertion fails
+  assert_not_nil(next(positionMessage), "Position message not received")                                     -- if Position message not received assertion fails
 
-  -- difference in time of occurence of ZoneEntry report and StationaryIntervalSat report
-  local differenceInTimestamps =  stationaryIntervalSatMessage[1].Payload.EventTime - zoneEntryMessage[1].Payload.EventTime
+  -- difference in time of occurence of Position report and StationaryIntervalSat report
+  local differenceInTimestamps =  stationaryIntervalSatMessage[1].Payload.EventTime - positionMessage[1].Payload.EventTime
   -- checking if difference in time is correct - full StationaryIntervalSat period is expected
   assert_equal(stationaryIntervalSat, differenceInTimestamps, 2, "StationaryIntervalSat has not been correctly deffered")
 
@@ -1706,7 +1673,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
-function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentPeriodically()
+function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingIntervalSatGreaterThanZero_MovingIntervalSatMessageSentPeriodically()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1763,7 +1730,6 @@ function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentPerio
                                              }
                    )
 
-
 end
 
 
@@ -1779,7 +1745,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
-function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentPeriodicallyGpsFixReported()
+function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingIntervalSatGreaterThanZero_MovingIntervalSatMessageSentPeriodicallyGpsFixReported()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -1844,25 +1810,22 @@ function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentPerio
 end
 
 
---- TC checks if MovingIntervalSat message is deffered by ZoneEntry message (for terminal in moving state)
+--- TC checks if MovingIntervalSat message is deffered by Position message (for terminal in moving state)
   -- *actions performed:
-  -- set movingIntervalSat to 30 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
+  -- set movingIntervalSat to 10 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh;
   -- increase speed one kmh above threshold; wait for time longer than movingDebounceTime to make terminal moving
-  -- then change position of terminal to inside of the defined geofence - ZoneEntry message is generated -
-  -- calculate difference in time between ZoneEntry message and MovingIntervalSat message - that should be equal to
-  -- movingIntervalSat period if the report has been correctly deffered
+  -- then request Position message and check if movingIntervalSat message is correctly deffered by it -  calculate difference
+  -- in time between Position message and MovingIntervalSat message - that should be equal to full movingIntervalSat period
+  -- in the end set MovingIntervalSat to get no more reports
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
-  --  MovingIntervalSat message sent after full movingIntervalSat period (deffered by ZoneEntry message)
-function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentAfterFullMovingIntervalSatPeriodIfDeffered()
+  --  MovingIntervalSat message sent after full movingIntervalSat period (deffered by Position message)
+function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEventoccurs_MovingIntervalSatMessageSentAfterFullMovingIntervalSatPeriodIfDeffered()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
-  local movingIntervalSat = 30       -- seconds
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 3       -- in seconds
+  local movingIntervalSat = 10       -- seconds
 
 
   -- gps settings table to be sent to simulator
@@ -1881,39 +1844,24 @@ function test_Moving_WhenTerminalInMovingState_MovingIntervalSatMessageSentAfter
                                              }
                    )
 
-  --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
-                                              }
-                   )
-
+  gateway.setHighWaterMark()                 -- to get the newest messages
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+2)
+  framework.delay(6)                         -- wait until terminal gets moving state
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 50,                  -- degrees
-              longitude = 3                   -- degrees
-                     }
-  gps.set(gpsSettings)
-  gateway.setHighWaterMark()            -- to get the newest messages
-  framework.delay(movingIntervalSat+5)  -- wait longer than movingIntervalSat
-
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
+  local message = {SIN = 126, MIN = 1}      -- to trigger Position event
+	gateway.submitForwardMessage(message)
+  framework.delay(movingIntervalSat+5)                   -- wait longer than movingIntervalSat to receive report
+  local receivedMessages = gateway.getReturnMessages()  -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for MovingEnd and SpeedingEnd messages
   local movingIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingIntervalSat))
-  local zoneEntryMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
 
   -- checking if expected messages has been received
-  assert_not_nil(next(movingIntervalSatMessage), "MovingIntervalSat message message not received")       -- if MovingIntervalSat message not received assertion fails
-  assert_not_nil(next(zoneEntryMessage), "ZoneEntry message not received")                               -- if ZoneEntry message not received assertion fails
+  assert_not_nil(next(movingIntervalSatMessage), "MovingIntervalSat message message not received")     -- if MovingIntervalSat message not received assertion fails
+  assert_not_nil(next(positionMessage), "Position message not received")                               -- if Position message not received assertion fails
 
-  -- difference in time of occurence of ZoneEntry report and movingIntervalSat report
-  local differenceInTimestamps =  movingIntervalSatMessage[1].Payload.EventTime - zoneEntryMessage[1].Payload.EventTime
+  -- difference in time of occurence of Position report and movingIntervalSat report
+  local differenceInTimestamps =  movingIntervalSatMessage[1].Payload.EventTime - positionMessage[1].Payload.EventTime
   -- checking if difference in time is correct - full MovingIntervalSat period is expected
   assert_equal(movingIntervalSat, differenceInTimestamps, 2, "MovingIntervalSat has not been correctly deffered")
 
@@ -1938,7 +1886,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  Position messages sent periodically and fields of the reports have correct values
-function test_Moving_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
+function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
 
   local positionMsgInterval = 15     -- seconds
   local numberOfReports = 2          -- number of expected reports received during the TC
@@ -1946,7 +1894,7 @@ function test_Moving_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPe
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 0,  -- one kmh above threshold
+              speed = 0,                      -- one kmh above threshold
               heading = 90,                   -- degrees
               latitude = 1,                   -- degrees
               longitude = 1                   -- degrees
@@ -1991,17 +1939,18 @@ end
 
 --- TC checks if Position message is sent after full positionMsgInterval when MovingStart event deffers it
   -- *actions performed:
-  -- set positionMsgInterval to 20 seconds and movingDebounceTime to 1 second; simulate speed above stationarySpeedThld and wait longer than positionMsgInterval;
-  -- check if positionMsgInterval message has been sent after full positionMsgInterval period since MovingStart event
+  -- set positionMsgInterval to 20 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh,
+  -- simulate speed above stationarySpeedThld and wait longer than positionMsgInterval (MovingStart message is sent meanwhile)
+  -- check if positionMsgInterval message has been sent after full positionMsgInterval period after MovingStart event
   -- after verification set positionMsgInterval to 0 not get more reports
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
-  --  Position messages correctly deffered by MovingStart event
-function test_Moving_WhenPositionMsgIntervalIsGreaterThanZeroAndMovingStartEventDeffers_PositionMessageSentAfterFullPositionMsgInterval()
+  -- Position messages correctly deffered by MovingStart event
+function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndMovingStartEventDeffers_PositionMessageSentAfterFullPositionMsgInterval()
 
-  local positionMsgInterval = 30     -- seconds
-  local movingDebounceTime = 1      -- seconds
+  local positionMsgInterval = 20     -- seconds
+  local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
 
 
@@ -2022,12 +1971,12 @@ function test_Moving_WhenPositionMsgIntervalIsGreaterThanZeroAndMovingStartEvent
                    )
 
   gateway.setHighWaterMark()              -- to get the newest messages
-  gps.set(gpsSettings)                   -- applying gps settings to generate MovingStart message
-  framework.delay(positionMsgInterval+movingDebounceTime+3)
+  gps.set(gpsSettings)                    -- applying gps settings to generate MovingStart message
+  framework.delay(positionMsgInterval+3)  -- wait longer than positionMsgInterval to receive report
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for MovingEnd and SpeedingEnd messages
+  -- looking for positionMsgInterval and MovingStart messages
   local positionMsgIntervalMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
   local movingStartMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingStart))
 
@@ -2037,7 +1986,7 @@ function test_Moving_WhenPositionMsgIntervalIsGreaterThanZeroAndMovingStartEvent
   assert_not_nil(next(positionMsgIntervalMessage), "PositionMsgInterval message message not received")       -- if PositionMsgInterval message not received assertion fails
   assert_not_nil(next(movingStartMessage), "MovingStart message not received")                               -- if MovingStart message not received assertion fails
 
-  -- difference in time of occurence of ZoneEntry report and movingIntervalSat report
+  -- difference in time of occurence of MovingStart report and movingIntervalSat report
   local differenceInTimestamps =  positionMsgIntervalMessage[1].Payload.EventTime - movingStartMessage[1].Payload.EventTime
   -- checking if difference in time is correct - full positionMsgInterval period is expected
   assert_equal(positionMsgInterval, differenceInTimestamps, 2, "PositionMsgInterval message has not been correctly deffered")
@@ -2064,7 +2013,7 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   --  Position messages sent periodically and fields of the reports have correct values
-function test_Moving_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodicallyGpsFixReported()
+function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodicallyGpsFixReported()
 
   local positionMsgInterval = 10     -- seconds
   local numberOfReports = 2          -- number of expected reports received during the TC
