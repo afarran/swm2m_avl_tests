@@ -1638,7 +1638,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPosi
   framework.delay(stationaryIntervalSat+3)  -- wait longer than stationaryIntervalSat receive report
 
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for MovingEnd and SpeedingEnd messages
+  -- looking for stationaryIntervalSatMessage and Position messages
   local stationaryIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.stationaryIntervalSat))
   local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
 
@@ -1852,7 +1852,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
 	gateway.submitForwardMessage(message)
   framework.delay(movingIntervalSat+5)                   -- wait longer than movingIntervalSat to receive report
   local receivedMessages = gateway.getReturnMessages()  -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for MovingEnd and SpeedingEnd messages
+  -- looking for movingIntervalSatMessage and Position messages
   local movingIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingIntervalSat))
   local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
 
@@ -2550,10 +2550,11 @@ end
 
 
 
---- TC checks if DistanceSat message is sent when terminal travels distanceSatThld
+--- TC checks if DistanceSat message is sent when terminal travels defined distanceSatThld
   -- *actions performed:
   -- set distanceSatThld to 200 meters and odometerDistanceIncrement to 10 meters, simulate terminals linear movement with speed of 20 m/s
-  -- and after 45 seconds check if 4 DistanceSat messages has been sent by terminal
+  -- and after 45 seconds check if 4 DistanceSat messages has been sent by terminal; in the end set distanceSatThld to 0  not to get
+  -- more reports
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
@@ -2580,7 +2581,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
               heading = 30,                   -- degrees
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
-              simulateLinearMotion = true,   -- terminal not moving
+              simulateLinearMotion = true,    -- terminal not moving
                      }
   gps.set(gpsSettings)  -- number of expected reports received during the TC
   local timeOfEventTc = os.time()
@@ -2603,6 +2604,75 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   assert_equal(4, table.getn(matchingMessages) , 1, "The number of received DistanceSat reports is incorrect")
+
+  -- back to distanceSatThld = 0 to get no more reports
+  local distanceSatThld = 0       -- seconds
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.distanceSatThld, distanceSatThld},
+                                             }
+                   )
+
+
+end
+
+
+
+--- TC checks if DistanceSat message is deffered when terminal travels defined distanceSatThld but meanwhile Position message is sent from
+  -- *actions performed:
+  -- set distanceSatThld to 400 meters and odometerDistanceIncrement to 10 meters, simulate terminals linear movement with speed of 20 m/s
+  -- and after 15 seconds (that is 600 m of travel) send Position message, then after next 25 seconds check if 1 DistanceSat message has been
+  -- sent by terminal and calculate difference in time between Position and DistanceSat messages - that should be 20 seconds if DistanceSat  hase
+  -- been correctly deffered
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- DistanceSat correctly deffered by Position message
+function test_Odometer_WhenTerminalMovingAndPositionMessageOccurs_DistanceSatMessageIsDeffered()
+
+  local distanceSatThld = 400            -- in meters
+  local stationarySpeedThld = 10         -- in kmh
+  local odometerDistanceIncrement = 10   -- in meters
+  local stationarySpeedThld = 20         -- in kmh
+  local movingDebounceTime = 1           -- in seconds
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.distanceSatThld, distanceSatThld},
+                                                {avlPropertiesPINs.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                             }
+                   )
+
+  local gpsSettings={
+              speed = 72,                     -- 20 m/s
+              heading = 30,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              simulateLinearMotion = true,    -- terminal not moving
+                     }
+  gps.set(gpsSettings)                        -- applying gps settings (linear motion with speed of 20m/s)
+  gateway.setHighWaterMark()                  -- to get the newest messages
+  framework.delay(15)                         -- after 15 seconds terminal will travel 600 meters (distanceSat report not generated yet)
+  local message = {SIN = 126, MIN = 1}        -- to trigger Position event
+	gateway.submitForwardMessage(message)
+  framework.delay(25)                         -- after 25 seconds terminal will travel 900 meters - 1 DistanceSat report is expected
+
+
+  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
+  -- looking for DistanceSat and Position messages
+  local distanceSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
+  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
+
+  -- checking if expected messages has been received
+  assert_not_nil(next(distanceSatMessage), "distanceSatMessage message message not received")         -- if distanceSat message not received assertion fails
+  assert_not_nil(next(positionMessage), "Position message not received")                              -- if Position message not received assertion fails
+
+  -- difference in time of occurence of Position report and distanceSat report
+  local differenceInTimestamps =  distanceSatMessage[1].Payload.EventTime - positionMessage[1].Payload.EventTime
+  -- checking if difference in time is correct - full StationaryIntervalSat period is expected
+  assert_equal(20, differenceInTimestamps, 2, "DistanceSatMessage has not been correctly deffered")   -- 20 seconds is expected (time to cover 400 m with speed 20 m/s),
+
 
   -- back to distanceSatThld = 0 to get no more reports
   local distanceSatThld = 0       -- seconds
