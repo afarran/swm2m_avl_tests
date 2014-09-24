@@ -2685,6 +2685,90 @@ function test_Odometer_WhenTerminalMovingAndPositionMessageOccurs_DistanceSatMes
 end
 
 
+--- TC checks if LoggedPosition message is periodically saved according to LoggingPositionsInterval for moving terminal
+  -- *actions performed:
+  -- simulate terminal in moving state (speed above stationarySpeedThld for time above movingDebounceTime) set loggingPositionsInterval to 10 seconds
+  -- and wait for 30 seconds; after that set loggingPositionsInterval to 0 (not to get more reports saved in the report); sent setDataLogFilter message to filter
+  -- only LoggedPosition messages and after that get the log by sending getDataLogEntries message; verify if the number of saved LoggedPosition reports is correct
+  -- and field of one report are correct (latitude, longitude, speed, heading and EventTime)
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- LoggedPosition messages saved periodically in log according to LoggingPositionsInterval, fields of report have correct values
+function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsIntervallGreaterThanZero_LoggedPositionMessageSavedPeriodically()
+
+  local loggingPositionsInterval = 10     -- seconds
+  local numberOfReports = 3               -- number of expected reports received during the TC
+  local movingDebounceTime = 1            -- seconds
+  local stationarySpeedThld = 5           -- kmh
+
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 50,                     -- above stationary threshold  (terminal moving)
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+
+
+  -- sending clearLogsMessage to clear logs
+  local clearLogsMessage = {SIN = 23, MIN = 7}
+	clearLogsMessage.Fields = {{Name="logType",Value="Data"}}
+	gateway.submitForwardMessage(clearLogsMessage)
+
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                             }
+                   )
+
+  framework.delay(loggingPositionsInterval*numberOfReports+3)    -- wait for LoggingPositionsInterval period multiplied by number of expected reports
+  local timeOfEventTc = os.time()
+
+  local loggingPositionsInterval = 0     -- not to get any more messages saved
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                             }
+                   )
+
+  -- send setDataLogFilter to log service (to filter only LoggedPosition messages)
+	local setDataLogFilterMessage = {SIN = 23, MIN = 1}
+	setDataLogFilterMessage.Fields = {{Name="reverse",Value=true},{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},{Name="minList",Value="Dw=="}}}}},}
+	gateway.submitForwardMessage(setDataLogFilterMessage)
+
+  framework.delay(2)           -- wait until message is processed
+  gateway.setHighWaterMark()   -- to get the newest messages
+
+  -- send getDataLogEntries message
+  local getDataLogEntriesMessage = {SIN = 23, MIN = 5}
+  getDataLogEntriesMessage.Fields = {}
+  gateway.submitForwardMessage(getDataLogEntriesMessage)
+  framework.delay(2)  -- wait until message is processed
+
+  -- DataLogEntries message is expected (SIN 23, MIN 5)
+  local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(23, 5))
+
+  --check if number of received LoggedPosition reports is relevant to LoggingPositionsInterval
+  assert_equal(numberOfReports,(table.getn(logEntriesMessage.Payload.Fields[1].Elements)), 0, "Number of saved LoggedPosition reports is not correct")
+
+ -- check if values of the fields reported in LoggedPosition reports are correct
+ assert_equal(gpsSettings.latitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[1].Fields[4].Message.Fields[1].Value), "Latitude value is not correct in report")   -- multiplied by 60000 for conversion from miliminutes
+ assert_equal(gpsSettings.longitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[1].Fields[4].Message.Fields[2].Value), "Longitude value is not correct in report") -- multiplied by 60000 for conversion from miliminutes
+ assert_equal(gpsSettings.speed, tonumber(logEntriesMessage.Payload.Fields[1].Elements[1].Fields[4].Message.Fields[3].Value), "Speed value is not correct in report")
+ assert_equal(gpsSettings.heading, tonumber(logEntriesMessage.Payload.Fields[1].Elements[1].Fields[4].Message.Fields[4].Value), "Heading value is not correct in report")
+ assert_equal(timeOfEventTc, tonumber(logEntriesMessage.Payload.Fields[1].Elements[1].Fields[4].Message.Fields[5].Value),10, "EventTime value is not correct in report")
+
+
+end
+
+
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed

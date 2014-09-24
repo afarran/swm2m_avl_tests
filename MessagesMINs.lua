@@ -23,6 +23,7 @@ messagesMINs = {
   setGeoDwellTimes = 9,
   longDriving = 29,
   distanceSat = 23,
+  loggedPosition = 15,
 
 
 

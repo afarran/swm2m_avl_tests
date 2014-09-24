@@ -41,6 +41,7 @@ avlPropertiesPINs = {
       odometer = 15,
       distanceCellThld = 18,
       distanceSatThld = 19,
+      loggingPositionsInterval = 8,
 
 
 
