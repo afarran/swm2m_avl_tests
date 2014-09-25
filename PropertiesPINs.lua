@@ -42,6 +42,7 @@ avlPropertiesPINs = {
       distanceCellThld = 18,
       distanceSatThld = 19,
       loggingPositionsInterval = 8,
+      digPorts = 24
 
 
 
