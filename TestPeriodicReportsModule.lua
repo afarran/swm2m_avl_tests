@@ -598,6 +598,113 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 end
 
 
+--- TC checks if Position message is sent when requested by MIN 1 for stationary terminal
+  -- *actions performed:
+  -- for terminal in stationary state set positionMsgInterval to 0 seconds; send request of Position message (SIN 126, MIN 1)
+  -- verify if position messages has been received and check if fields of the single report are correct
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  Position message sent after request and fields of the reports have correct values
+function test_Position_WhenTerminalInStationaryStateAndRequestedPositionMessageByMIN1_PositionMessageSent()
+
+  local positionMsgInterval =  0     -- seconds (periodic sending disabled)
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 0,                      -- terminal stationary
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  local requestPositionMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.positionRequest}      -- to trigger Position event
+	gateway.submitForwardMessage(requestPositionMessage)
+
+  local timeOfEventTc = os.time()
+  framework.delay(2)    -- wait until message is processed
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
+
+  gpsSettings.heading = 361                 -- that is for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "Position",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+end
+
+
+--- TC checks if Position message is sent when requested by MIN 1 for moving terminal
+  -- *actions performed:
+  -- simulate terminal moving, set positionMsgInterval to 0 seconds; send request of Position message (SIN 126, MIN 1)
+  -- verify if position messages has been received and check if fields of the single report are correct
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  Position message sent after request and fields of the reports have correct values
+function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN1_PositionMessageSent()
+
+  local positionMsgInterval =  0     -- seconds (periodic sending disabled)
+  local stationarySpeedThld = 10     -- kmh
+  local movingDebounceTime = 1       -- seconds
+
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+2,  -- terminal moving
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+1)
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  local requestPositionMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.positionRequest}      -- to trigger Position event
+	gateway.submitForwardMessage(requestPositionMessage)
+
+  local timeOfEventTc = os.time()
+  framework.delay(2)    -- wait until message is processed
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "Position",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+end
+
+
 --- TC checks if Position message is sent after full positionMsgInterval when MovingStart event deffers it
   -- *actions performed:
   -- set positionMsgInterval to 20 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh,
@@ -827,7 +934,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
 
 end
 
---]]
+
 
 --- TC checks if DistanceSat message is not sent when terminal travels distance below distanceSatThld
   -- *actions performed:

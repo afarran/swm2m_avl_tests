@@ -1,6 +1,7 @@
 --- AVL Agent test Messages MINs definitions
 --
 messagesMINs = {
+  positionRequest = 1,
   ignitionON = 4,
   ignitionOFF = 5,
 	movingStart = 6,
