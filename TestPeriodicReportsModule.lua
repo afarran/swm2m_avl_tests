@@ -827,6 +827,74 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
 
 end
 
+--]]
+
+--- TC checks if DistanceSat message is not sent when terminal travels distance below distanceSatThld
+  -- *actions performed:
+  -- set distanceSatThld to 100 km and odometerDistanceIncrement to 10 meters, simulate terminals initial position to
+  -- lat = 0, long = 0 then move terminal to the second position 89 km away; check if DistanceSat report has not been sent;
+  -- set distanceSatThld to 0 not to get more reports
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- DistanceSat not sent when covered distance is below distanceSatThld
+function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceSatMessageNotSent()
+
+  local distanceSatThld = 100000         -- in meters
+  local stationarySpeedThld = 10         -- in kmh
+  local odometerDistanceIncrement = 10   -- in meters
+  local stationarySpeedThld = 20         -- in kmh
+  local movingDebounceTime = 1           -- in seconds
+
+  -- terminal in first location
+  local gpsSettings={
+              speed = 72,                     -- 20 m/s
+              heading = 30,                   -- degrees
+              latitude = 0,                   -- degrees
+              longitude = 0,                  -- degrees
+              simulateLinearMotion = false,
+                     }
+  gps.set(gpsSettings)  -- applying gps settings
+  framework.delay(3)
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.distanceSatThld, distanceSatThld},
+                                                {avlPropertiesPINs.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                             }
+                   )
+
+  -- terminal moved to next location, that is 89 km away from first one (below distanceSatThld)
+  local gpsSettings={
+              speed = 72,                     -- 20 m/s
+              heading = 30,                   -- degrees
+              latitude = 0,                   -- degrees
+              longitude = 0.8,                -- degrees
+              simulateLinearMotion = false,
+                     }
+  gps.set(gpsSettings)
+  framework.delay(2)
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for DistanceSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
+  assert_false(next(matchingMessages), "DistanceSat report not expected") -- distanceSat message is not expected
+
+  -- back to distanceSatThld = 0 to get no more reports
+  local distanceSatThld = 0       -- seconds
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.distanceSatThld, distanceSatThld},
+                                             }
+                   )
+
+
+end
+
+
+
 
 --- TC checks if DistanceSat message is deffered by Position report
   -- *actions performed:
@@ -1068,7 +1136,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
 end
 
---]]
+
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
