@@ -932,17 +932,28 @@ function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceS
   local odometerDistanceIncrement = 10   -- in meters
   local stationarySpeedThld = 20         -- in kmh
   local movingDebounceTime = 1           -- in seconds
+  local gpsSettings = {}                 -- gps settings table to be used in TC
 
-  -- terminal in first location
-  local gpsSettings={
+  -- definition of terminal position during simulated travel
+  -- gps settings for 1st position
+  gpsSettings[1]={
               speed = 72,                     -- 20 m/s
               heading = 30,                   -- degrees
               latitude = 0,                   -- degrees
               longitude = 0,                  -- degrees
               simulateLinearMotion = false,
                      }
-  gps.set(gpsSettings)  -- applying gps settings
-  framework.delay(3)
+
+  -- gps settings for 2nd position -- 89 kilometers from 1st position
+  gpsSettings[2]={
+              speed = 72,                     -- 20 m/s
+              heading = 30,                   -- degrees
+              latitude = 0,                   -- degrees
+              longitude = 0.8,                -- degrees
+                 }
+
+  gps.set(gpsSettings[1])  -- applying gps settings for initial position
+  framework.delay(3)       -- wait until report is generated
 
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -954,15 +965,8 @@ function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceS
                    )
 
   -- terminal moved to next location, that is 89 km away from first one (below distanceSatThld)
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 0.8,                -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)
-  framework.delay(2)
+  gps.set(gpsSettings[2]) -- applying gps settings for seconds position
+  framework.delay(3)      -- wait until report is generated
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
@@ -995,22 +999,47 @@ end
   -- DistanceSat correctly deffered by Position message
 function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffersIt_DistanceSatMessageNotSent()
 
-  local distanceSatThld = 100000         -- in meters
+  local distanceSatThld = 100000         -- in meters, 100 kilometers
   local stationarySpeedThld = 10         -- in kmh
   local odometerDistanceIncrement = 10   -- in meters
   local stationarySpeedThld = 20         -- in kmh
   local movingDebounceTime = 1           -- in seconds
+  local gpsSettings = {}                 -- gps settings table to be sent to simulator
 
-  -- terminal in first location
-  local gpsSettings={
+  -- definition of terminal position during simulated travel
+  -- gps settings for 1st position
+  gpsSettings[1]={
               speed = 72,                     -- 20 m/s
               heading = 30,                   -- degrees
               latitude = 0,                   -- degrees
               longitude = 0,                  -- degrees
               simulateLinearMotion = false,
                      }
-  gps.set(gpsSettings)  -- applying gps settings
-  framework.delay(3)
+
+  -- gps settings for 2nd position -- 89 kilometers from 1st position
+  gpsSettings[2]={
+              latitude = 0,                   -- degrees
+              longitude = 0.8,                -- degrees
+                 }
+
+  -- gps settings for 3rd position -- 33 kilometers from 2nd position
+  gpsSettings[3]={
+              latitude = 0,                   -- degrees
+              longitude = 1.1,                -- degrees
+                 }
+
+  -- gps settings for 4th position -- 122 kilometers from 3rd
+  gpsSettings[4]={
+              speed = 72,                     -- 20 m/s   - speed is added for verification in report
+              heading = 30,                   -- degrees  - heading is added for verification in report
+              latitude = 1.1,                 -- degrees
+              longitude = 1.1,                -- degrees
+                 }
+
+
+  -- setting terminals initial position
+  gps.set(gpsSettings[1])  -- applying gps settings for 1st position
+  framework.delay(3)       -- wait until settings are applied
 
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -1021,32 +1050,17 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
                                              }
                    )
 
-  -- terminal moved to next location, that is 89 km away from first one (below distanceSatThld)
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 0.8,                -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)
-  framework.delay(2)
+  gps.set(gpsSettings[2])  -- applying gps settings for 2nd position - 89 kilometres from initial position (below distanceSatThld)
+  framework.delay(3)       -- wait until report is generated
 
   -- generate Position message to deffer distanceSat report
-  local message = {SIN = 126, MIN = 1}       -- to trigger Position event
-	gateway.submitForwardMessage(message)
+  local positionRequestMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.positionRequest}     -- to trigger Position event
+	gateway.submitForwardMessage(positionRequestMessage)
   framework.delay(3)                        -- wait until Position message is processed
-  gateway.setHighWaterMark()      -- to get the newest messages
-  -- terminal moved to next location, that is 33 km away from first one (89 + 33 km is above distanceSatThld)
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 1.1,                -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)
-  framework.delay(3)                -- wait until report is generated
+  gateway.setHighWaterMark()                -- to get the newest messages
+
+  gps.set(gpsSettings[3])                   -- applying gps settings for 3rd position, 33 kilometers from 2nd (89 + 33 kilometers is above distanceSatThld)
+  framework.delay(3)                        -- wait until report is generated
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
@@ -1054,17 +1068,9 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
   assert_false(next(matchingMessages), "DistanceSat report not expected") -- distanceSat message is not expected (deffered by Position message)
 
-  gateway.setHighWaterMark()      -- to get the newest messages
-  -- terminal moved to next location, that is 122 km away from second one
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 1.1,                 -- degrees
-              longitude = 1.1,                -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)
-  local timeOfEventTc = os.time()
+  gateway.setHighWaterMark()  -- to get the newest messages
+  gps.set(gpsSettings[4])     -- applying gps settings for 4th position - 122 km from 3rd - DistanceSat message is expected after that move
+  local timeOfEventTc = os.time()  -- to get the correct value for verification
   framework.delay(3)                -- wait until report is generated
 
   -- receiving all from mobile messages sent after setHighWaterMark()
@@ -1074,7 +1080,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
   assert_true(next(matchingMessages), "DistanceSat report not received") -- distanceSat message is expected
 
   local expectedValues={
-                  gps = gpsSettings,
+                  gps = gpsSettings[4],
                   messageName = "DistanceSat",
                   currentTime = timeOfEventTc,
                         }
