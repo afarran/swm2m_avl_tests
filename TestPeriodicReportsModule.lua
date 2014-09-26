@@ -837,31 +837,37 @@ end
 --- TC checks if DistanceSat messages are sent when terminal travels distance above defined distanceSatThld
   -- *actions performed:
   -- set distanceSatThld to 100 km and odometerDistanceIncrement to 10 meters, simulate terminals initial position to
-  -- lat = 0, long = 0 then move terminal to the second position 111 km away - check if DistanceSat message has been sent
-  -- end verify the content of the report; then move terminal to third position (111 km away from the second one) and check if another
-  -- distanceSat message has been sent and has correct content; in the end set distanceSatThld back to 0 to get no more reports
+  -- lat = 0, long = 0 then move terminal to the next position which is 111 kilometers away from previous (distanceJumpStep)
+  -- for every position change check if DistanceSat has been generated and verify fields of the report
+  -- in the end set distanceSatThld back to 0 to get no more reports
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
   -- DistanceSat set after terminal travels distanceSatThld, content of the reports is correct
 function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent()
 
-  local distanceSatThld = 100000         -- in meters
+  local distanceSatThld = 100000         -- in meters, 100 kilometers
   local stationarySpeedThld = 10         -- in kmh
   local odometerDistanceIncrement = 10   -- in meters
   local stationarySpeedThld = 20         -- in kmh
   local movingDebounceTime = 1           -- in seconds
+  local gpsSettings = {}
+  local distanceJumpStep = 1             -- in degrees, 1 degree is 111 kilometers
+  local numberOfJumps = 4                -- number of position changes
 
-  -- terminal in first location
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 0,                  -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)  -- applying gps settings
 
+  -- definition of locations
+  -- 1 st - initial position
+  gpsSettings={
+                 speed = 72,                     -- 20 m/s
+                 heading = 30,                   -- degrees
+                 latitude = 0,                   -- degrees
+                 longitude = 0,                  -- degrees
+                 simulateLinearMotion = false,
+                   }
+
+
+  gps.set(gpsSettings)  -- applying gps settings for initial position
 
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -872,57 +878,31 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
                                              }
                    )
 
-  gateway.setHighWaterMark()      -- to get the newest messages
-  -- terminal moved to next location, that is 111 km away from first one
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 1,                  -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)
-  local timeOfEventTc = os.time()
-  framework.delay(2)                -- wait until report is generated
 
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for DistanceSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
-  assert_true(next(matchingMessages), "DistanceSat report not received")
+  -- loop simulating terminal travelling by changing position of terminal with step of distanceJumpStep for numberOfJumps times
+  -- after every jump received distanceSat report is verified
+  for i = 1, numberOfJumps, 1 do
 
-  local expectedValues={
+    gateway.setHighWaterMark()        -- to get the newest messages
+    gpsSettings.longitude = gpsSettings.longitude+distanceJumpStep  -- longitude increased by distanceJumpStep
+    gps.set(gpsSettings)              -- applying gps settings
+    local timeOfEventTc = os.time()  -- to get correct time for verification in report
+    framework.delay(3)                -- wait until report is generated
+
+    -- receiving all from mobile messages sent after setHighWaterMark()
+    local receivedMessages = gateway.getReturnMessages()
+    -- look for DistanceSat messages
+    local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
+    assert_true(next(matchingMessages), "DistanceSat report not received")  -- DistanceSat report is expected
+
+    local expectedValues={
                   gps = gpsSettings,
                   messageName = "DistanceSat",
                   currentTime = timeOfEventTc,
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+    avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the DistanceSa treport fields
 
-  gateway.setHighWaterMark()      -- to get the newest messages
-  -- terminal moved to another location, that is 111 km away from second one
-  local gpsSettings={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              simulateLinearMotion = false,
-                     }
-  gps.set(gpsSettings)
-  local timeOfEventTc = os.time()
-  framework.delay(2)                -- wait until report is generated
-
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.distanceSat))
-  assert_true(next(matchingMessages), "DistanceSat report not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DistanceSat",
-                  currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  end
 
   -- back to distanceSatThld = 0 to get no more reports
   local distanceSatThld = 0       -- seconds
@@ -1149,7 +1129,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                                 {avlPropertiesPINs.funcDigInp1, 2},                           -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},                    -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.digStatesDefBitmap, 1},                    -- high state is expected to trigger Ignition on
                                                 {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
                                                 {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
                                              }
@@ -1229,19 +1209,18 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- check if values of the fields reported in LoggedPosition reports are correct (2 runs of the loop for two messages)
   for i = 1, 2, 1 do
-  assert_equal(gpsVerification[i].latitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[1].Value), "Latitude value is not correct in report")   -- multiplied by 60000 for conversion from miliminutes
-  assert_equal(gpsVerification[i].longitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[2].Value), "Longitude value is not correct in report") -- multiplied by 60000 for conversion from miliminutes
-  assert_equal(gpsVerification[i].speed, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[3].Value), "Speed value is not correct in report")
-  assert_equal(gpsVerification[i].heading, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[4].Value), "Heading value is not correct in report")
-  assert_equal(timeOfLogEntry[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[5].Value),10, "EventTime value is not correct in report")
-  assert_equal(avlStateVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[6].Value), "AvlStates value is not correct in report")
-  assert_equal(digPortsVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[7].Value),"DigitalPorts value is not correct in report")
+    assert_equal(gpsVerification[i].latitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[1].Value), "Latitude value is not correct in report")   -- multiplied by 60000 for conversion from miliminutes
+    assert_equal(gpsVerification[i].longitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[2].Value), "Longitude value is not correct in report") -- multiplied by 60000 for conversion from miliminutes
+    assert_equal(gpsVerification[i].speed, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[3].Value), "Speed value is not correct in report")
+    assert_equal(gpsVerification[i].heading, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[4].Value), "Heading value is not correct in report")
+    assert_equal(timeOfLogEntry[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[5].Value),10, "EventTime value is not correct in report")
+    assert_equal(avlStateVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[6].Value), "AvlStates value is not correct in report")
+    assert_equal(digPortsVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[7].Value),"DigitalPorts value is not correct in report")
 
   end
 
-
-
 end
+
 
 
 
@@ -1251,5 +1230,7 @@ for i=1, 1, 1 do     -- to check the reliability, will be removed
 end
 
 framework.printResults()
+
+
 
 
