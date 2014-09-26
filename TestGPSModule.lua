@@ -1947,6 +1947,73 @@ end
 
 
 
+--- TC checks if DiagnosticsInfo message is sent when requested and fields of the report have correct values
+  -- *actions performed:
+  -- for terminal in stationary state set send getDiagnosticsInfo message and check if DiagnosticsInfo message is sent after that
+  -- verify all the fields of report
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  --  DiagnosticsInfo message sent after request and fields of the reports have correct values
+function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfoRequestSent_DiagnosticsInfoMessageSent()
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = 0,                      -- terminal stationary
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+  gps.set(gpsSettings)
+  framework.delay(3)   --- wait until settings are applied
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- saving AvlStates and DigPorts properties for analysis
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  -- saving digPortsProperty and DigPorts properties for analysis
+  digStatesDefBitmapProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.digStatesDefBitmap)
+
+  -- getting terminals power properties for verification
+  local temperature = device.getPower(4)
+  local extVoltage = device.getPower(9)
+  local battVoltage = device.getPower(3)
+
+  local getDiagnosticsMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getDiagnostics}    -- to trigger DiagnosticsInfo message
+	gateway.submitForwardMessage(getDiagnosticsMessage)
+
+  local timeOfEventTc = os.time()
+  framework.delay(2)    -- wait until message is processed
+
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for diagnosticsInfo messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.diagnosticsInfo))
+
+  gpsSettings.heading = 361   -- for stationary state
+
+  --- verification of the received report fields
+  colmsg = framework.collapseMessage(matchingMessages[1])   -- collapsing message for easier analysys
+  assert_equal("DiagnosticsInfo", colmsg.Payload.Name, "Message name is not correct")
+  assert_equal(gpsSettings.latitude*60000, tonumber(colmsg.Payload.Latitude), "Latitude value is not correct in report")     -- multiplied by 60000 for conversion from miliminutes
+  assert_equal(gpsSettings.longitude*60000, tonumber(colmsg.Payload.Longitude), "Longitude value is not correct in report")  -- multiplied by 60000 for conversion from miliminutes
+  assert_equal(timeOfEventTc,tonumber(colmsg.Payload.EventTime),10, "EventTime value is not correct in the report")          -- 10 seconds of tolerance
+  assert_equal(gpsSettings.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
+  assert_equal(gpsSettings.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
+  assert_equal("Disabled", colmsg.Payload.BattChargerState, "BattChargerState value is wrong in report")
+  assert_equal(tonumber(avlStatesProperty[1].value), tonumber(colmsg.Payload.AvlStates), "AvlStates value is wrong in report")
+  assert_equal(tonumber(digStatesDefBitmapProperty[1].value), tonumber(colmsg.Payload.DigStatesDefMap), "DigStatesDefMap value is wrong in report")
+  assert_equal(temperature, tonumber(colmsg.Payload.Temperature),1, "Temperature value is wrong in report")
+  assert_equal(4518, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")
+  assert_equal(99, tonumber(colmsg.Payload.CellRssi), "CellRssi value is wrong in report")
+  assert_equal(extVoltage, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
+  assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
+
+end
+
+
+
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed

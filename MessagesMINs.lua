@@ -25,6 +25,8 @@ messagesMINs = {
   longDriving = 29,
   distanceSat = 23,
   loggedPosition = 15,
+  getDiagnostics = 13,
+  diagnosticsInfo = 32,
 
 
 
