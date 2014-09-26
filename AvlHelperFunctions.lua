@@ -49,9 +49,6 @@ function avlHelperFunctions.decimalToBinary(num)
 end
 
 
-
-
-
 --- Given the AvlStates property (PIN 41) array { PIN = "41, value="x"} this
 -- function returns the table of the states with current status
 -- @tparam table - table containing the AvlStates property to be analysed
@@ -161,16 +158,51 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_equal(expectedValues.totalDrivingTime,tonumber(colmsg.Payload.TotalDrivingTime), "DwellTimeLimit value is not correct in the report") -- in the expectedValues table
   end
 
-
-
-
   assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
   assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
 
 
+end
 
+
+
+--- Given the names of special input functions in the table the function sets DigStatesDefBitmap
+-- this function sets DigStatesDefBitmap property according to the names of special functions passed to it
+-- @tparam functionsToActivate table - table containing names of functions to be activated
+-- @usage
+-- avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn","SeatbeltOff"})
+-- @within AvlhelperFunctions
+function avlHelperFunctions.setDigStatesDefBitmap(functionsToActivate)
+
+  local digStatesDefBitmap = { "IgnitionOn" , "SeatbeltOff" , "SM1Active", "SM2Active", "SM3Active",  "SM4Active"}
+  local digStatesDefBitmapDecimal = 0        -- decimal value of the digStatesDefBitmap property
+  local digStatesDefBitmapDecimalToAdd = 0   -- helper variable
+
+  -- first loop iterates on all elements of functionsToActivate table
+  for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
+    digStatesDefBitmapDecimalToAdd = 0 -- not to add the value from the pervious run of the loop
+    -- second loop iterates on all elements of digStatesDefBitmap table
+    for digStatesDefBitmapIndex,digStatesDefBitmapValue in pairs(digStatesDefBitmap) do
+      if functionsToActivateValue == digStatesDefBitmapValue then          -- check if element from digStatesDefBitmap exists in functionsToActivate
+        -- if it exists the value of index of this element (in digStatesDefBitmap) is used to raise number 2 to the power of it
+         digStatesDefBitmapDecimalToAdd = 2^(digStatesDefBitmapIndex-1)     -- minus 1 is due to indexes of the table starting from 1 (not from 0)
+      end
+    end
+    -- calculating total value of the decimal representation of the binary digStatesDefBitmap
+    digStatesDefBitmapDecimal = digStatesDefBitmapDecimal + digStatesDefBitmapDecimalToAdd
+  end
+
+  -- applying AVL agent properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                 {avlPropertiesPINs.digStatesDefBitmap, digStatesDefBitmapDecimal}
+                                              }
+                   )
 
 
 end
+
+
+
+
 
 return function() return avlHelperFunctions end

@@ -116,7 +116,6 @@ function teardown()
 
 end
 
-
 -------------------------
 -- Test Cases
 -------------------------
@@ -1097,7 +1096,6 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
 
 end
 
-
 --- TC checks if LoggedPosition message is periodically saved according to LoggingPositionsInterval for moving terminal
   -- *actions performed:
   -- configure loggingPositionsInterval to 20 seconds, simulate terminal in first position in Speeding and IgnitionOn state
@@ -1150,12 +1148,14 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                                                 {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.funcDigInp1, 2},                           -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 1},                    -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
                                                 {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
                                                 {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
   local loggingStartTime = os.time()     -- time of start of logging - to be used in log filter message
 
   device.setIO(1, 1)                      -- port 1 to high level - that should trigger IgnitionOn
