@@ -1112,9 +1112,25 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   local defaultSpeedLimit = 80            -- kmh
   local speedingTimeOver = 3              -- seconds
   local timeOfLogEntry = {}               -- helper variables
-  local gpsVerification = {}              -- helper variables
   local digPortsVerification = {}         -- helper variables
   local avlStateVerification = {}         -- helper variables
+  local gpsSettings = {}                  -- gpsSettings to be sent to simulator
+
+  -- definition of first position of terminal
+  gpsSettings[1] = {
+              speed = defaultSpeedLimit+10,   -- above speeding threshold to get speeding state
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1                   -- degrees
+                     }
+
+  -- definition of second position of terminal
+  gpsSettings[2] = {
+              speed = 5,                      -- below speeding threshold
+              heading = 30,                   -- degrees - different than in first position
+              latitude = 5,                   -- degrees - different than in first position
+              longitude = 5                   -- degrees - different than in first position
+                     }
 
   -- setting the EIO properties (for IgnitionON)
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -1138,16 +1154,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   device.setIO(1, 1)                      -- port 1 to high level - that should trigger IgnitionOn
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings = {
-              speed = defaultSpeedLimit+10,   -- above stationary threshold  (terminal moving)
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
-  gps.set(gpsSettings)                           -- apply settings for first position and speeding state
-  gpsVerification[1] = gpsSettings               -- save gpsSettings for verification
-
+  gps.set(gpsSettings[1])                        -- apply settings for first position and speeding state
   framework.delay(loggingPositionsInterval+3)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
   timeOfLogEntry[1] = os.time()                  -- save timestamp for first log entry
 
@@ -1160,27 +1167,18 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
 
-  -- gps settings table to be sent to simulator
-  gpsSettings={
-              speed = 5,                      -- below speeding threshold
-              heading = 30,                   -- degrees
-              latitude = 5,                   -- degrees
-              longitude = 5                   -- degrees
-                     }
-  gps.set(gpsSettings)                           -- apply settings for second position and non-speeding state
-  gpsVerification[2] = gpsSettings               -- save gpsSettings for verification
+  gps.set(gpsSettings[2])                        -- apply settings for second position and non-speeding state
   framework.delay(loggingPositionsInterval+4)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
   timeOfLogEntry[2] = os.time()                  -- save timestamp for second log entry
 
   -- saving AvlStates and DigPorts properties for analysis
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   avlStateVerification[2] = tonumber(avlStatesProperty[1].value)
   -- saving digPortsProperty and DigPorts properties for analysis
-  local digPortsProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.digPorts)
+  digPortsProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.digPorts)
   digPortsVerification[2] = tonumber(digPortsProperty[1].value)
 
   loggingPositionsInterval = 0     -- not to get any more messages saved
-
   --applying properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                                 {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
@@ -1209,10 +1207,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- check if values of the fields reported in LoggedPosition reports are correct (2 runs of the loop for two messages)
   for i = 1, 2, 1 do
-    assert_equal(gpsVerification[i].latitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[1].Value), "Latitude value is not correct in report")   -- multiplied by 60000 for conversion from miliminutes
-    assert_equal(gpsVerification[i].longitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[2].Value), "Longitude value is not correct in report") -- multiplied by 60000 for conversion from miliminutes
-    assert_equal(gpsVerification[i].speed, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[3].Value), "Speed value is not correct in report")
-    assert_equal(gpsVerification[i].heading, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[4].Value), "Heading value is not correct in report")
+    assert_equal(gpsSettings[i].latitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[1].Value), "Latitude value is not correct in report")   -- multiplied by 60000 for conversion from miliminutes
+    assert_equal(gpsSettings[i].longitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[2].Value), "Longitude value is not correct in report") -- multiplied by 60000 for conversion from miliminutes
+    assert_equal(gpsSettings[i].speed, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[3].Value), "Speed value is not correct in report")
+    assert_equal(gpsSettings[i].heading, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[4].Value), "Heading value is not correct in report")
     assert_equal(timeOfLogEntry[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[5].Value),10, "EventTime value is not correct in report")
     assert_equal(avlStateVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[6].Value), "AvlStates value is not correct in report")
     assert_equal(digPortsVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[7].Value),"DigitalPorts value is not correct in report")
