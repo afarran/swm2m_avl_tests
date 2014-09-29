@@ -126,7 +126,7 @@ end
 --- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
+  -- set the high state of the port to be a trigger for line activation
   -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
   -- wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
   -- and check if terminal entered IgnitionOn state
@@ -158,10 +158,11 @@ function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSent()
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
@@ -188,8 +189,8 @@ end
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+  -- set the high state of the port to be a trigger for line activation
+  -- (digStatesDefBitmap = 1); then simulate port 1 value change to high state and
   -- wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
   -- and check if terminal entered IgnitionOn state
   -- *initial conditions:
@@ -219,10 +220,11 @@ function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSentGpsFixAgeR
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
@@ -250,8 +252,8 @@ end
 --- TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and check if
+  -- set the high state of the port to be a trigger for line activation (digStatesDefBitmap = 3);
+  -- then simulate port 1 value change to high state and check if
   -- terminal enters IgnitionOn state; then simulate port 1 value change to low state and
   -- wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
   -- and check if terminal is no longer in IgnitionOn state
@@ -281,10 +283,12 @@ function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSent()
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},         -- line number 1 set for Ignition function
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
@@ -318,8 +322,8 @@ end
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and check if
+  -- set the high state of the port to be a trigger for line activation
+  -- then simulate port 1 value change to high state and check if
   -- terminal enters IgnitionOn state; then simulate port 1 value change to low state and
   -- wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
   -- and check if terminal is no longer in IgnitionOn state
@@ -350,10 +354,11 @@ function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSentGpsFixAgeR
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3}  -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
@@ -383,13 +388,12 @@ function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSentGpsFixAgeR
 
 end
 
-
 --- TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
   -- for longer than maxIdlingTime
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and  wait until IgnitionOn is true;
+  -- set the high state of the port to be a trigger for line activation
+  -- then simulate port 1 value change to high state and  wait until IgnitionOn is true;
   -- then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
   -- verify reported fields and check if terminal entered EngineIdling state
   -- *initial conditions:
@@ -418,17 +422,21 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.funcDigInp1, 2},              -- line number 1 set for Ignition function
-                                              {avlPropertiesPINs.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
-                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
-
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
   gateway.setHighWaterMark()
+  timeOfEventTC = os.time()
   device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime+5)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
+  framework.delay(maxIdlingTime+8)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
 
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
@@ -448,7 +456,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IdlingStart",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTC,
                         }
   avlHelperFunctions.reportVerification(idlingStartMessage, expectedValues ) -- verification of the report fields
 
@@ -465,8 +473,8 @@ end
   -- for longer than maxIdlingTime
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and  wait until IgnitionOn is true;
+  -- set the high state of the port to be a trigger for line activation
+  -- then simulate port 1 value change to high state and  wait until IgnitionOn is true;
   -- then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
   -- verify reported fields and check if terminal entered EngineIdling state
   -- *initial conditions:
@@ -496,15 +504,18 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.funcDigInp1, 2},              -- line number 1 set for Ignition function
-                                              {avlPropertiesPINs.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
-                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
-
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
   gateway.setHighWaterMark()
+  timeOfEventTC = os.time()
   device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+avlAgentCons.coldFixDelay+2)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
 
@@ -526,7 +537,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IdlingStart",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTC,
                   GpsFixAge = 6
                         }
   avlHelperFunctions.reportVerification(idlingStartMessage, expectedValues ) -- verification of the report fields
@@ -542,8 +553,8 @@ end
 
 --- TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and IgnitionOn state becomes false
   -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
-  -- of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line, set the high state
+  -- of the port to be a trigger for line activation; then simulate port 1 value change to high state and
   -- wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
   -- then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
   -- state becomes false; also verify the fields of the IdlingEnd report
@@ -573,14 +584,15 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.funcDigInp1, 2},           -- line number 1 set for Ignition function
-                                              {avlPropertiesPINs.digStatesDefBitmap, 3},    -- high state is expected to trigger Ignition on
-                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
-
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+3)            -- wait longer than maxIdlingTime to trigger the IdlingStart event
@@ -620,8 +632,8 @@ end
 --- TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and IgnitionOn state becomes false
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
   -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
-  -- of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line, set the high state
+  -- of the port to be a trigger for line activation; then simulate port 1 value change to high state and
   -- wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
   -- then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
   -- state becomes false; also verify the fields of the IdlingEnd report
@@ -651,17 +663,18 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.funcDigInp1, 2},           -- line number 1 set for Ignition function
-                                              {avlPropertiesPINs.digStatesDefBitmap, 3},    -- high state is expected to trigger Ignition on
-                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
-
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1)                                         -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime+5) -- wait longer than maxIdlingTime to trigger the IdlingStart event
+  framework.delay(maxIdlingTime+8) -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
@@ -708,8 +721,8 @@ end
 
 --- TC checks if IdlingEnd message is correctly sent when terminal is in EngineIdling state and it starts moving (MovingStart sent)
   -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2), set the high state
-  -- of the port to be a trigger for line activation (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
+  -- configure port 1 as a digital input and associate this port with IgnitionOn line, set the high state
+  -- of the port to be a trigger for line activation; then simulate port 1 value change to high state and
   -- wait until IgnitionOn is true; then wait until maxIdlingTime passes and check if EngineIdling state has been correctly obtained,
   -- after that simulate gps speed above stationarySpeedThld for longer then movingDebounceTime to put the terminal into moving state
   -- check if IdlingEnd message is correctly sent and EngineIdling state becomes false; also verify the fields of the IdlingEnd report
@@ -741,16 +754,17 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.funcDigInp1, 2},               -- line number 1 set for Ignition function
-                                              {avlPropertiesPINs.digStatesDefBitmap, 3},        -- high state is expected to trigger Ignition on
-                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}, -- maximum idling time allowed without sending idling report
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},      -- stationary speed threshold
-                                              {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},        -- moving debounce time
-
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},                          -- maximum idling time allowed without sending idling report
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},                -- moving debounce time
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+3)         -- wait longer than maxIdlingTime to trigger the IdlingStart event
@@ -818,14 +832,16 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxI
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.funcDigInp1, 2},              -- line number 1 set for Ignition function
-                                              {avlPropertiesPINs.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
-                                              {avlPropertiesPINs.maxIdlingTime, maxIdlingTime} -- maximum idling time allowed without sending idling report
-
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
 
   gateway.setHighWaterMark()         -- to get all messages after changing port state from low to high
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
@@ -972,17 +988,17 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccursMovin
               longitude = 1                   -- degrees
                      }
 
-  --applying properties of the service
+  -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.funcDigInp1, 2},                -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},         -- high state is expected to trigger Ignition on
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},                -- moving debounce time
                                                 {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
                                                 {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
-
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -1079,17 +1095,18 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
                                                 {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
-
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},        -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 5},        -- line number 2 set for ServiceMeter1 function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 5},  -- high state is expected to trigger IgnitionOn and SM1
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SM1"]},          -- line number 2 set for ServiceMeter1 function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},                         -- maximum idling time allowed without sending idling report
+
                                              }
                    )
-
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SM1Active"})
 
   gateway.setHighWaterMark()                -- to get the newest messages
 
@@ -1153,15 +1170,27 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                                         }
 
                    )
-  -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 5},         -- line number 2 set for ServiceMeter1 function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 5},  -- high state is expected to trigger IgnitionOn and SM1
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},
-                                             }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},      -- port 1 as digital input
+                                                {avlPropertiesPINs.port2Config, 3},      -- port 2 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3},  -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
+
+                                        }
                    )
 
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SM1"]},   -- line number 2 set for ServiceMeter1 function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},                         -- maximum idling time allowed without sending idling report
+
+                                             }
+                   )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SM1Active"})
 
   gateway.setHighWaterMark()                -- to get the newest messages
 
@@ -1210,7 +1239,6 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   local stationarySpeedThld = 5         -- kmh
   local seatbeltDebounceTime = 10       -- seconds
 
-
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
                                                 {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
@@ -1221,15 +1249,16 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbelOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
@@ -1291,7 +1320,6 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   local stationarySpeedThld = 5         -- kmh
   local seatbeltDebounceTime = 10       -- seconds
 
-
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
                                                 {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
@@ -1302,14 +1330,16 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbelOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
@@ -1384,14 +1414,16 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbelOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
@@ -1460,6 +1492,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   local seatbeltDebounceTime = 15        -- seconds
 
 
+
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
                                                 {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
@@ -1470,14 +1503,16 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOFF
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime}     -- movingDebounceTime - moving related
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
   -- terminal should be put in the moving state
@@ -1551,14 +1586,16 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
@@ -1636,15 +1673,16 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
 
@@ -1728,14 +1766,16 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
   device.setIO(1, 1)                         -- port 1 to high level - that should trigger IgnitionOn
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
@@ -1822,14 +1862,17 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},         -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, 3},         -- line number 2 set for SeatbeltOFF function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},  -- high state is expected to trigger Ignition on and SeatbeltOff
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
                                                 {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+
 
   device.setIO(1, 1)                         -- port 1 to high level - that should trigger IgnitionOn
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true

@@ -9,7 +9,7 @@ avlAgentCons = {
                       EioSIN = 25,
                       geofenceSIN = 21,
                       coldFixDelay = 40,
-                      funcDigInp = { ["Disabled"] = 0, ["GeneralPurpose"] = 1, ["IgnitionOn"] = 2, ["Seatbelt"] = 3, ["IgnitionAndSM0"] = 4, ["SM1"] = 5, ["SM2"] = 6, ["SM2"] = 7, ["SM4"] = 8},
+                      funcDigInp = { ["Disabled"] = 0, ["GeneralPurpose"] = 1, ["IgnitionOn"] = 2, ["SeatbeltOff"] = 3, ["IgnitionAndSM0"] = 4, ["SM1"] = 5, ["SM2"] = 6, ["SM2"] = 7, ["SM4"] = 8},
                       digStatesDefBitmap = { ["IgnitionOn"] = 0  , ["SeatbeltOff"] = 1, ["SM1Active"] = 2, ["SM2Active"] = 3, ["SM3Active"] = 4 ,  ["SM4Active"] = 5},
 
               }

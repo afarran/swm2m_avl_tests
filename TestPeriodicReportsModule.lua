@@ -1096,6 +1096,8 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
 
 end
 
+
+
 --- TC checks if LoggedPosition message is periodically saved according to LoggingPositionsInterval for moving terminal
   -- *actions performed:
   -- configure loggingPositionsInterval to 20 seconds, simulate terminal in first position in Speeding and IgnitionOn state
@@ -1109,7 +1111,7 @@ end
   -- LoggedPosition messages saved periodically in log according to LoggingPositionsInterval, fields of report have correct values
 function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsIntervallGreaterThanZero_LoggedPositionMessageSavedPeriodically()
 
-  local loggingPositionsInterval = 20     -- seconds
+  local loggingPositionsInterval = 25     -- seconds
   local numberOfReports = 2               -- number of expected reports received during the TC
   local movingDebounceTime = 1            -- seconds
   local stationarySpeedThld = 5           -- kmh
