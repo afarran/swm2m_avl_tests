@@ -9,6 +9,7 @@
 ]]
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
+local bit = require("bit")
 
 local avlHelperFunctions = {}
 
@@ -165,7 +166,6 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
 end
 
 
-
 --- Given the names of special input functions in the table the function sets DigStatesDefBitmap
 -- this function sets DigStatesDefBitmap property according to the names of special functions passed to it
 -- @tparam functionsToActivate table - table containing names of functions to be activated
@@ -174,27 +174,14 @@ end
 -- @within AvlhelperFunctions
 function avlHelperFunctions.setDigStatesDefBitmap(functionsToActivate)
 
-  local digStatesDefBitmap = { "IgnitionOn" , "SeatbeltOff" , "SM1Active", "SM2Active", "SM3Active",  "SM4Active"}
-  local digStatesDefBitmapDecimal = 0        -- decimal value of the digStatesDefBitmap property
-  local digStatesDefBitmapDecimalToAdd = 0   -- helper variable
-
-  -- first loop iterates on all elements of functionsToActivate table
-  for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
-    digStatesDefBitmapDecimalToAdd = 0 -- not to add the value from the pervious run of the loop
-    -- second loop iterates on all elements of digStatesDefBitmap table
-    for digStatesDefBitmapIndex,digStatesDefBitmapValue in pairs(digStatesDefBitmap) do
-      if functionsToActivateValue == digStatesDefBitmapValue then          -- check if element from digStatesDefBitmap exists in functionsToActivate
-        -- if it exists the value of index of this element (in digStatesDefBitmap) is used to raise number 2 to the power of it
-         digStatesDefBitmapDecimalToAdd = 2^(digStatesDefBitmapIndex-1)     -- minus 1 is due to indexes of the table starting from 1 (not from 0)
-      end
-    end
-    -- calculating total value of the decimal representation of the binary digStatesDefBitmap
-    digStatesDefBitmapDecimal = digStatesDefBitmapDecimal + digStatesDefBitmapDecimalToAdd
+  local digStatesDefBitmapToSave = 0x00000000   -- value of the property to be set
+   for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
+    digStatesDefBitmapToSave = bit.bor(digStatesDefBitmapToSave, bit.lshift(1, avlAgentCons.digStatesDefBitmap[functionsToActivateValue]))
   end
 
   -- applying AVL agent properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                 {avlPropertiesPINs.digStatesDefBitmap, digStatesDefBitmapDecimal}
+                                                 {avlPropertiesPINs.digStatesDefBitmap, digStatesDefBitmapToSave}
                                               }
                    )
 
