@@ -136,7 +136,7 @@ end
   -- *expected results:
   -- terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
   -- have correct values
-function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSent()
+function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -199,7 +199,7 @@ end
   -- *expected results:
   -- terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
   -- have correct values
-function test_Ignition_WhenPortValueChangesToHighIgnitionOnMessageSentGpsFixAgeReported()
+function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAgeReported()
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -263,7 +263,7 @@ end
   -- *expected results:
   -- terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
   -- have correct values
-function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSent()
+function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -333,7 +333,7 @@ end
   -- *expected results:
   -- terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
   -- have correct values
-function test_Ignition_WhenPortValueChangesToLowIgnitionOffMessageSentGpsFixAgeReported()
+function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAgeReported()
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -402,7 +402,7 @@ end
   -- *expected results:
   -- terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSent()
+function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTime_IdlingStartMessageSent()
 
   local maxIdlingTime = 1  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -483,7 +483,7 @@ end
   -- *expected results:
   -- terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeIdlingStartMessageSentGpsFixAgeReported()
+function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTime_IdlingStartMessageSentGpsFixAgeReported()
 
   local maxIdlingTime = 1  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -564,7 +564,7 @@ end
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSent()
+function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccurs_IdlingEndMessageSent()
 
   local maxIdlingTime = 5 -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -643,7 +643,7 @@ end
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccursIdlingEndMessageSentGpsFixReported()
+function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitionOffOccurs_IdlingEndMessageSentGpsFixReported()
 
   local maxIdlingTime = 1 -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -732,7 +732,7 @@ end
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesTrueIdlingEndMessageSent()
+function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesTrue_IdlingEndMessageSent()
 
   local maxIdlingTime = 5           -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
   local movingDebounceTime = 1      -- seconds
@@ -822,7 +822,7 @@ end
   -- *expected results:
   -- terminal does not enter the EngineIdling state, IdlingStart message not sent
 
-function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxIdlingTimeIdlingMessageNotSent()
+function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxIdlingTime_IdlingMessageNotSent()
 
   local maxIdlingTime = 15  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -879,7 +879,7 @@ end
   -- *expected results:
   -- terminal correctly put in the stationary and IgnitionOFF state, MovingEnd message sent
 
-function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccursMovingEndMessageSent()
+function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_MovingEndMessageSent()
 
   local movingDebounceTime = 20       -- seconds
   local stationarySpeedThld = 5       -- kmh
@@ -973,7 +973,7 @@ end
   -- *expected results:
   -- terminal correctly put in the stationary and IgnitionOFF state, SpedingEnd and MovingEnd messages sent
 
-function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccursMovingEndAndSpeedingEndMessagesSent()
+function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_MovingEndAndSpeedingEndMessagesSent()
 
   local movingDebounceTime = 20       -- seconds
   local stationarySpeedThld = 5       -- kmh
@@ -1074,7 +1074,7 @@ end
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
   -- have correct values
-function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndServiceMeterLineBecomesActiveIdlingEndMessageSent()
+function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndServiceMeterLineBecomesActive_IdlingEndMessageSent()
 
   local maxIdlingTime = 1 -- in seconds, time in which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -1155,7 +1155,7 @@ end
   -- *expected results:
   -- terminal does not enter the EngineIdling state, IdlingStart message not sent
 
-function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeButServiceMeterLineActiveIdlingMessageNotSent()
+function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTimeButServiceMeterLineActive_IdlingMessageNotSent()
 
   local maxIdlingTime = 1  -- in seconds, time in which terminal can be in IgnitionOn state without sending IdlingStart message
 
@@ -1232,7 +1232,7 @@ end
   -- *expected results:
   -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent()
+function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThld_SeatbeltViolationStartMessageSent()
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -1313,7 +1313,7 @@ end
   -- *expected results:
   -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent()
+function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActiveForPeriodAboveThld_SeatbeltViolationStartMessageSent()
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -1396,7 +1396,7 @@ end
   -- *expected results:
   -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSentGpsFixAgeReported()
+function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThld_SeatbeltViolationStartMessageSentGpsFixAgeReported()
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -1484,7 +1484,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal not put in the SeatbeltViolation state, SeatbeltViolationStart message not sent
-function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThldSeatbeltViolationStartMessageSent()
+function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThld_SeatbeltViolationStartMessageSent()
 
   -- moving state related properties
   local movingDebounceTime = 1          -- seconds
@@ -1568,7 +1568,7 @@ end
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndSeatbeltOffLineBecomesInactiveSeatbeltltViolationEndMessageSent()
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndSeatbeltOffLineBecomesInactive_SeatbeltltViolationEndMessageSent()
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -1655,7 +1655,7 @@ end
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndMovingStateBecomesFalseSeatbeltltViolationEndMessageSent()
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndMovingStateBecomesFalse_SeatbeltViolationEndMessageSent()
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -1748,7 +1748,7 @@ end
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSent()
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalse_SeatbeltViolationEndMessageSent()
 
   -- properties values to be used in TC
   local movingDebounceTime = 15          -- seconds
@@ -1844,7 +1844,7 @@ end
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
-function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalseSeatbeltltViolationEndMessageSentGpsFixAgeReported()
+function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndIgnitionOnStateBecomesFalse_SeatbeltViolationEndMessageSentGpsFixAgeReported()
 
   -- properties values to be used in TC
   local movingDebounceTime = 15          -- seconds
@@ -1923,6 +1923,71 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
 
 end
+
+
+
+--- TC checks if DigInp1Hi message is sent when port 1 state changes from low to high
+  -- *actions performed:
+  -- Configure port 1 as a digital input and set General Purpose as function for digital input line number 1
+  -- simulate terminal moving and change state of digital port 1 from low to high; check if DigInp1Hi message
+  -- has been sent from terminal and report contains correct values of fields
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- DigInp1Hi message sent when port changes state from low to high
+function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+
+
+  -- gpsSettings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+              latitude = 1,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided
+              heading = 90                      -- heading in degrees
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+
+                                             }
+                   )
+  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
+  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  gateway.setHighWaterMark()                               -- to get the newest messages
+  device.setIO(1, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
+  framework.delay(3)                                       -- wait until message is processed
+
+  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
+    -- flitering received messages to find DigInp1Hi message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp1Hi))
+  assert_true(next(filteredMessages), "DigInp1Hi report not received")   -- checking if digitalInp1Hi message has been caught, if not assertion fails
+  digitalInp1HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "DigInp1Hi",
+                  currentTime = os.time(),
+                         }
+
+  avlHelperFunctions.reportVerification(digitalInp1HiMessage, expectedValues) -- verification of the report fields
+
+
+end
+
 
 
 --[[Start the tests]]
