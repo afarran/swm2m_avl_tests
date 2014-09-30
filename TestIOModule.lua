@@ -2189,6 +2189,68 @@ end
 
 
 
+--- TC checks if DigInp3Hi message is sent when port 3 state changes from low to high
+  -- *actions performed:
+  -- Configure port 3 as a digital input and set General Purpose as function for digital input line number 3
+  -- simulate terminal moving and change state of digital port 3 from low to high; check if DigInp3Hi message
+  -- has been sent from terminal and report contains correct values of fields
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- DigInp2Hi message sent when port changes state from low to high
+function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+
+
+  -- gpsSettings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+              latitude = 1,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided
+              heading = 90                      -- heading in degrees
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port3Config, 3},    -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3}, -- port 3 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+
+                                             }
+                   )
+  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
+  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  gateway.setHighWaterMark()                               -- to get the newest messages
+  device.setIO(3, 1)                                       -- set port 3 to high level - that should trigger DigInp3Hi
+  framework.delay(3)                                       -- wait until message is processed
+
+  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
+  -- flitering received messages to find DigInp3Hi message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp3Hi))
+  assert_true(next(filteredMessages), "DigInp3Hi report not received")   -- checking if digitalInp3Hi message has been caught, if not assertion fails
+  digitalInp3HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "DigInp3Hi",
+                  currentTime = os.time(),
+                         }
+
+  avlHelperFunctions.reportVerification(digitalInp3HiMessage, expectedValues) -- verification of the report fields
+
+
+end
+
 
 
 
