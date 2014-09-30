@@ -1926,6 +1926,7 @@ end
 
 
 
+
 --- TC checks if DigInp1Hi message is sent when port 1 state changes from low to high
   -- *actions performed:
   -- Configure port 1 as a digital input and set General Purpose as function for digital input line number 1
@@ -1973,7 +1974,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_D
   framework.delay(3)                                       -- wait until message is processed
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-    -- flitering received messages to find DigInp1Hi message
+  -- flitering received messages to find DigInp1Hi message
   local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp1Hi))
   assert_true(next(filteredMessages), "DigInp1Hi report not received")   -- checking if digitalInp1Hi message has been caught, if not assertion fails
   digitalInp1HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
@@ -1987,6 +1988,74 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_D
 
 
 end
+
+
+
+--- TC checks if DigInp1Lo message is sent when port 1 state changes from high to low
+  -- *actions performed:
+  -- Configure port 1 as a digital input and set General Purpose as function for digital input line number 1
+  -- simulate terminal moving and change state of digital port 1 from low to high; then change it  back from high to low
+  -- and check if DigInp1Lo message has been sent from terminal and report contains correct values of fields
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- DigInp1Lo message sent when port changes state from high to low
+function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+
+
+  -- gpsSettings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+              latitude = 1,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided
+              heading = 90                      -- heading in degrees
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+
+                                             }
+                   )
+  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
+  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  gateway.setHighWaterMark()                               -- to get the newest messages
+  device.setIO(1, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
+  framework.delay(3)                                       -- wait until message is processed
+
+  device.setIO(1, 0)                                       -- set port 1 to low level - that should trigger DigInp1Lo
+  framework.delay(3)                                       -- wait until message is processed
+
+  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
+  -- flitering received messages to find DigInp1Lo message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp1Lo))
+  assert_true(next(filteredMessages), "DigInp1Lo report not received")   -- checking if digitalInp1Lo message has been caught, if not assertion fails
+  digitalInp1LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "DigInp1Lo",
+                  currentTime = os.time(),
+                         }
+
+  avlHelperFunctions.reportVerification(digitalInp1LoMessage, expectedValues) -- verification of the report fields
+
+
+end
+
 
 
 
