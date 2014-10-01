@@ -3045,6 +3045,78 @@ end
 
 
 
+--- TC checks if SetServiceMeter message correctly sets SM2Time and SM2Distance
+  -- are populated
+  -- *actions performed:
+  -- in funcDigInp set line 1 as SM3 and activate SM3 in DigStatesDefBitmap
+  -- send setServiceMeter message to set SM3Distance and SM3Time to known values; then send GetServiceMeter request
+  -- and check if ServiceMeter message is sent after that and values of SM3Time and SM3Distance are correct (as set in TC)
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- SetServiceMeter message correctly sets SM3Time and SM3Distance
+function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  local SMTimeTC = 10                  -- hours
+  local SMDistanceTC = 500             -- kilometers
+
+
+  -- gpsSettings table to be sent to simulator
+  local gpsSettings={
+              speed = 0,                        -- terminal in stationary state
+              latitude = 1,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
+              heading = 100,                    -- degrees
+                     }
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"SM3Active"})
+
+  gps.set(gpsSettings) -- applying gps settings
+
+  framework.delay(2)  -- wait until settings are applied
+
+  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setServiceMeter}
+	message.Fields = {{Name="SM3Time",Value=SMTimeTC},{Name="SM3Distance",Value=SMDistanceTC},}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5)  -- wait until message is processed
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getServiceMeter}    -- to trigger ServiceMeter event
+	gateway.submitForwardMessage(getServiceMeterMessage)
+  framework.delay(3)  -- wait until message is received
+
+  gpsSettings.heading = 361  -- for stationary state
+  --ServiceMeter message is expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.serviceMeter))
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ServiceMeter",
+                  currentTime = os.time(),
+                  SM3Time = SMTimeTC,           -- excpected value is SMTimeTC
+                  SM3Distance =  SMDistanceTC   -- expected value is SMDistanceTC
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+end
+
+
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
   lunatest.run()
