@@ -159,8 +159,50 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_equal(expectedValues.totalDrivingTime,tonumber(colmsg.Payload.TotalDrivingTime), "DwellTimeLimit value is not correct in the report") -- in the expectedValues table
   end
 
+
   assert_equal(expectedValues.gps.heading, tonumber(colmsg.Payload.Heading), "Heading value is wrong in report")
   assert_equal(expectedValues.gps.speed, tonumber(colmsg.Payload.Speed), "Speed value is wrong in report")
+
+
+  if(expectedValues.SM0Time) then                                                                                                 -- checking SM0Time if that parameter has been passed
+    assert_equal(expectedValues.SM0Time,tonumber(colmsg.Payload.SM0Time), "SM0Time value is not correct in the report")            -- in the expectedValues table
+  end
+
+  if(expectedValues.SM0Distance) then                                                                                              -- checking SM0Distance if that parameter has been passed
+    assert_equal(expectedValues.SM0Distance,tonumber(colmsg.Payload.SM0Distance), 2, "SM0Distance value is not correct in the report") -- in the expectedValues table
+  end
+
+  if(expectedValues.SM1Time) then                                                                                                  -- checking SM1Time if that parameter has been passed
+    assert_equal(expectedValues.SM1Time,tonumber(colmsg.Payload.SM1Time), "SM1Time value is not correct in the report")             -- in the expectedValues table
+  end
+
+  if(expectedValues.SM1Distance) then                                                                                              -- checking SM1Distance if that parameter has been passed
+    assert_equal(expectedValues.SM1Distance,tonumber(colmsg.Payload.SM1Distance), 2, "SM1Distance value is not correct in the report") -- in the expectedValues table
+  end
+
+  if(expectedValues.SM2Time) then                                                                                                  -- checking SM2Time if that parameter has been passed
+    assert_equal(expectedValues.SM2Time,tonumber(colmsg.Payload.SM2Time), "SM2Time value is not correct in the report")             -- in the expectedValues table
+  end
+
+  if(expectedValues.SM2Distance) then                                                                                              -- checking SM2Distance if that parameter has been passed
+    assert_equal(expectedValues.SM2Distance,tonumber(colmsg.Payload.SM2Distance), 2, "SM2Distance value is not correct in the report") -- in the expectedValues table
+  end
+
+  if(expectedValues.SM3Time) then                                                                                                   -- checking SM3Time if that parameter has been passed
+    assert_equal(expectedValues.SM3Time,tonumber(colmsg.Payload.SM3Time), "SM3Time value is not correct in the report")              -- in the expectedValues table
+  end
+
+  if(expectedValues.SM3Distance) then                                                                                               -- checking SM3Distance if that parameter has been passed
+    assert_equal(expectedValues.SM3Distance,tonumber(colmsg.Payload.SM3Distance), 2, "SM3Distance value is not correct in the report")  -- in the expectedValues table
+  end
+
+  if(expectedValues.SM4Time) then                                                                                                   -- checking SM4Time if that parameter has been passed
+    assert_equal(expectedValues.SM4Time,tonumber(colmsg.Payload.SM4Time), "SM4Time value is not correct in the report")              -- in the expectedValues table
+  end
+
+  if(expectedValues.SM4Distance) then                                                                                               -- checking SM4Distance if that parameter has been passed
+    assert_equal(expectedValues.SM4Distance,tonumber(colmsg.Payload.SM4Distance), 2, "SM4Distance value is not correct in the report")  -- in the expectedValues table
+  end
 
 
 end
