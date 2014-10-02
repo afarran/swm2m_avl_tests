@@ -1289,7 +1289,7 @@ end
 
 --- TC checks if LoggedPosition message does not deffer sending periodic StationaryIntervalSat message
   -- *actions performed:
-  -- make sure terminal is stationary; set loggingPositionsInterval to 2 seconds and stationaryIntervalSat to 5 seconds;
+  -- make sure terminal is stationary; set loggingPositionsInterval to 2 seconds and stationaryIntervalSat to 10 seconds;
   -- apply property settings and wait for time of stationaryIntervalSat multiplied by number of expected reports; then set loggingPositionsInterval
   -- and stationaryIntervalSat to 0 not get more reports and check how many periodic stationaryIntervalSat reports has been sent;
   -- if stationaryIntervalSat message has not been deffered by saving LoggedPosition this number is expected to be numberOfReports defined in TC
@@ -1352,6 +1352,71 @@ end
 
 end
 
+
+--- TC checks if LoggedPosition message does not deffer sending periodic MovingIntervalSat essage
+  -- *actions performed:
+  -- make sure terminal is moving; set loggingPositionsInterval to 2 seconds and movingIntervalSat to 10 seconds;
+  -- apply property settings and wait for time of movingIntervalSat multiplied by number of expected reports; then set loggingPositionsInterval
+  -- and movingIntervalSat to 0 not get more reports and check how many periodic MovingIntervalSat reports has been sent;
+  -- if MovingIntervalSat message has not been deffered by saving LoggedPosition this number is expected to be numberOfReports defined in TC
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- saving LoggedPosition messages does not deffer periodic MovingIntervalSat message
+  function test_LoggedPosition_ForTerminalMovingyWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingMovingIntervalSat()
+
+  local loggingPositionsInterval =  2   -- seconds
+  local numberOfReports = 3             -- number of expected reports received during the TC
+  local movingIntervalSat = 10          -- seconds
+  local stationarySpeedThld = 10        -- kmh
+  local movingDebounceTime = 1          -- seconds
+
+  -- definition of first position of terminal
+  local gpsSettings = {
+              speed = stationarySpeedThld+10, -- kmh, 10 kmh above threshold, to make terminal moving
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided
+                       }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  gps.set(gpsSettings)                                         -- apply settings
+  framework.delay(movingDebounceTime+gpsReadInterval+2)        -- wait until terminal is moving
+
+  gateway.setHighWaterMark()   -- to get the newest messages
+  --applying properties of the service, messages are saved to log and sent from mobile until now
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.movingIntervalSat, movingIntervalSat},
+                                            }
+                   )
+
+  framework.delay(numberOfReports*movingIntervalSat+3)    -- wait for movingIntervalSat interval multiplied by number of expected reports
+
+  loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
+  movingIntervalSat = 0          -- seconds, not to get any more MovingIntervalSatmessages
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.movingIntervalSat, movingIntervalSat},
+                                             }
+                   )
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for movingIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingIntervalSat))
+  -- checking the number of received movingIntervalSat messages
+  assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received MovingIntervalSatreports is incorrect")
+
+end
 
 
 
