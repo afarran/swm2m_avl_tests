@@ -1287,6 +1287,74 @@ end
 end
 
 
+--- TC checks if LoggedPosition message does not deffer sending periodic StationaryIntervalSat message
+  -- *actions performed:
+  -- make sure terminal is stationary; set loggingPositionsInterval to 2 seconds and stationaryIntervalSat to 5 seconds;
+  -- apply property settings and wait for time of stationaryIntervalSat multiplied by number of expected reports; then set loggingPositionsInterval
+  -- and stationaryIntervalSat to 0 not get more reports and check how many periodic stationaryIntervalSat reports has been sent;
+  -- if stationaryIntervalSat message has not been deffered by saving LoggedPosition this number is expected to be numberOfReports defined in TC
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- saving LoggedPosition messages does not deffer periodic stationaryIntervalSat message
+  function test_LoggedPosition_ForTerminalStationaryWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingStationaryIntervalSat()
+
+  local loggingPositionsInterval =  2   -- seconds
+  local numberOfReports = 3             -- number of expected reports received during the TC
+  local stationaryIntervalSat = 10      -- seconds
+  local stationarySpeedThld = 10        -- kmh
+  local movingDebounceTime = 1          -- seconds
+
+  -- definition of first position of terminal
+  local gpsSettings = {
+              speed = 0,                      -- kmh, terminal stationary
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided
+                       }
+
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  gps.set(gpsSettings)                                         -- apply settings
+  framework.delay(movingDebounceTime+gpsReadInterval+2)        -- wait until terminal is stationary
+
+  gateway.setHighWaterMark()   -- to get the newest messages
+  --applying properties of the service, messages are saved to log and sent from mobile until now
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                            }
+                   )
+
+  framework.delay(numberOfReports*stationaryIntervalSat+3)    -- wait for stationaryIntervalSat interval multiplied by number of expected reports
+
+  loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
+  stationaryIntervalSat = 0          -- seconds, not to get any more StationaryIntervalSat messages
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                             }
+                   )
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for stationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.stationaryIntervalSat))
+  -- checking the number of received stationaryIntervalSat messages
+  assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received StationaryIntervalSat reports is incorrect")
+
+end
+
+
+
+
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
