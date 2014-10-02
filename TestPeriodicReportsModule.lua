@@ -554,7 +554,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 0,                      -- one kmh above threshold
+              speed = 0,                      -- stationary state
               heading = 90,                   -- degrees
               latitude = 1,                   -- degrees
               longitude = 1                   -- degrees
@@ -1227,6 +1227,64 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
 end
 
+
+--- TC checks if LoggedPosition message does not deffer sending periodic Position message
+  -- *actions performed:
+  -- set loggingPositionsInterval to 2 seconds and positionMsgInterval to 10 seconds; apply property settings and wait for time
+  -- of positionMsgInterval multiplied by number of expected positon reports; then set loggingPositionsInterval and positionMsgInterval
+  -- to 0 not get more reports and check how many periodic Position reports has been sent; if periodic position message has not been deffered by
+  -- saving LoggedPosition this number is expected to be numberOfPositionReports defined in TC
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- *expected results:
+  -- saving LoggedPosition messages does not deffer periodic Position message
+  function test_LoggedPosition_WhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingPeriodicPositionMessage()
+
+  local loggingPositionsInterval =  2   -- seconds
+  local positionMsgInterval = 10        -- seconds
+  local numberOfPositionReports = 3     -- number of expected reports received during the TC
+  local stationaryIntervalSat = 5
+
+  -- definition of first position of terminal
+  local gpsSettings = {
+              speed = 0,                      -- terminal stationary
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided
+                       }
+  gps.set(gpsSettings)                        -- apply settings
+  framework.delay(3)                          -- wait until settings are applied
+
+  gateway.setHighWaterMark()   -- to get the newest messages
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                                {avlPropertiesPINs.stationaryIntervalSat, stationaryIntervalSat},
+                                             }
+                   )
+
+
+  framework.delay(numberOfPositionReports*positionMsgInterval+3)    -- wait for position message interval multiplied by number of expected reports
+
+  loggingPositionsInterval = 0     -- seconds, not to get any more messages saved in log
+  positionMsgInterval = 0          -- seconds, not to get any more position messages
+  --applying properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlPropertiesPINs.positionMsgInterval, positionMsgInterval},
+                                             }
+                   )
+
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for Position messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.position))
+  -- checking the number of received Position messages
+  assert_equal(numberOfPositionReports, table.getn(matchingMessages) , "The number of received Position reports is incorrect")
+
+end
 
 
 
