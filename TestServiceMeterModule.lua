@@ -122,7 +122,6 @@ end
 --]]
 
 
-
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Time fields
   -- are populated
   -- *actions performed:
@@ -797,7 +796,7 @@ end
   -- send setServiceMeter message to set SM4Distance and SM4Time to zero; then simulate port 1 value change to high state
   -- to activate SM4; enter loop with numberOfSteps iterations and change terminals positon of distanceOfStep
   -- distance with every run; in every iteration send GetServiceMeter message and check if ServiceMeter message is sent after the
-  -- request; verify the fields in the received reportorted fields
+  -- request; verify the fields in the received report
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
@@ -953,6 +952,128 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
 
 end
 
+
+
+--- TC checks if ServiceMeter message reports correct values of all active ServiceMeters (SM1 to SM4)
+  -- are populated
+  -- *actions performed:
+  -- configure all 4 ports a digital input and associate them with all 4 ServiceMeters lines
+  -- set the high state of the port to be a trigger for line activation and activate all ServiceMeters in DigStatesDefBitmap
+  -- send setServiceMeter message to set ServiceMeters initial distances and times; then simulate all 4 ports value change to high state
+  -- to activate ServiceMeters; enter loop with numberOfSteps iterations and change terminals positon of distanceOfStep
+  -- distance with every run; in every iteration send GetServiceMeter message and check if ServiceMeter message is sent after the
+  -- request; verify if all 4 ServiceMeters values are correctly reported
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- ServiceMeter message send after GetServiceMeter request; All SMTimes and SMDistances are correctly reported
+function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+  local distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
+  local numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
+  local odometerDistanceIncrement = 10  -- in meters
+  local SM1TimeInitial = 0              -- hours, initial value of ServiceMeter
+  local SM1DistanceInitial = 0          -- km, initial value of ServiceMeter
+  local SM2TimeInitial = 100            -- hours, initial value of ServiceMeter
+  local SM2DistanceInitial = 200        -- km, initial value of ServiceMeter
+  local SM3TimeInitial = 44             -- hours, initial value of ServiceMeter
+  local SM3DistanceInitial = 44         -- km, initial value of ServiceMeter
+  local SM4TimeInitial = 500            -- hours, initial value of ServiceMeter
+  local SM4DistanceInitial = 500        -- km, initial value of ServiceMeter
+
+
+  -- gpsSettings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+10,   -- terminal in moving state
+              latitude = 1,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
+              heading = 100,                    -- degrees
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3}, -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.port3Config, 3},     -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3}, -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.port4Config, 3},     -- port 4 as digital input
+                                                {avlPropertiesPINs.port4EdgeDetect, 3}, -- detection for both rising and falling edge
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp.SM2},    -- line number 1 set for SM2
+                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlPropertiesPINs.funcDigInp4, avlAgentCons.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlPropertiesPINs.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"SM1Active","SM2Active","SM3Active","SM4Active",})
+
+  gps.set(gpsSettings) -- applying gps settings
+
+  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
+
+  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setServiceMeter}
+	message.Fields = {{Name="SM1Time",Value=SM1TimeInitial},{Name="SM1Distance",Value=SM1DistanceInitial},{Name="SM2Time",Value=SM2TimeInitial},{Name="SM2Distance",Value=SM2DistanceInitial},
+                    {Name="SM3Time",Value=SM3TimeInitial},{Name="SM3Distance",Value=SM3DistanceInitial},{Name="SM4Time",Value=SM4TimeInitial},{Name="SM4Distance",Value=SM4DistanceInitial}}
+	gateway.submitForwardMessage(message)
+
+  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM1 = ON
+  device.setIO(2, 1)  -- port 1 to high level - that should trigger SM2 = ON
+  device.setIO(3, 1)  -- port 1 to high level - that should trigger SM3 = ON
+  device.setIO(4, 1)  -- port 1 to high level - that should trigger SM4 = ON
+  framework.delay(5)  -- wait until ServiceMeters are active
+
+
+  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
+  for i = 1, numberOfSteps, 1 do
+
+  -- terminal moving to another point distanceOfStep away from the initial position
+  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+  gps.set(gpsSettings)               -- applying gps settings
+  framework.delay(2)                 -- wait until settings are applied
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getServiceMeter}    -- to trigger ServiceMeter event
+	gateway.submitForwardMessage(getServiceMeterMessage)
+  framework.delay(3)  -- wait until message is received
+
+  --ServiceMeter message is expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.serviceMeter))
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ServiceMeter",
+                  currentTime = os.time(),
+                  SM1Time = SM1TimeInitial,                                      -- zero hours of increase SM1 is expected
+                  SM1Distance = SM1DistanceInitial + (distanceOfStep*111.12)*i,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                  SM2Time = SM2TimeInitial,                                      -- zero hours of increase SM2 is expected
+                  SM2Distance = SM2DistanceInitial + (distanceOfStep*111.12)*i,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                  SM3Time = SM3TimeInitial,                                      -- zero hours of increase SM3 is expected
+                  SM3Distance = SM3DistanceInitial + (distanceOfStep*111.12)*i,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                  SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
+                  SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*i,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                       }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+
+ end
+
+end
 
 
 
