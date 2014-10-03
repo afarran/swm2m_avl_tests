@@ -133,7 +133,7 @@ end
 
 --]]
 
-
+--[[
 
 --- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
   -- *actions performed:
@@ -2475,9 +2475,10 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_AssiociatedDigitalOutp
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
                                                 {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
                                                 {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+
 
                                         }
                    )
@@ -2544,7 +2545,7 @@ function test_DigitalOutput_WhenTerminalInMovingState_AssiociatedDigitalOutputPo
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
 
                                         }
                    )
@@ -2690,7 +2691,7 @@ function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssiociatedDigitalOu
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
                                                 {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
                                                 {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
@@ -2754,7 +2755,7 @@ function test_DigitalOutput_WhenServiceMeter1IsON_AssiociatedDigitalOutputPortIn
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
                                                 {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
                                                 {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
@@ -2808,7 +2809,7 @@ function test_DigitalOutput_WhenServiceMeter2IsON_AssiociatedDigitalOutputPortIn
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
                                                 {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
                                                 {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
@@ -2861,7 +2862,7 @@ function test_DigitalOutput_WhenServiceMeter3IsON_AssiociatedDigitalOutputPortIn
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
                                                 {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
                                                 {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
@@ -2915,7 +2916,7 @@ function test_DigitalOutput_WhenServiceMeter4IsON_AssiociatedDigitalOutputPortIn
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
                                                 {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
                                                 {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
@@ -2948,6 +2949,102 @@ function test_DigitalOutput_WhenServiceMeter4IsON_AssiociatedDigitalOutputPortIn
 
   -- asserting state of port 1 - low state is expected -  SM4 = OFF now
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+end
+
+--]]
+--- TC checks if 2 digital outputs assiociated with Moving state and SM1 are changing according to Moving and SM1 states
+  -- *actions performed:
+  -- configure port 3 as a digital input and associate this port with SM4Active function;
+  -- configure port 1 as a digital output and associate this port with Moving function; configure port 1 as a digital output
+  -- and associate this port with SM1 function; check if state of both lines are initially low
+  -- simulate terminal moving and check if the state of port 1 changes to high; then simulate SM1 = ON and check if port 2 changes
+  -- state to high; go back to stationary state and SM = OFF and check if both ports are back to low state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 and port 2 states change according to Moving and SM1 state
+function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_AssiociatedDigitalOutputPortsInHighState()
+
+  local movingDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5     -- kmh
+  local stationaryDebounceTime = 1  -- seconds
+
+  -- gpsSettings to be used in TC
+  local gpsSettings={
+              speed = stationarySpeedThld+10 ,   -- speed above threshold, terminal in moving state
+              latitude = 1,                      -- degrees
+              longitude = 1,                     -- degrees
+              fixType=3,                         -- valid fix provided
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+                                                {avlPropertiesPINs.port2Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
+                                                {avlPropertiesPINs.funcDigOut2, avlAgentCons.funcDigOut["SM1ON"]},    -- digital output line number 2 set for SM1 function
+                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM1"]},      -- digital input line number 3 set for Service Meter 1 function
+                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},            -- moving related
+                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},          -- moving related
+                                                {avlPropertiesPINs.stationaryDebounceTime,stationaryDebounceTime},    -- moving related
+                                             }
+                   )
+  -- activating special output function
+  avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1","FuncDigOut2"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as terminal is not moving yet
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+  -- asserting state of port 2 - low state is expected as SM1 is not ON yet
+  assert_equal(0, device.getIO(2), "Port1 associated with digital output line 1 is not in low state as expected")
+
+  -- applying gps settings to simulate terminal moving
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+2)  -- wait until moving state becomes true
+
+  -- verification of the state of terminal - Moving state true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state as expected")
+
+  -- asserting state of port 1 - high state is expected - terminal in moving state
+  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+
+  device.setIO(3, 1)     -- port 3 to high level - that should trigger SM1 = ON
+  framework.delay(4)     -- wait until terminal changes state of Service Meter 1
+
+  -- asserting state of port 1 - high state is expected - SM1 = ON
+  assert_equal(1, device.getIO(2), "Port1 associated with digital output line 1 is not in high state as expected")
+
+
+  -- simulating terminal in stationary state again
+  gpsSettings.speed = 0
+  gps.set(gpsSettings)
+  framework.delay(stationaryDebounceTime+gpsReadInterval+2)   -- wait until terminal becomes stationary
+
+  -- verification of the state of terminal - Moving false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the Moving state")
+
+  -- asserting state of port 1 - low state is expected - terminal stationary
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+
+  device.setIO(3, 0)     -- port 3 to low level - that should trigger SM1 = OFF
+  framework.delay(6)     -- wait until terminal changes state of Service Meter 1
+
+  -- asserting state of port 2 - low state is expected - SM1 = OFF
+  assert_equal(0, device.getIO(2), "Port1 associated with digital output line 1 is not in low state as expected")
+
 
 end
 
