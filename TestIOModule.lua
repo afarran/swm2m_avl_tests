@@ -2557,7 +2557,7 @@ function test_DigitalOutput_WhenTerminalInMovingState_AssiociatedDigitalOutputPo
                                              }
                    )
   -- activating special output function
-   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected as terminal is not moving yet
@@ -2587,6 +2587,88 @@ function test_DigitalOutput_WhenTerminalInMovingState_AssiociatedDigitalOutputPo
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
 end
+
+
+--- TC checks if digital output line assiociated with Speeding state is changing according to Speeding state
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with Speeding function; simulate terminal moving and check if state of the line
+  -- is low; then simulate terminal Speeding and check if the state of port 1 changes to high; then simulate terminal back to moving
+  -- (non-speeding) state and check if port 1 changes back to low
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 state changes according to Speeding state
+function test_DigitalOutput_WhenTerminalInSpeedingState_AssiociatedDigitalOutputPortInHighState()
+
+  local movingDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5     -- kmh
+  local stationaryDebounceTime = 1  -- seconds
+  local speedingTimeOver  = 1       -- seconds
+  local defaultSpeedLimit = 80      -- kmh
+  local speedingTimeUnder = 1       -- seconds
+
+  -- gpsSettings to be used in TC
+  local gpsSettings={
+              speed = stationarySpeedThld+1 ,    -- speed above threshold, terminal in moving (non-speeding) state
+              latitude = 1,                      -- degrees
+              longitude = 1,                     -- degrees
+              fixType=3,                         -- valid fix provided
+                     }
+  gps.set(gpsSettings) -- apply gps settings
+  framework.delay(movingDebounceTime+gpsReadInterval+2) -- wait until terminal goes to moving state
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Speeding"]}, -- digital output line number 1 set for Moving function
+                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},            -- moving related
+                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},          -- moving related
+                                                {avlPropertiesPINs.stationaryDebounceTime,stationaryDebounceTime},    -- moving related
+                                                {avlPropertiesPINs.speedingTimeOver,speedingTimeOver},                -- speeding related
+                                                {avlPropertiesPINs.defaultSpeedLimit,defaultSpeedLimit},              -- speeding related
+                                                {avlPropertiesPINs.speedingTimeUnder,speedingTimeUnder},              -- speeding related
+
+                                             }
+                   )
+  -- activating special output function
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as terminal is not speeding yet
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+  -- applying gps settings to simulate terminal moving
+  gpsSettings.speed = defaultSpeedLimit + 10           -- kmh, 10 kmh above speed limit to get speeding state
+  gps.set(gpsSettings)
+  framework.delay(speedingTimeOver+gpsReadInterval+2)  -- wait until speeding state becomes true
+
+  -- verification of the state of terminal - Speeding state true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the Speeding state as expected")
+
+  -- asserting state of port 1 - high state is expected - terminal in speeding state
+  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+
+  -- simulating terminal in non speeding state again
+  gpsSettings.speed = defaultSpeedLimit - 10   -- 10 kmh below threshold
+  gps.set(gpsSettings)
+  framework.delay(speedingTimeUnder+gpsReadInterval+2)   -- wait until terminal becomes Speeding state false
+
+  -- verification of the state of terminal - Speeding false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the Speeding state")
+
+  -- asserting state of port 1 - low state is expected - terminal non speeding
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+end
+
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
