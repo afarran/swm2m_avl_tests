@@ -2698,8 +2698,9 @@ function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssiociatedDigitalOu
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Idling"]}, -- digital output line number 1 set for Idling function
-                                                {avlPropertiesPINs.maxIdlingTime,maxIdlingTime},                    -- Idling related
+                                               {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},  -- digital input line number 3 set for Ignition function
+                                               {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Idling"]},      -- digital output line number 1 set for Idling function
+                                               {avlPropertiesPINs.maxIdlingTime,maxIdlingTime},                         -- Idling related
 
                                              }
                    )
@@ -2735,6 +2736,61 @@ function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssiociatedDigitalOu
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
 end
+
+
+
+--- TC checks if digital output line assiociated with SM1 state is changing according to SM1 state
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with SM1 function;
+  -- configure port 3 as a digital input and associate this port with SM1Active function;
+  -- set the high state of the port 3 to be a trigger for line activation; check if initial state of port 1 is low;
+  -- simulate port 3 value change to high state to trigger SM1 = ON and check if port 1 value has changed to high state;
+  -- then set port 3 to low level - that triggers SM1 = OFF and after that check if port 1 output is low again
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 state changes according to SM1 state
+function test_DigitalOutput_WhenServiceMeter1IsON_AssiociatedDigitalOutputPortInHighState()
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SM1ON"]}, -- digital output line number 1 set for SM1 function
+                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM1"]},   -- digital input line number 3 set for Service Meter 1 function
+
+                                              }
+                   )
+   -- activating special input and output functions
+  avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as SM1 is not ON yet
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+
+  device.setIO(3, 1)     -- port 3 to high level - that should trigger SM1 = ON
+  framework.delay(4)     -- wait until terminal changes state of Service Meter 1
+
+  -- asserting state of port 1 - high state is expected -  SM1 = ON now
+  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+
+  device.setIO(3, 0)     -- port 3 to high level - that should trigger SM1 = OFF
+  framework.delay(4)     -- wait until terminal changes state of Service Meter 1
+
+  -- asserting state of port 1 - low state is expected -  SM1 = OFF now
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+end
+
 
 
 
