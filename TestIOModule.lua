@@ -82,7 +82,8 @@ function setup()
   --setting properties of the service
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                               {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime}
+                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
+
                                              }
                     )
 
@@ -103,6 +104,17 @@ function setup()
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- setting the EIO properties - disabling all 4 I/O ports
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                            {avlPropertiesPINs.port1Config, 0},      -- port disabled
+                                            {avlPropertiesPINs.port2Config, 0},      -- port disabled
+                                            {avlPropertiesPINs.port3Config, 0},      -- port disabled
+                                            {avlPropertiesPINs.port4Config, 0},      -- port disabled
+
+                                        }
+                    )
+
 
 
 end
@@ -2443,6 +2455,63 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
 
   avlHelperFunctions.reportVerification(digitalInp4LoMessage, expectedValues) -- verification of the report fields
 
+
+end
+
+
+
+--- TC checks if digital output line assiociated with IgnitionOn is changing state according to IgnitionOn state
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with IgnitionOn function;
+  -- configure port 3 as a digital input and associate this port also with IgnitionOn function;
+  -- set the high state of the port 3 to be a trigger for line activation; then simulate port 3 value change to
+  -- high state and check if terminal goes to IgnitionOn state; check the state of port 1 - high state is expected
+  -- simulate port 3 value change to low state - check if terminal goes to IgnitionOn false and port 1 goes back to low state
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 state changes according to IgnitionOn state
+function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortInHighState()
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["IgnitionOn"]},    -- digital output line number 1 set for Ignition function
+                                             }
+                   )
+  -- activating special input and output functions
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
+  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+
+  device.setIO(3, 0)                 -- port 3 to low level - that should trigger IgnitionOn state change to false
+  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+
+  -- verification of the state of terminal - IgnitionOn false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
 end
 

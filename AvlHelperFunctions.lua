@@ -209,7 +209,6 @@ end
 
 
 --- Given the names of special input functions in the table the function sets DigStatesDefBitmap
--- this function sets DigStatesDefBitmap property according to the names of special functions passed to it
 -- @tparam functionsToActivate table - table containing names of functions to be activated
 -- @usage
 -- avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn","SeatbeltOff"})
@@ -227,6 +226,27 @@ function avlHelperFunctions.setDigStatesDefBitmap(functionsToActivate)
                                               }
                    )
 
+
+end
+
+
+--- Given the names of digital output lines in the table the function sets DigOutActiveBitmap
+-- @tparam functionsToActivate table - table containing names of digital output functions to be activated
+-- @usage
+-- avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1","FuncDigOut2"})
+-- @within AvlhelperFunctions
+function avlHelperFunctions.setDigOutActiveBitmap(functionsToActivate)
+
+  local digOutActiveBitmapToSave = 0x00000000   -- value of the property to be set
+   for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
+    digOutActiveBitmapToSave = bit.bor(digOutActiveBitmapToSave, bit.lshift(1, avlAgentCons.digOutActiveBitmap[functionsToActivateValue]))
+  end
+
+  -- applying AVL agent properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                 {avlPropertiesPINs.digOutActiveBitmap, digOutActiveBitmapToSave}
+                                              }
+                   )
 
 end
 

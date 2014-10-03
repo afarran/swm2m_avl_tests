@@ -55,6 +55,13 @@ avlPropertiesPINs = {
       loggingPositionsInterval = 8,
       digPorts = 24,
       temperatureValue = 51,
+      digOutActiveBitmap = 116,
+      funcDigOut1 = 117,
+      funcDigOut2 = 118,
+      funcDigOut3 = 119,
+      funcDigOut4 = 120,
+      funcDigOut5 = 120,
+
 
 
 
