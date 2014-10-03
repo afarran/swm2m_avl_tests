@@ -99,7 +99,7 @@ function setup()
   for i = 1, 4, 1 do
   device.setIO(i, 0)
   end
-  framework.delay(3)
+  framework.delay(4)
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
@@ -2668,6 +2668,75 @@ function test_DigitalOutput_WhenTerminalInSpeedingState_AssiociatedDigitalOutput
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
 end
+
+
+
+--- TC checks if digital output line assiociated with Idling state is changing according to EngineIdling state
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with Idling function;
+  -- configure port 3 as a digital input and associate this port with IgnitionOn function;
+  -- set the high state of the port 3 to be a trigger for line activation; check if initial state of port 1 is low;
+  -- simulate port 3 value change to high state to trigger IgnitionOn; wait for time longer than maxIdlingTime and check
+  -- if terminal goes into Idling state; when terminal Idling check if port 1 value has changed to high state;
+  -- then set port 3 to low level - that triggers IgnitionOff and IdlingEnd - after that check if port 1 output is low again
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 state changes according to EngineIdling state
+function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssiociatedDigitalOutputPortInHighState()
+
+  local maxIdlingTime =  1 -- seconds
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Idling"]}, -- digital output line number 1 set for Idling function
+                                                {avlPropertiesPINs.maxIdlingTime,maxIdlingTime},                    -- Idling related
+
+                                             }
+                   )
+   -- activating special input and output functions
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as terminal is not Idling yet
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+
+  device.setIO(3, 1)                   -- port 3 to high level - that should trigger IgnitionOn
+  framework.delay(maxIdlingTime+10)     -- wait until terminal goes into Idling state
+
+
+  -- verification of the state of terminal - Idling state true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the Idling state as expected")
+
+  -- asserting state of port 1 - high state is expected - terminal in Idling state
+  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+
+  device.setIO(3, 0)     -- port 3 to high level - that should trigger IgnitionOn
+  framework.delay(4)     -- wait until terminal goes into Idling false state
+
+
+  -- verification of the state of terminal - Idling false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the Idling state")
+
+  -- asserting state of port 1 - low state is expected - terminal non speeding
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+end
+
+
 
 
 --[[Start the tests]]
