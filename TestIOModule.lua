@@ -2459,8 +2459,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
 end
 
 
-
---- TC checks if digital output line assiociated with IgnitionOn is changing state according to IgnitionOn state
+--- TC checks if digital output line assiociated with IgnitionOn state is changing according to IgnitionOn state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with IgnitionOn function;
   -- configure port 3 as a digital input and associate this port also with IgnitionOn function;
@@ -2472,7 +2471,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to IgnitionOn state
-function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortInHighState()
+function test_DigitalOutput_WhenTerminalInIgnitionOnState_AssiociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -2493,6 +2492,9 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortInHig
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
 
+  -- asserting state of port 1 - low state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
   device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
@@ -2510,12 +2512,81 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortInHig
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
-  -- asserting state of port 1 - high state is expected
+  -- asserting state of port 1 - low state is expected
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
 end
 
 
+--- TC checks if digital output line assiociated with Moving state is changing according to IgnitionOn state
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with Moving function; check if state of the line is initially low
+  -- simulate terminal moving and check if the state of port 1 changes to high; then simulate terminal back to stationary state and
+  -- check if port 1 changes to low
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 state changes according to Moving state
+function test_DigitalOutput_WhenTerminalInMovingState_AssiociatedDigitalOutputPortInHighState()
+
+  local movingDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5     -- kmh
+  local stationaryDebounceTime = 1  -- seconds
+
+  -- gpsSettings to be used in TC
+  local gpsSettings={
+              speed = stationarySpeedThld+10 ,   -- speed above threshold, terminal in moving state
+              latitude = 1,                      -- degrees
+              longitude = 1,                     -- degrees
+              fixType=3,                         -- valid fix provided
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 2 as digital output
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
+                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},            -- moving related
+                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},          -- moving related
+                                                {avlPropertiesPINs.stationaryDebounceTime,stationaryDebounceTime},    -- moving related
+                                             }
+                   )
+  -- activating special output function
+   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as terminal is not moving yet
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+  -- applying gps settings to simulate terminal moving
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+gpsReadInterval+2)  -- wait until moving state becomes true
+
+  -- verification of the state of terminal - Moving state true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state as expected")
+
+  -- asserting state of port 1 - high state is expected - terminal in moving state
+  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+
+  -- simulating terminal in stationary state again
+  gpsSettings.speed = 0
+  gps.set(gpsSettings)
+  framework.delay(stationaryDebounceTime+gpsReadInterval+2)   -- wait until terminal becomes stationary
+
+  -- verification of the state of terminal - Moving false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the Moving state")
+
+  -- asserting state of port 1 - low state is expected - terminal stationary
+  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+
+end
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
