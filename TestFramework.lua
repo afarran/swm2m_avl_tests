@@ -1,6 +1,6 @@
 --- Lua Services Test Framework.
 -- You may find it convenient to run your test suite from SciTE.
--- @usage 
+-- @usage
 -- shell> lua -e "debugLevel = 0|1|2" <test file name>
 -- @usage
 -- -- Here, debugLevel 0 is implied
@@ -36,7 +36,7 @@ local gps = {}
 local framework = {}
 
 gateway.returnMsgList = {}
-cfg.PORTMAP = {1, 2, 3, 4}
+cfg.PORTMAP = { }
 local function getTableLength(table)
 	local len = 0
 	for _ in pairs(table) do len = len + 1 end
@@ -97,8 +97,8 @@ framework.trace0 = printfLineDate
 --- print regardless of debugLevel
 -- @function framework.trace0
 -- @param ... variable arguments that could be passed to string.format
--- @usage 
--- -- output will be similar to this: 
+-- @usage
+-- -- output will be similar to this:
 -- -- [2014-06-24 21:18:16] Hello World!
 -- framework.trace0("Hello %s!", "World")
 -- @within framework
@@ -106,8 +106,8 @@ framework.trace0 = printfLineDate
 --- print when debug level is 1 or higher
 -- @function framework.trace1
 -- @param ... variable arguments that could be passed to string.format
--- @usage 
--- -- output will be similar to this: 
+-- @usage
+-- -- output will be similar to this:
 -- -- [2014-06-24 21:18:16] Today's day of week: Tuesday
 -- framework.trace1("Today's day of week: %s", os.date("%A"))
 -- @within framework
@@ -115,8 +115,8 @@ framework.trace0 = printfLineDate
 --- print when debug level is 2
 -- @function framework.trace2
 -- @param ... variable arguments that could be passed to string.format
--- @usage 
--- -- output will be similar to this: 
+-- @usage
+-- -- output will be similar to this:
 -- -- [2014-06-24 21:18:16] He said, "thank you".
 -- framework.trace2("He said, %q.", "thank you")
 -- @within framework
@@ -374,11 +374,11 @@ function framework.firstCallHouseKeeping()
 		timeOffset = gatewayTime - localTime
 		gatewayVersion = getGatewayResource("info_version")
 		gateway.setHighWaterMark()
-	
+
 		gateway.submitForwardMessage{SIN = 16, MIN = 1}
 		local msg = gateway.getReturnMessage(
 			function(msg)
-				if not msg then 
+				if not msg then
 					print "Unable to retrieve terminal info. Tests will continue."
 					return false
 				end
@@ -469,7 +469,7 @@ end
 --- Data fields in to-or-from terminal messages are encoded in base64 format; this function encodes string data to base64 format
 -- @param data string or array or numbers in range [0, 255]: the data to encode
 -- @treturn string base64-encoded data
--- @usage 
+-- @usage
 -- -- These are equivalent calls:
 -- framework.base64Encode({65, 66, 67})
 -- framework.base64Encode("ABC")
@@ -479,7 +479,7 @@ function framework.base64Encode(data)
 	if type(data) == "table" then
 		data1 = string.char(unpack(data))
 	end
-	
+
     return ((data1:gsub('.', function(x)
         local r,b='',x:byte()
         for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
@@ -551,7 +551,7 @@ end
 -- local msgs = getReturnMessages()
 -- for _, msg in ipairs(msgs) do
 -- 	msg = framework.collapseMessage(msg)
---	print(framework.dump(msg)) 
+--	print(framework.dump(msg))
 -- end
 -- -- or simply:
 -- framework.dump(getReturnMessages())
@@ -626,11 +626,11 @@ function framework.printResults(testSuiteSuccess)
 	if gatewayVersion then
 		printf("Gateway version: %s \n", gatewayVersion)
 	end
-	
+
 	if terminalInfo then		--if debugLevel == 2 then all msgs are logged automatically
 		print(terminalInfo)
 	end
-	
+
 	--resetStats
 	testStartTime = os.time()
 	gateway.returnMsgList = {}
@@ -642,7 +642,7 @@ end
 --- Submits a forward message payload. Specify only the payload - message metadata can be configured in the TestConfiguration file.
 -- @tparam table payload the payload field of the forward message
 -- @tparam[opt=false] ?boolean raw nil regarded as false; if true, this specifies the message's RawPayload field.
--- @usage 
+-- @usage
 -- -- Submit (SIN, MIN) = (16, 1) (getTerminalInfo) message to terminal
 -- gateway.submitForwardMessage{SIN = 16, MIN = 1}
 -- @within gateway
@@ -679,7 +679,7 @@ function gateway.submitForwardMessage(payload, raw)
 			framework.trace2("Submitted: " .. framework.dump(framework.collapseMessage(payload)))
 		end
 	end
-	
+
 	-- retry submission if gateway temporarily unavailable.
 	while code == 503 do
 		print "Gateway temporarily unavailable; retry submission."
@@ -721,9 +721,9 @@ end
 -- gateway.getReturnMessage(<your own callback or framework.checkMessageType>)
 -- @within gateway
 function gateway.getReturnMessage(
-			checkFunction, 			
-			checkParam, 			
-			timeout					
+			checkFunction,
+			checkParam,
+			timeout
 		)
 	assert(checkFunction, "checkFunction not provided to getReturnMessage")
 	time1 = os.time()
@@ -829,7 +829,7 @@ function lsf.getProperties(sin, pinList)
 	if type(pinList) ~= "table" then
 		pinList = {pinList}
 	end
-	
+
 	local b64str = framework.base64Encode(string.char(unpack(pinList)))
 	local payload={Fields={{Elements={{Fields={{Name="sin",Value=sin},{Name="pinList",Value=b64str}},Index=0}},Name="list"}},MIN=8,Name="getProperties",SIN=16}
 	local msg = getTerminalResponse(payload, checkPropValResponse)
@@ -904,7 +904,7 @@ function lsf.getPosition(forceNewFix)
 	local age = forceNewFix and 1 or 30
 	payload={Fields={{Name="fixType",Value="3D"},{Name="timeout",Value=cfg.GATEWAY_TIMEOUT},{Name="age",Value=age}},MIN=1,Name="getPosition",SIN=20}
 	gateway.submitForwardMessage(payload)
-	
+
 	local msg = gateway.getReturnMessage(
 		function(msg)
 			if msg == nil then return false end
@@ -921,7 +921,7 @@ end
 -- @string shellCmd shell command to execute
 -- @tparam[opt=false] ?bool needResponse whether to wait for a response to the shell command
 -- @return returns first shell response received if result needed; immediately returns true if result not requested; returns false if result requested but not received
--- @usage 
+-- @usage
 -- -- this prints the output of "mem" command on the terminal; note: since the response contains "%" character, you cannot use framework.trace0 here.
 -- print(lsf.shellCommand("mem", true))
 -- @within lsf
@@ -1011,7 +1011,7 @@ end
 
 --- Configure power service parameters
 -- @usage -- set battery voltage to 15V
--- device.setPower(3, 15000) 
+-- device.setPower(3, 15000)
 -- @tparam number id power service property ID to change (corresponds to PID of power service)
 --
 -- 3 - battery voltage, 4 - battery temp, 8 - external power present
@@ -1120,7 +1120,7 @@ local acceptedKeys = {latitude = gpsSetLocation, longitude = gpsSetLocation, alt
 -- <li>simulateLinearMotion: bool - whether or not the lat/long values change due to movement</li>
 -- </ul>
 -- @param parameters a table of GPS settings
--- @usage 
+-- @usage
 -- -- This sets the speed to 50km/h, heading to East, and updates lat/long according to movement
 -- gps.set({speed=50, heading=90, simulateLinearMotion=true})
 -- @within gps

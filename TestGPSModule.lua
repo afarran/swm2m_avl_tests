@@ -117,6 +117,7 @@ function teardown()
 end
 
 
+
 -------------------------
 -- Test Cases
 -------------------------
@@ -1958,7 +1959,7 @@ end
   --  DiagnosticsInfo message sent after request and fields of the reports have correct values
 function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfoRequestSent_DiagnosticsInfoMessageSent()
 
-  local extVoltage = 15        -- volts
+  local extVoltage = 15000     -- milivolts
   local battVoltage = 24000    -- milivolts
 
   -- gps settings table to be sent to simulator
@@ -1971,9 +1972,12 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   gps.set(gpsSettings)
   framework.delay(3)   --- wait until settings are applied
 
+
   -- setting terminals power properties for verification
-  device.setPower(3, battVoltage)     -- setting battery voltage
-  --device.setPower(9, extVoltage)  -- setting external power voltage  TODO: uncomment in the future setting extVoltage does not work in test framework
+  device.setPower(3, battVoltage) -- setting battery voltage
+  device.setPower(9, extVoltage)  -- setting external power voltage
+
+
 
   gateway.setHighWaterMark() -- to get the newest messages
 
@@ -2012,7 +2016,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(tonumber(temperature[1].value), tonumber(colmsg.Payload.Temperature),1, "Temperature value is wrong in report")
   assert_equal(4518, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")
   assert_equal(99, tonumber(colmsg.Payload.CellRssi), "CellRssi value is wrong in report")
-  assert_equal(24000, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")             -- TODO: add setting extVoltage when issue will be fixed in TestFramework
+  assert_equal(extVoltage, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
   assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
 
 end
