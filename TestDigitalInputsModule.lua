@@ -1,7 +1,7 @@
 -----------
--- IO test module
--- - contains digital input/output related test cases
--- @module TestIOModule
+-- Digital Inputs test module
+-- - contains digital input related test cases
+-- @module TestDigitalInputsModule
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
