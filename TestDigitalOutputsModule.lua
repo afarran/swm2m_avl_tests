@@ -134,7 +134,8 @@ end
 --]]
 
 
---- TC checks if digital output line assiociated with IgnitionOn state is changing according to IgnitionOn state
+
+--- TC checks if digital output line associated with IgnitionOn state is changing according to IgnitionOn state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with IgnitionOn function;
   -- configure port 3 as a digital input and associate this port also with IgnitionOn function;
@@ -146,7 +147,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to IgnitionOn state
-function test_DigitalOutput_WhenTerminalInIgnitionOnState_AssiociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenTerminalInIgnitionOnState_AssociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -195,7 +196,7 @@ end
 
 
 
---- TC checks if digital output line assiociated with Moving state is changing when speed is above Stationary Speed Threshold
+--- TC checks if digital output line associated with Moving state is changing when speed is above Stationary Speed Threshold
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with Moving function; check if state of the line is initially low
   -- simulate speed above Stationary Speed Threshold and check if port 1 changes state to high  immediately (before Moving state
@@ -205,7 +206,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes state when speed is above Stationary Speed Threshold
-function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutputPortAssiociatedWithMovingStateInHighState()
+function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutputPortAssociatedWithMovingStateInHighState()
 
   local movingDebounceTime =  60     -- seconds
   local stationarySpeedThld = 5      -- kmh
@@ -256,7 +257,7 @@ function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutput
 end
 
 
---- TC checks if digital output line assiociated with Speeding state is changing when speed is above defaultSpeedLimit
+--- TC checks if digital output line associated with Speeding state is changing when speed is above defaultSpeedLimit
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with Speeding function; simulate terminal moving and check if state of the line
   -- is low; then simulate speed above defaultSpeedLimit and check if the state of port 1 changes to high; then simulate speed below defaultSpeedLimit
@@ -266,7 +267,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes when speed above defaultSpeedLimit
-function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAssiociatedWithSpeedingInHighState()
+function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAssociatedWithSpeedingInHighState()
 
   local movingDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5     -- kmh
@@ -327,8 +328,8 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
 
 end
 
---]]
---- TC checks if digital output line assiociated with Idling state is changing according to EngineIdling state
+
+--- TC checks if digital output line associated with Idling state is changing according to EngineIdling state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with Idling function;
   -- configure port 3 as a digital input and associate this port with IgnitionOn function;
@@ -341,7 +342,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to EngineIdling state
-function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssiociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssociatedDigitalOutputPortInHighState()
 
   local maxIdlingTime =  30 -- seconds
 
@@ -399,7 +400,7 @@ function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssiociatedDigitalOu
 end
 
 
---- TC checks if digital output line assiociated with SM1 state is changing according to SM1 state
+--- TC checks if digital output line associated with SM1 state is changing according to SM1 state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with SM1 function;
   -- configure port 3 as a digital input and associate this port with SM1Active function;
@@ -411,7 +412,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM1 state
-function test_DigitalOutput_WhenServiceMeter1IsON_AssiociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter1IsON_AssociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -452,7 +453,7 @@ function test_DigitalOutput_WhenServiceMeter1IsON_AssiociatedDigitalOutputPortIn
 end
 
 
---- TC checks if digital output line assiociated with SM2 state is changing according to SM2 state
+--- TC checks if digital output line associated with SM2 state is changing according to SM2 state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with SM2 function;
   -- configure port 3 as a digital input and associate this port with SM2Active function;
@@ -464,7 +465,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM2 state
-function test_DigitalOutput_WhenServiceMeter2IsON_AssiociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter2IsON_AssociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -505,7 +506,7 @@ function test_DigitalOutput_WhenServiceMeter2IsON_AssiociatedDigitalOutputPortIn
 end
 
 
---- TC checks if digital output line assiociated with SM3 state is changing according to SM3 state
+--- TC checks if digital output line associated with SM3 state is changing according to SM3 state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with SM3 function;
   -- configure port 3 as a digital input and associate this port with SM3Active function;
@@ -517,7 +518,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM3 state
-function test_DigitalOutput_WhenServiceMeter3IsON_AssiociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter3IsON_AssociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -558,7 +559,7 @@ function test_DigitalOutput_WhenServiceMeter3IsON_AssiociatedDigitalOutputPortIn
 end
 
 
---- TC checks if digital output line assiociated with SM4 state is changing according to SM4 state
+--- TC checks if digital output line associated with SM4 state is changing according to SM4 state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with SM4 function;
   -- configure port 3 as a digital input and associate this port with SM4Active function;
@@ -570,7 +571,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM4 state
-function test_DigitalOutput_WhenServiceMeter4IsON_AssiociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -611,10 +612,10 @@ function test_DigitalOutput_WhenServiceMeter4IsON_AssiociatedDigitalOutputPortIn
 end
 
 
---- TC checks if 2 digital outputs assiociated with Moving and SM1 are changing according to speed value and SM1 state
+--- TC checks if 2 digital outputs associated with Moving and SM1 are changing according to speed value and SM1 state
   -- *actions performed:
   -- configure port 3 as a digital input and associate this port with SM4Active function;
-  -- configure port 1 as a digital output and associate this port with Moving function; configure port 1 as a digital output
+  -- configure port 1 as a digital output and associate this port with Moving function; configure port 2 as a digital output
   -- and associate this port with SM1 function; check if state of both lines are initially low
   -- simulate terminal moving and check if the state of port 1 changes to high; then simulate SM1 = ON and check if port 2 changes
   -- state to high; go back to stationary state and SM = OFF and check if both ports are back to low state
@@ -623,7 +624,7 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 and port 2 states change according to speed and SM1 state
-function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_AssiociatedDigitalOutputPortsInHighState()
+function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_AssociatedDigitalOutputPortsInHighState()
 
   local movingDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5     -- kmh
@@ -692,6 +693,83 @@ function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_Assioc
 
   -- asserting state of port 2 - low state is expected - SM1 = OFF
   assert_equal(0, device.getIO(2), "Port2 associated with digital output line 2 is not in low state as expected")
+
+
+end
+
+
+--- TC checks if digital output associated with SeatbeltViolation is changing state when terminal is in Moving state and driver unfastens belt
+  -- configure port 1 as a digital output and associate this port with Seatbelt Violation function; configure port 2 as a digital input and
+  -- associate this port with SeatbeltOff function; simulate terminal in Moving state and check if port 1 still is in low state; then simulate
+  -- port 2 change to high level (driver unfastens seatbelt) and check if- port 1 changes state to high level;
+  -- in the end simulate port 2 change to low level (driver fastens seatbelt) and check if port 1 changes
+  -- back to low state;
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 associated with SeatbeltViolation function changes state according to SeatbeltOff line
+function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_DigitalOutputPortAssociatedWithSeatBeltViolationInHighState()
+
+  local movingDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5     -- kmh
+  local stationaryDebounceTime = 1  -- seconds
+  local seatbeltDebounceTime = 30   -- seconds
+
+  -- gpsSettings to be used in TC
+  local gpsSettings={
+              speed = stationarySpeedThld+10 ,   -- speed above threshold, terminal in moving state
+              latitude = 1,                      -- degrees
+              longitude = 1,                     -- degrees
+              fixType=3,                         -- valid fix provided
+                     }
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+                                                {avlPropertiesPINs.port2Config, 3},      -- port 2 as digital input
+                                                {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SeatbeltViol"]},   -- digital output line number 1 set for SeatbeltViolation function
+                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- digital input line number 2 set for SeatbeltOff function
+                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},                  -- moving related
+                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},                -- moving related
+                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime},              -- moving related
+                                             }
+                   )
+  -- activating special input and output functions
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+
+  -- asserting state of port 1 - low state is expected as terminal is not moving yet and seatbelt is fastened
+  assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
+
+  -- terminal should be put in the moving state
+  local gpsSettings={
+              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
+              fixType = 3,                    -- valid fix provided
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+3)
+
+  -- asserting state of port 1 - low state is expected as terminal moving but seatbelt is fastened
+  assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
+
+  device.setIO(2, 1)                            --  port 2 to high level - that triggers SeatbeltOff
+  framework.delay(seatbeltDebounceTime-20)      --  wait shorter than seatbeltDebounceTime not to get SeatbeltViolation state
+
+  -- asserting state of port 1 - high state is expected as - terminal moving and  seatbelt is unfastened
+  assert_equal(1, device.getIO(1), "Port1 associated with seatbeltViolation is not in high state as expected")
+
+  device.setIO(2, 0)     --  port 2 to low level - that triggers SeatbeltOff false
+  framework.delay(3)      -- wait until message is processed
+
+  -- asserting state of port 1 - low state is expected as - SeatBelt fastened
+  assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
 
 
 end
