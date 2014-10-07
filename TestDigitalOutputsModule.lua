@@ -329,22 +329,33 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
 end
 
 
---- TC checks if digital output line associated with Idling state is changing according to EngineIdling state
+--- TC checks if digital output line associated with Idling state is active when terminal is stationary and ignition is switched on
   -- *actions performed:
-  -- configure port 1 as a digital output and associate this port with Idling function;
-  -- configure port 3 as a digital input and associate this port with IgnitionOn function;
-  -- set the high state of the port 3 to be a trigger for line activation; check if initial state of port 1 is low;
-  -- simulate port 3 value change to high state to trigger IgnitionOn; wait for time longer than maxIdlingTime and check
-  -- if terminal goes into Idling state; when terminal Idling check if port 1 value has changed to high state;
-  -- then set port 3 to low level - that triggers IgnitionOff and IdlingEnd - after that check if port 1 output is low again
+  -- configure port 1 as a digital output and associate this port with Idling function; configure port 3 as a digital input and
+  -- associate this port with IgnitionOn function; set the high state of the port 3 to be a trigger for line activation; for terminal in stationary
+  -- state check if initial state of port 1 is low; simulate port 3 value change to high state to trigger IgnitionOn; wait for time shorter
+  -- than maxIdlingTime and check if port 1 value has changed to high state; then set port 3 to low level - that triggers IgnitionOff and
+  -- check if port 1 output is low again; in the end simulate ignition = on (port 3 high) but terminal in moving state - port 1 is expected to be
+  -- in low state then (no idling)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
-  -- port 1 state changes according to EngineIdling state
-function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssociatedDigitalOutputPortInHighState()
+  -- port 1 is high when terminal is stationary and ignition is switched on
+function test_DigitalOutput_WhenTerminalStationaryAndIgnitionIsOn_DigitalOutputPortAssociatedWithIdlingInHighState()
 
-  local maxIdlingTime =  30 -- seconds
+  local maxIdlingTime =  30          -- seconds
+  local movingDebounceTime =  1      -- seconds
+  local stationarySpeedThld = 5      -- kmh
+
+  -- gpsSettings to be used in TC
+  local gpsSettings={
+              speed = stationarySpeedThld+10 ,   -- speed above threshold
+              latitude = 1,                      -- degrees
+              longitude = 1,                     -- degrees
+              fixType=3,                         -- valid fix provided
+                     }
+
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -367,35 +378,34 @@ function test_DigitalOutput_WhenTerminalInEngineIdlingState_AssociatedDigitalOut
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
 
-  -- asserting state of port 1 - low state is expected as terminal is not Idling yet
-  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+  -- asserting state of port 1 - low state is expected as terminal is not moving but ignition is off
+  assert_equal(0, device.getIO(1), "Port1 associated with Idling is not in low state as expected")
 
+  device.setIO(3, 1)                   -- port 3 to high level - that should trigger ignition on
+  framework.delay(maxIdlingTime-25)    -- wait shorter than maxIdlingTime, not to get EngineIdling state
 
-  device.setIO(3, 1)                   -- port 3 to high level - that should trigger IgnitionOn
+  -- asserting state of port 1 - high state is expected - terminal not moving and ignition is on
+  assert_equal(1, device.getIO(1), "Port1 associated with Idling is not in high state as expected")
+
+  device.setIO(3, 0)     -- port 3 to low level - that should trigger ignition off
+  framework.delay(4)     -- wait until IgnitionOff message is processed
+
+  -- asserting state of port 1 - low state is expected - terminal not moving but ignition is off again
+  assert_equal(0, device.getIO(1), "Port1 associated with Idling not in low state as expected")
+
+  device.setIO(3, 1)                   -- port 3 to high level - that should trigger ignition on
   framework.delay(maxIdlingTime-25)    -- wait shorter than maxIdlingTime
 
-  -- asserting state of port 1 - low state is expected as terminal is not Idling yet
-  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+  -- asserting state of port 1 - high state is expected - terminal not moving and ignition is on
+  assert_equal(1, device.getIO(1), "Port1 associated with Idling is not in high state as expected")
 
-  framework.delay(maxIdlingTime+2)    -- wait longer than maxIdlingTime
+  -- now put terminal in moving state and check if Idling output line becomes low
+  gps.set(gpsSettings) -- applying settings of gps simulator to make terminal moving
+  framework.delay(movingDebounceTime+gpsReadInterval+3) -- wait until terminal becomes moving
 
-  -- verification of the state of terminal - Idling state true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the Idling state as expected")
+  -- asserting state of port 1 - low state is expected - ignition is on but terminal is not moving
+  assert_equal(0, device.getIO(1), "Port1 associated with Idling not in low state as expected")
 
-  -- asserting state of port 1 - high state is expected - terminal in Idling state
-  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
-
-  device.setIO(3, 0)     -- port 3 to high level - that should trigger IgnitionOn
-  framework.delay(4)     -- wait until terminal goes into Idling false state
-
-
-  -- verification of the state of terminal - Idling false expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the Idling state")
-
-  -- asserting state of port 1 - low state is expected - terminal non speeding
-  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
 end
 
@@ -701,9 +711,9 @@ end
 --- TC checks if digital output associated with SeatbeltViolation is changing state when terminal is in Moving state and driver unfastens belt
   -- configure port 1 as a digital output and associate this port with Seatbelt Violation function; configure port 2 as a digital input and
   -- associate this port with SeatbeltOff function; simulate terminal in Moving state and check if port 1 still is in low state; then simulate
-  -- port 2 change to high level (driver unfastens seatbelt) and check if- port 1 changes state to high level;
-  -- in the end simulate port 2 change to low level (driver fastens seatbelt) and check if port 1 changes
-  -- back to low state;
+  -- port 2 change to high level (driver unfastens seatbelt) and check if port 1 changes state to high level; simulate port 2 change to low level
+  -- (driver fastens seatbelt) and check if port 1 changes back to low state; in the end set SeatbeltOff back to high level again but set speed to
+  -- 0 (terminal stationary) and check if Seatbelt Violation line is not high in this case
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
@@ -770,6 +780,20 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
 
   -- asserting state of port 1 - low state is expected as - SeatBelt fastened
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
+
+  -- SeatbeltOff high again
+  device.setIO(2, 1)                            --  port 2 to high level - that triggers SeatbeltOff
+  framework.delay(seatbeltDebounceTime-20)      --  wait shorter than seatbeltDebounceTime not to get SeatbeltViolation state
+
+  -- checking if the Seatbelt Violation line is not active when SeatbeltOff is active but terminal is not moving
+  gpsSettings.speed = 0  -- terminal stationary
+  gps.set(gpsSettings)   -- applying gps settings
+  framework.delay(stationaryDebounceTime+gpsReadInterval+2) -- wait until terminal is stationary
+
+
+  -- asserting state of port 1 - low state is expected as - SeatBelt fastened
+  assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
+
 
 
 end
