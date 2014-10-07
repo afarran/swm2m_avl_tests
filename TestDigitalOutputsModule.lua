@@ -38,6 +38,22 @@ function suite_setup()
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
+
+  -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
+  -- for more details please go to Geofences.jpg file in Documentation
+  local message = {SIN = 24, MIN = 1}
+	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5) -- to make sure file is saved
+
+  -- restaring geofences service, that action is necessary after sending new fences.dat file
+  local message = {SIN = 16, MIN = 5}
+	message.Fields = {{Name="sin",Value=21}}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5) -- wait until geofences service is up again
+
 end
 
 
@@ -74,9 +90,11 @@ function setup()
   local stationarySpeedThld = 5         -- kmh
   -- gps settings table
   local gpsSettings={
-              speed = 0,
-              fixType=3,
-              heading = 90,
+              speed = 0,        -- kmh, terminal not moving
+              fixType=3,        -- valid fix provided
+              latitude = 1,     -- degrees
+              longitude = 1,    -- degrees
+              heading = 90,     -- degrees
                      }
 
   --setting properties of the service
@@ -668,12 +686,12 @@ function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_Associ
   -- activating special output function
   avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1","FuncDigOut2"})
-  framework.delay(gpsReadInterval+2)                 -- wait until settings are applied
+  framework.delay(2)                 -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected as terminal is not moving yet
-  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+  assert_equal(0, device.getIO(1), "Port1 associated with Moving is not in low state as expected")
   -- asserting state of port 2 - low state is expected as SM1 is not ON yet
-  assert_equal(0, device.getIO(2), "Port2 associated with digital output line 2 is not in low state as expected")
+  assert_equal(0, device.getIO(2), "Port2 associated with SM1 is not in low state as expected")
 
   -- applying gps settings to simulate speed above stationarySpeedThld
   gps.set(gpsSettings)
@@ -792,6 +810,91 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
   -- asserting state of port 1 - low state is expected as - SeatBelt fastened
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
 
+end
+
+
+
+
+--- TC checks if digital output associated with GeoDwelling changes its state when terminal enters geofence with defined DwellTime
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with GeoDwelling function; set DwellTime for geofence 2 to 10 minutes;
+  -- intially terminal is stationary outside any of the geofences - check if port 1 has low state; than simulate terminal moving inside
+  -- geofence 2 and check if port changes its value to high before DwellTime (10 minutes); then simulate terminal moving outside of the
+  -- geofence 2 and check if port changes its value back to low level
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state; fences.dat containing test geofences
+  -- sent to terminal
+  -- *expected results:
+  -- port 1 set to high state when terminal inside geofence with defined DwellTime
+function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDefinedDwellTime_DigitalOutputPortAssociatedWithGeoDwellingInHighState()
+
+  local movingDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5     -- kmh
+  local geofenceEnabled = true      -- to enable geofence feature
+  local geofenceInterval = 10       -- in seconds
+  local geofenceHisteresis = 1      -- in seconds
+  local geofence2DwellTime = 10      -- in minutes
+
+  -- setting ZoneDwellTimes for geofence 2
+  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}}}},}
+	gateway.submitForwardMessage(message)
+
+  -- gps settings table to be sent to simulator
+  local gpsSettings={
+              speed = stationarySpeedThld+10,  -- kmh, 10 kmh above stationary threshold
+              heading = 90,                    -- degrees
+              latitude = 50.5,                 -- degrees, that is inside geofence 2
+              longitude = 4.5,                 -- degrees, that is inside geofence 2
+              simulateLinearMotion = false,
+                     }
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                            {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+                                        }
+                   )
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
+                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},                 -- moving related
+                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},               -- moving related
+                                             }
+                   )
+  -- activating special output function
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2) -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
+  assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
+
+  gps.set(gpsSettings)                -- applying gps settings, terminal moving inside geofence 2 (DwellTime 10 minutes)
+  framework.delay(gpsReadInterval+geofenceInterval+10)  -- wait until settings are applied
+
+  -- asserting state of port 1 - high state is expected as terminal is inside geofence 2 (with defined DwellTime)
+  assert_equal(1, device.getIO(1), "Port1 associated with GeoDwelling is not in high state as expected")
+
+   -- changing gps settings - terminal outside any of the geofences
+  gpsSettings={
+               latitude = 1,      -- degrees, that is outside any of the geofences
+               longitude = 1,     -- degrees, that is outside any of the geofences
+              }
+
+  gps.set(gpsSettings)                -- applying gps settings
+  framework.delay(gpsReadInterval+geofenceInterval+10)  -- wait until settings are applied
+
+  -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
+  assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
 
 
 end
