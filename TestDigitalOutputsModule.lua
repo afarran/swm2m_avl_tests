@@ -42,7 +42,8 @@ function suite_setup()
   -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
   -- for more details please go to Geofences.jpg file in Documentation
   local message = {SIN = 24, MIN = 1}
-	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},{Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
+	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},
+  {Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
 	gateway.submitForwardMessage(message)
 
   framework.delay(5) -- to make sure file is saved
@@ -899,8 +900,6 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDefinedDwellTime
 end
 
 
-
-
 --- TC checks if digital output line associated with LowPower is changing when lpmTrigger is true
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with LowPower function; configure port 3 as
@@ -973,8 +972,24 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   assert_equal(0, device.getIO(1), "Port1 associated with LowPower is not in low state as expected")
 
 
-
 end
+
+
+--[[
+
+TODO:
+TCs for digital outputs associated with following functions:
+
+- LowPower -- onBattery as the LpmTrigger
+- MainPower
+- Towing"
+- GpsJammed
+- CellJammed
+- Tamper
+- AirBlocked
+- LoggedIn
+- AntCut
+--]]
 
 
 --[[Start the tests]]
