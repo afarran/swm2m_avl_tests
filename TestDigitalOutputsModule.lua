@@ -152,7 +152,6 @@ end
 --]]
 
 
-
 --- TC checks if digital output line associated with IgnitionOn state is changing according to IgnitionOn state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with IgnitionOn function;
@@ -899,6 +898,83 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDefinedDwellTime
 
 end
 
+
+
+
+--- TC checks if digital output line associated with LowPower is changing when lpmTrigger is true
+  -- *actions performed:
+  -- configure port 1 as a digital output and associate this port with LowPower function; configure port 3 as
+  -- a digital input and associate this port with IgnitionOn function; set the high state of the port 3 to
+  -- be a trigger for line activation; set lpmEntryDelay to 10 minutes and IgnitionOff as the trigger of low power mode;
+  -- simulate port 3 value change to high state and check if port 1 state is low (lpmTrigger is not active); change port 3
+  -- value to low state to trigger IgnitionOff and check if port 1 state immediately becomes high (lpmTrigger is active);
+  -- then change port 3 back to high state to trigger IgnitionOn and check if port 1 goes back to low state (lpmTrigger is not active);
+  -- *initial conditions:
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
+  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- *expected results:
+  -- port 1 state changes according to lpmTrigger state
+function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitionOnFalseState_DigitalOutputPortAssociatedWithLowPowerInHighState()
+
+  local lpmEntryDelay = 10   -- time of lpmEntryDelay, in minutes
+  local lpmTrigger = 1       -- 1 is for IgnitionOff
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
+                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+
+
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["LowPower"]},    -- digital output line number 1 set for LowPower function
+                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},  -- digital input line number 3 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                        -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, lpmTrigger},
+                                             }
+                   )
+  -- activating special input and output functions
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
+  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
+  assert_equal(0, device.getIO(1), "Port1 associated with LowPower is not in low state as expected")
+
+  device.setIO(3, 0)                 -- port 3 to low level - that should trigger IgnitionOff (that is lpmTrigger)
+  framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
+
+  -- verification of the state of terminal - IgnitionOn false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- asserting state of port 1 - high state is expected - Ignition is off
+  assert_equal(1, device.getIO(1), "Port1 associated with LowPower is not in high state as expected")
+
+  -- back to IgnitionOn state
+  device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
+  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
+  assert_equal(0, device.getIO(1), "Port1 associated with LowPower is not in low state as expected")
+
+
+
+end
 
 
 --[[Start the tests]]
