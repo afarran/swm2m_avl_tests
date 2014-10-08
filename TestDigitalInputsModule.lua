@@ -72,6 +72,7 @@ function setup()
 
   local stationaryDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5         -- kmh
+
   -- gps settings table
   local gpsSettings={
               speed = 0,
@@ -83,9 +84,9 @@ function setup()
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                               {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
                                               {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
-
                                              }
                     )
+
 
   -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
   gps.set(gpsSettings) -- applying settings of gps simulator
@@ -132,8 +133,6 @@ end
     Each test case is a global function whose name begins with "test"
 
 --]]
-
-
 
 --- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
   -- *actions performed:
@@ -195,6 +194,87 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
 end
+
+
+
+
+--- TC checks if IgnitionOn message is sent when port 1 changes to low state for DigStatesDefBitmap = 0
+  -- Initial Conditions:
+  --
+  -- * Port 1 set to digital input and associated with IgnitionOn function
+  -- * DigStatesDefBitmap = 0
+  -- * GPS signal is good
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Port 1 state changes from high to low
+  -- Results:
+  --
+  -- 1. Receive IgnitionOn message
+  -- 2. Validate that message fields
+ function test_Ignition_WhenPortValueChangesToLowForDigStatesDefBitmapSetToZero_IgnitionOnMessageSent()
+
+  local digStatesDefBitmap = 0          -- DigStatesDefBitmap set to 0
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                     }
+
+  gps.set(gpsSettings)
+  framework.delay(2)
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.digStatesDefBitmap, digStatesDefBitmap}
+                                             }
+                   )
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  device.setIO(1, 1)                 -- port 1 to high level
+  framework.delay(2)
+  device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOn
+  timeOfEventTC = os.time()          -- exact time of event occurence
+  framework.delay(2)
+
+  --IgnitionOn message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IgnitionOn",
+                  currentTime = timeOfEventTC
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionOn true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  -- following code is only not to make problems with setup function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})  -- setting bitmap to make high state the trigger of ignitionON
+  framework.delay(2)
+  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOff
+  framework.delay(2)
+  device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOff
+
+
+
+end
+
 
 
 --- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
