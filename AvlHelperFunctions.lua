@@ -288,5 +288,41 @@ end
 
 
 
+--- Function puts terminal into moving state
+-- @usage
+-- avlHelperFunctions.putTerminalIntoMovingState()
+-- @within AvlhelperFunctions
+function avlHelperFunctions.putTerminalIntoMovingState()
+
+  local movingDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5     -- kmh
+
+  --setting properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                              {avlPropertiesPINs.movingDebounceTime, movingDebounceTime}
+                                             }
+                    )
+
+  -- gps settings table
+  local gpsSettings={
+              speed = stationarySpeedThld+5,   -- kmh
+              fixType= 3,
+                     }
+
+  -- set the speed above stationarySpeedThld and wait longer than movingDebounceTime
+  gps.set(gpsSettings) -- applying settings of gps simulator
+  framework.delay(movingDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  -- assertion gives the negative result if terminal does not change the moving state to true
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
+
+
+end
+
+
+
+
 
 return function() return avlHelperFunctions end
