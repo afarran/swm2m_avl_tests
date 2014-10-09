@@ -17,16 +17,22 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
 -- Setup and Teardown
 -------------------------
 
---- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
- -- executed before each test suite
- -- * actions performed:
- -- lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
- -- function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
- -- *initial conditions:
- -- running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
- -- GPS Web Service switched on
- -- *Expected results:
- -- lpmTrigger set correctly and terminal is not in the Low Power mode
+
+--- Suite setup function sets LpmTrigger to 0 and checks if terminal is not in LPM (executed before each test suite  .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmTrigger (PIN 31)
+  -- 4. Assert if terminal is not in LPM
+  --
+  -- Results:
+  --
+  -- 1. Terminal not in LPM
 function suite_setup()
 
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
@@ -40,7 +46,21 @@ function suite_setup()
 
 end
 
--- executed after each test suite
+
+--- Teardown function sets LpmTrigger to 0 (executed after each test case)  .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmTrigger (PIN 31)
+  --
+  -- Results:
+  --
+  -- 1. LpmTrigger (PIN 31) set
 function teardown()
 
 -- terminal should be put out of the low power mode after each test case
@@ -59,12 +79,11 @@ function suite_teardown()
 end
 
 
-
 --- Setup function puts terminal into stationary state, configures gpsReadInterval, sets all ports to low level and checks if terminal is not in LPM and IgnitionOn state .
   -- Initial Conditions:
   --
   -- * Running Terminal Simulator
-  -- * Webservices: Device, GPS, Gateway  running
+  -- * Webservices: Device, GPS, Gateway running
   -- * Air communication not blocked
   --
   -- Steps:
@@ -73,6 +92,7 @@ end
   -- 2. Put terminal into stationary state
   -- 3. Set all ports to low level
   -- 4. Assert if terminal not in LPM and IgnitionOn mode
+  --
   -- Results:
   --
   -- 1. Terminal not in LPM and IgnitionOn state
@@ -115,17 +135,15 @@ end
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
   -- Initial Conditions:
   --
-  -- * Terminal not in the LPM
-  -- * IgnitonOn is false
-  -- * Port set as digital input and associated with IgnitionOn function
+  -- * Terminal in LPM and IgnitionOn
   -- * LpmTrigger (PIN 31) set to IgnitionOff
   -- * Air communication not blocked
   --
   -- Steps:
   --
-  -- 1. Put terminal to IgnitionOn state
-  -- 2. Trigger IgnitionOff (MIN 5)
-  -- 3. Stay in IgnitionOff longer than LpmEntryDelay (PIN 32)
+  -- 1. Trigger IgnitionOff (MIN 5)
+  -- 2. Stay in IgnitionOff longer than LpmEntryDelay (PIN 32)
+  --
   -- Results:
   --
   -- 1. Terminal enters LPM after LpmEntryDelay
@@ -180,7 +198,6 @@ end
   --
   -- * Terminal not in the LPM
   -- * IgnitonOn is false
-  -- * Port set as digital input and associated with IgnitionOn function
   -- * LpmTrigger (PIN 31) set to IgnitionOff
   -- * Air communication not blocked
   --
@@ -189,6 +206,7 @@ end
   -- 1. Put terminal to IgnitionOn state
   -- 2. Trigger IgnitionOff (MIN 5)
   -- 3. Stay in IgnitionOff shorter than LpmEntryDelay (PIN 32)
+  --
   -- Results:
   --
   -- 1. Terminal does not enter LPM after LpmEntryDelay
@@ -241,28 +259,10 @@ function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEnt
 end
 
 
---- TC checks if terminal is put out of Low Power Mode if the trigger of LPM is set to IgnitionOff and
-  -- IgnitionOn state becomes true
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line (funcDigInp1 = 2)
-  -- set the high state of the port to be a trigger for line activation (digStatesDefBitmap = 3);
-  -- set lpmEntryDelay to one minute and IgnitionOff as the trigger of low power mode;
-  -- simulate port 1 value change to high state and check if terminal entered IgnitionOn state
-  -- then simulate port 1 value change to low state and check if terminal entered IgnitionOff state
-  -- wait for time longer than lpmEntryDelay and check if after this period terminal is not in Low Power Mode
-  -- after that simulate IgnitionOn and check if terminal is put out of the Low Power Mode
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal correctly put out of the Low Power Mode
-
-
 --- TC checks if terminal is put out of Low Power Mode if the trigger of LPM is set to IgnitionOff and IgnitionOn state becomes true .
   -- Initial Conditions:
   --
   -- * Terminal in LPM
-  -- * Port set as digital input and associated with IgnitionOn function
   -- * LpmTrigger (PIN 31) set to IgnitionOff
   -- * Air communication not blocked
   --
