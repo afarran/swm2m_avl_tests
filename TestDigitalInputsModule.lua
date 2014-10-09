@@ -198,34 +198,35 @@ end
 
 
 
---- TC checks if IgnitionOn message is sent when port 1 changes to low state for DigStatesDefBitmap = 0
+--- TC checks if IgnitionOn message is sent when digital input port changes to low state for DigStatesDefBitmap = 0 .
   -- Initial Conditions:
   --
-  -- * Port 1 set to digital input and associated with IgnitionOn function
-  -- * DigStatesDefBitmap = 0
+  -- * Port configured as digital input and associated it with IgnitionOn function
+  -- * DigStatesDefBitmap set to 0
   -- * GPS signal is good
   -- * Air communication not blocked
   --
   -- Steps:
   --
-  -- 1. Port 1 state changes from high to low
+  -- 1. Set GPS position to Point#1
+  -- 2. Port state changes from high to low
   -- Results:
   --
-  -- 1. Receive IgnitionOn message
-  -- 2. Validate that message fields
- function test_Ignition_WhenPortValueChangesToLowForDigStatesDefBitmapSetToZero_IgnitionOnMessageSent()
+  -- 1. Receive IgnitionOn message (MIN 4)
+  -- 2. Validate that message fields contain Point#1 and time information
+ function test_Ignition_WhenPortValueChangesFromHighToLowForDigStatesDefBitmapSetToZero_IgnitionOnMessageSent()
 
   local digStatesDefBitmap = 0          -- DigStatesDefBitmap set to 0
 
-  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  -- Point#1 gps settings
   local gpsSettings={
-              speed = 0,                      -- terminal in stationary state
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              speed = 0,                  -- terminal in stationary state
+              latitude = 1,               -- degrees
+              longitude = 1,              -- degrees
+              fixType = 3,                -- valid fix provided,
                      }
 
-  gps.set(gpsSettings)
+  gps.set(gpsSettings)             -- applying gps settings
   framework.delay(2)
 
   -- setting the EIO properties
@@ -246,7 +247,7 @@ end
   device.setIO(1, 1)                 -- port 1 to high level
   framework.delay(2)
   device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOn
-  timeOfEventTC = os.time()          -- exact time of event occurence
+  timeOfEventTC = os.time()          -- get the exact time of event occurence
   framework.delay(2)
 
   --IgnitionOn message expected
@@ -270,7 +271,6 @@ end
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOff
   framework.delay(2)
   device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOff
-
 
 
 end
