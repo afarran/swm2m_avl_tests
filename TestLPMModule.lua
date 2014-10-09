@@ -59,54 +59,35 @@ function suite_teardown()
 end
 
 
---- setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval, sets all 4 ports to low state
-  -- and checks if terminal is not in the IgnitionOn state
-  -- executed before each unit test
-  -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
-  -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
-  -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
-  -- set all 4 ports to low state and check if terminal is not in the IgnitionOn state
-  -- *initial conditions:
-  -- terminal not in the low power mode
-  -- *expected results:
-  -- terminal correctly put in the stationary state and IgnitionOn false state
-function setup()
 
-  lsf.setProperties(20,{
-                        {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
-                                                 -- gps will be read every gpsReadInterval (in seconds)
-                      }
-                    )
+--- Setup function puts terminal into stationary state, configures gpsReadInterval, sets all ports to low level and checks if terminal is not in LPM and IgnitionOn state .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway  running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set gpsReadInterval (PIN 15) in Position service (SIN 20)
+  -- 2. Put terminal into stationary state
+  -- 3. Set all ports to low level
+  -- 4. Assert if terminal not in LPM and IgnitionOn mode
+  -- Results:
+  --
+  -- 1. Terminal not in LPM and IgnitionOn state
+ function setup()
 
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  -- gps settings table
-  local gpsSettings={
-              speed = 0,
-              fixType=3,
-              heading = 90,
-                     }
-
-  --setting properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime}
+  lsf.setProperties(avlAgentCons.positionSIN,{
+                                              {avlPropertiesPINs.gpsReadInterval,gpsReadInterval}     -- setting the continues mode interval of position service
                                              }
                     )
 
-  -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
-
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
   -- setting all 4 ports to low stare
-  for i = 1, 4, 1 do
-  device.setIO(i, 0)
+  for counter = 1, 4, 1 do
+    device.setIO(counter, 0)
   end
   framework.delay(3)
 
@@ -158,6 +139,7 @@ function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEn
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                                 {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function

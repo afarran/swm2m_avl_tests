@@ -61,7 +61,7 @@ avlPropertiesPINs = {
       funcDigOut3 = 119,
       funcDigOut4 = 120,
       funcDigOut5 = 120,
-
+      gpsReadInterval = 15,
 
 
 

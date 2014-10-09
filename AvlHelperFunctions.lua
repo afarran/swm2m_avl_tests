@@ -252,6 +252,41 @@ end
 
 
 
+--- Function puts terminal into stationary state
+-- @usage
+-- avlHelperFunctions.putTerminalIntoStationaryState()
+-- @within AvlhelperFunctions
+function avlHelperFunctions.putTerminalIntoStationaryState()
+
+  local stationaryDebounceTime = 1      -- seconds
+  local stationarySpeedThld = 5         -- kmh
+
+
+  --setting properties of the service
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
+                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime}
+                                             }
+                    )
+
+  -- gps settings table
+  local gpsSettings={
+              speed = 0,
+              fixType= 3,
+                     }
+
+  -- set the speed to zero and wait for stationaryDebounceTime
+  gps.set(gpsSettings) -- applying settings of gps simulator
+  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
+
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  -- assertion gives the negative result if terminal does not change the moving state to false
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in stationary state as expected")
+
+
+end
+
+
 
 
 return function() return avlHelperFunctions end

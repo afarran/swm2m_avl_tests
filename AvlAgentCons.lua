@@ -8,6 +8,7 @@ avlAgentCons = {
              digitalStatesNames = {"IgnitionON", "SeatbeltOFF", "SM1Active", "SM2Active", "SM3Active", "SM4Active" },
              EioSIN = 25,
              geofenceSIN = 21,
+             positionSIN = 20,
              coldFixDelay = 40,
              funcDigInp = { ["Disabled"] = 0, ["GeneralPurpose"] = 1, ["IgnitionOn"] = 2, ["SeatbeltOff"] = 3, ["IgnitionAndSM0"] = 4,
                             ["SM1"] = 5, ["SM2"] = 6, ["SM3"] = 7, ["SM4"] = 8},
