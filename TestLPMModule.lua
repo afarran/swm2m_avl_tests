@@ -131,7 +131,7 @@ end
   -- 1. Terminal enters LPM after LpmEntryDelay
 function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEntryDelay_TerminalPutToLowPowerMode()
 
-  local lpmEntryDelay = 1 -- time of lpmEntryDelay, in minutes
+  local lpmEntryDelay = 1    -- in minutes
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -174,23 +174,27 @@ function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEn
 end
 
 
---- TC checks if terminal is not put into Low Power Mode if the trigger of LPM is set to IgnitionOff and
-  -- the trigger is active for period below the lpmEntryDelay time
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- (funcDigInp1 = 2), set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); set lpmEntryDelay to one minute and IgnitionOff as the trigger of low power mode;
-  -- simulate port 1 value change to high state and check if terminal entered IgnitionOn state
-  -- then simulate port 1 value change to low state and check if terminal entered IgnitionOff state
-  -- wait for time shorter than lpmEntryDelay and check if  terminal is not put in Low Power Mode
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal not put in the Low Power Mode
-function test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEntryDelayTerminalNotPutToLowPowerMode()
 
-  local lpmEntryDelay = 1 -- time of lpmEntryDelay, in minutes
+--- TC checks if terminal is not put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true shorter than lpmEntryDelay .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in the LPM
+  -- * IgnitonOn is false
+  -- * Port set as digital input and associated with IgnitionOn function
+  -- * LpmTrigger (PIN 31) set to IgnitionOff
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Put terminal to IgnitionOn state
+  -- 2. Trigger IgnitionOff (MIN 5)
+  -- 3. Stay in IgnitionOff shorter than LpmEntryDelay (PIN 32)
+  -- Results:
+  --
+  -- 1. Terminal does not enter LPM after LpmEntryDelay
+function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEntryDelay_TerminalNotPutToLowPowerMode()
+
+  local lpmEntryDelay = 1    -- minutes
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -200,16 +204,17 @@ function test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEnt
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},                    -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},             -- high state is expected to trigger Ignition on
-                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},      -- time of lpmEntryDelay, in minutes
-                                                {avlPropertiesPINs.lpmTrigger, 1},                     -- 1 is for Ignition Off
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 1},                                    -- 1 is for Ignition Off
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
 
 
-  device.setIO(1, 1) -- that should trigger IgnitionOn
+  device.setIO(1, 1)  -- port transition to high state; that should trigger IgnitionOn
   framework.delay(2)
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
@@ -217,17 +222,21 @@ function test_LPM_whenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEnt
 
   gateway.setHighWaterMark()         -- to get the newest messages
   device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
-  framework.delay(5)                 -- wait for the change of state
+  framework.delay(2)                 -- wait for the change of state
 
   -- checking if terminal correctly goes to IgnitionOn false state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- waiting for time shorter than lpmEntryDelay, terminal should not go to LPM after this period
-  framework.delay(5)
+  framework.delay(lpmEntryDelay*60-40)
   -- checking the state of terminal - Low Power Mode not expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
+
+  device.setIO(1, 0)                 -- port transition to high state; that should trigger IgnitionOn
+  framework.delay(5)                 -- wait for the change of state
+
 
 end
 
@@ -247,9 +256,26 @@ end
   -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put out of the Low Power Mode
-function test_LPM_whenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrueTerminalPutOutOfLowPowerMode()
 
-  local lpmEntryDelay = 1 -- time of lpmEntryDelay, in minutes
+
+--- TC checks if terminal is put out of Low Power Mode if the trigger of LPM is set to IgnitionOff and IgnitionOn state becomes true .
+  -- Initial Conditions:
+  --
+  -- * Terminal in LPM
+  -- * Port set as digital input and associated with IgnitionOn function
+  -- * LpmTrigger (PIN 31) set to IgnitionOff
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Trigger IgnitionOn message (MIN 4)
+  --
+  -- Results:
+  --
+  -- 1. Terminal put out of LPM
+function test_LPM_WhenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue_TerminalPutOutOfLowPowerMode()
+
+  local lpmEntryDelay = 1   -- minutes
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -259,12 +285,13 @@ function test_LPM_whenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, 2},                    -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},             -- high state is expected to trigger Ignition on
-                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},      -- time of lpmEntryDelay, in minutes
-                                                {avlPropertiesPINs.lpmTrigger, 1},                     -- 1 is for Ignition Off
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 1},                                   -- 1 is for Ignition Off
                                              }
                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
@@ -281,26 +308,26 @@ function test_LPM_whenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
-
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
   framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in seconds
-   -- checking state of the terminal, low power mode is expected
+  -- checking state of the terminal, Low Power Mode is expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
+
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
-
   framework.delay(5)   -- waiting for the state to change
+
   -- checking state of the terminal, low power mode is not expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
 
 
-end
+
 
 
 end
