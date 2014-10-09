@@ -336,16 +336,18 @@ end
   --
   -- * Terminal in LPM
   -- * Defined geofence in fences.dat
+  -- * GPS signal is good
   -- * Air communication not blocked
   --
   -- Steps:
   --
-  -- 1. Change position of terminal to inside geofence
+  -- 1. Change position of terminal from outside to inside of defined geofence
   -- 2. Wait longer than LpmGeoInterval (PIN 33)
   --
   -- Results:
   --
   -- 1. Geofence detected after LpmGeoInterval (PIN 33)
+  -- 2. ZoneEntry message sent
 function test_LPM_WhenTerminalInLowPowerMode_GeofenceCheckIntervalSetToLpmGeoInterval()
 
   local lpmEntryDelay = 1   -- minutes
