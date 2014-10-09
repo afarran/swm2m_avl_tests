@@ -40,6 +40,7 @@ function suite_setup()
                                               {avlPropertiesPINs.lpmTrigger, 0},
                                              }
                     )
+  framework.delay(2)
  -- checking the terminal state
  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
@@ -327,10 +328,122 @@ function test_LPM_WhenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
 
 
+end
 
+
+--- TC checks if ZoneEntry message is sent after LpmGeoInterval when terminal is in LPM .
+  -- Initial Conditions:
+  --
+  -- * Terminal in LPM
+  -- * Defined geofence in fences.dat
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Change position of terminal to inside geofence
+  -- 2. Wait longer than LpmGeoInterval (PIN 33)
+  --
+  -- Results:
+  --
+  -- 1. Geofence detected after LpmGeoInterval (PIN 33)
+function test_LPM_WhenTerminalInLowPowerMode_GeofenceCheckIntervalSetToLpmGeoInterval()
+
+  local lpmEntryDelay = 1   -- minutes
+  local lpmGeoInterval = 60 -- seconds
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 1},                                   -- 1 is for Ignition Off
+                                                {avlPropertiesPINs.lpmGeoInterval, lpmGeoInterval}
+                                             }
+                   )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+  -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
+  -- for more details please go to Geofences.jpg file in Documentation
+  local message = {SIN = 24, MIN = 1}
+	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},
+                    {Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5) -- to make sure file is saved
+
+  -- restaring geofences service, that action is necessary after sending new fences.dat file
+  local message = {SIN = 16, MIN = 5}
+	message.Fields = {{Name="sin",Value=21}}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5) -- wait until geofences service is up again
+
+  -- gps settings table - terminal outside any of the defined geofences
+  local gpsSettings={
+              longitude = 1,                -- degrees, outside any of the defined geofences
+              latitude = 1,                 -- degrees, outside any of the defined geofences
+              heading = 90,                 -- degrees
+              speed = 0,                    -- to get stationary state
+              fixType=3,                    -- valid 3D gps fix
+              simulateLinearMotion = false, -- terminal not moving
+                     }
+
+  gps.set(gpsSettings) -- applying settings of gps simulator
+
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+  -- checking if terminal correctly goes to IgnitionOn state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+  device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
+  framework.delay(5)                 -- waiting for the state to change
+
+  -- checking if terminal correctly goes to IgnitionOn false state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in seconds
+  -- checking state of the terminal, Low Power Mode is expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
+
+  -- gps settings table - terminal outside any of the defined geofences
+  gpsSettings={
+              heading = 90,                 -- degrees
+              speed = 0,                    -- to get stationary state
+              latitude = 50,                -- degrees, inside geofence 1
+              longitude = 3,                -- degrees, inside geofence 1
+                     }
+
+  gps.set(gpsSettings)               -- applying settings of gps simulator
+  timeOfEnteringGeozone= os.time()   -- saved for comparison
+  framework.delay(lpmGeoInterval+5)  -- wait for time longer than lpmGeoInterval
+
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for zoneEntry messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
+  gpsSettings.heading = 361          -- for stationary state
+  local expectedValues={
+                          gps = gpsSettings,
+                          messageName = "ZoneEntry",
+                          currentTime = timeOfEnteringGeozone+lpmGeoInterval,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
 
 end
+
 
 
 

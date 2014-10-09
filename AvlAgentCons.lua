@@ -20,6 +20,8 @@ avlAgentCons = {
                              ["SM2ON"] = 14, ["SM3ON"] = 15, ["SM4ON"] = 16, ["GeoDwelling"] = 17, ["AntCut"] = 18 },
 
              digOutActiveBitmap = { ["FuncDigOut1"] = 0, ["FuncDigOut2"] = 1, ["FuncDigOut3"] = 2, ["FuncDigOut4"] = 3, ["FuncDigOut5"] = 4 },
+             lpmModemWakeupIntervalValues = { ["5_seconds"] = 0, ["30_seconds"] = 1, ["1_minute"] = 2, ["3_minutes"] = 3, ["10_minutes"] = 4, ["30_minutes"] = 5, ["60_minutes"] = 6,
+                                        ["2_minutes"] = 7, ["5_minutes"] = 8, ["15_minutes"] = 9, ["20_minutes"] = 10}
 
               }
 
