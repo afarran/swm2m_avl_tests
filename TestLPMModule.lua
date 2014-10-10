@@ -310,7 +310,7 @@ function test_LPM_WhenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
-  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in seconds
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
   -- checking state of the terminal, Low Power Mode is expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
@@ -352,6 +352,15 @@ function test_LPM_WhenTerminalInLowPowerMode_GeofenceCheckIntervalSetToLpmGeoInt
 
   local lpmEntryDelay = 1   -- minutes
   local lpmGeoInterval = 60 -- seconds
+  local geofenceEnabled = true       -- to enable geofence feature
+  local geofenceHisteresis = 1       -- in seconds
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
@@ -414,7 +423,7 @@ function test_LPM_WhenTerminalInLowPowerMode_GeofenceCheckIntervalSetToLpmGeoInt
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
-  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in seconds
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
   -- checking state of the terminal, Low Power Mode is expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
@@ -443,9 +452,125 @@ function test_LPM_WhenTerminalInLowPowerMode_GeofenceCheckIntervalSetToLpmGeoInt
                         }
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
+  local geofenceEnabled = false       -- to disable geofence feature
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+                                              }
+                   )
+
+ framework.delay(1)   -- wait until message is processed
+
 
 end
 
+
+
+--- TC checks if geofence interval is changed to LpmGeoInterval when entering LPM and reverted to user-saved value when leaving it .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set Interval (PIN 2) in Geofence service (SIN 21) to value A
+  -- 2. Set LpmGeoInterval (PIN 33) in AVL service (SIN 126) to value B
+  -- 3. Set LpmTrigger (PIN 31) to 1 to make IgnitionOff the trigger of entering LPM
+  -- 4. Simulate IgnitionOn line in non-active state for time longer than LpmEntryDelay and check terminals state
+  -- 5. Read Interval (PIN 2) in Geofence (SIN 21) service and verify that is has value B (LpmGeoInterval)
+  -- 6. Simulate IgnitionOn line in active state and check terminals state
+  -- 7. Read geofence check Interval (PIN 2) and verify if its value has been reverted to A
+  --
+  -- Results:
+  --
+  -- 1. Geofence Interval (PIN 2) set to value A
+  -- 2. LpmGeoInterval (PIN 33) set to value B
+  -- 3. IgnitionOff set as trigger for LPM
+  -- 4. Terminal enters LPM after LpmEntryDelay (PIN 32)
+  -- 5. Value of Geofence Interval (PIN 2) has been changed to B after entering LPM
+  -- 6. Terminal goes out of LPM
+  -- 7. Value of geofence check Interval (PIN 2) has been reverted to A when leaving LPM
+function test_LPM_WhenEntersAndLeavesLPM_ValueOfGeofenceCheckIntervalIsChangedToLpmGeoIntervalAndRevertedWhenLeaving()
+
+  local lpmEntryDelay = 1           -- minutes
+  local lpmGeoInterval = 120        -- seconds
+  local geofenceInterval = 50       -- seconds
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+
+  --applying properties of geofence service
+  lsf.setProperties(avlAgentCons.geofenceSIN,{
+                                               {avlPropertiesPINs.geofenceInterval, geofenceInterval},  -- setting Interval in geofence service
+                                             }
+                   )
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 1},                                   -- 1 is for Ignition Off
+                                                {avlPropertiesPINs.lpmGeoInterval, lpmGeoInterval}
+                                             }
+                   )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+
+  -- checking state of the terminal, Low Power Mode is not expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
+  framework.delay(2)
+
+  -- reading Interval (PIN 2) in Geofence service (SIN 21) when terminal not in LPM
+  local geofenceIntervalProperty = lsf.getProperties(avlAgentCons.geofenceSIN,avlPropertiesPINs.geofenceInterval)
+  framework.delay(2)
+  print(framework.dump(tonumber(geofenceIntervalProperty[1].value)))
+  -- checking if geofence Interval has been changed to LpmGeoInterval when entering LPM
+  assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been changed when entering LPM")
+
+  device.setIO(1, 0) -- that should trigger IgnitionOff
+  framework.delay(2)
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+  -- checking state of the terminal, Low Power Mode is expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state as expected")
+
+  -- reading Interval (PIN 2) in Geofence service (SIN 21) when terminal in LPM
+  local geofenceIntervalProperty = lsf.getProperties(avlAgentCons.geofenceSIN,avlPropertiesPINs.geofenceInterval)
+  framework.delay(2)
+  print(framework.dump(tonumber(geofenceIntervalProperty[1].value)))
+  -- checking if geofence Interval has been changed to LpmGeoInterval when entering LPM
+  assert_equal(lpmGeoInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been changed when entering LPM")
+
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+
+  -- checking state of the terminal, Low Power Mode is not expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
+  framework.delay(2)
+
+  -- reading Interval (PIN 2) in Geofence service (SIN 21) when terminal out of LPM
+  local geofenceIntervalProperty = lsf.getProperties(avlAgentCons.geofenceSIN,avlPropertiesPINs.geofenceInterval)
+  framework.delay(2)
+  print(framework.dump(tonumber(geofenceIntervalProperty[1].value)))
+  -- checking if geofence Interval has been reverted to user-saved value when leaving LPM
+  assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
+
+
+end
 
 
 
