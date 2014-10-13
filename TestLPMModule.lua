@@ -683,6 +683,121 @@ end
 
 
 
+
+--- TC checks if WakeUpInterval property (satellite modem wake up period) in IDP service is set to LpmModemWakeUpInterval when terminal enters LPM and set to 5_seconds when leaving LPM .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmModemWakeUpInterval property (PIN 34) in AVL service (SIN 126) to value A
+  -- 2. Set WakeUpInterval property (PIN 11) in IDP service  (SIN 27) to value B
+  -- 3. Set LpmTrigger (PIN 31) to 1 to make IgnitionOff the trigger of entering LPM
+  -- 4. Simulate IgnitionOn line in non-active state for time longer than LpmEntryDelay (PIN 32) and check terminals state
+  -- 5. Read WakeUpInterval property (PIN 11) in IDP service (SIN 27) and verify that is has value A
+  -- 6. Simulate IgnitionOn line in active state and check terminals state
+  -- 7. Read WakeUpInterval property (PIN 11) and verify if it has been set to 5_seconds
+  --
+  -- Results:
+  --
+  -- 1. LpmModemWakeUpInterval  property (PIN 34) in AVL service set to value A
+  -- 2. WakeUpInterval property (PIN 11) in IDP service  set to value B
+  -- 3. IgnitionOff set as trigger for LPM
+  -- 4. Terminal enters LPM after LpmEntryDelay
+  -- 5. Value of WakeUpInterval (PIN 11) has been changed to A after entering LPM (changed to LpmModemWakeUpInterval)
+  -- 6. Terminal goes out of LPM
+  -- 7. Value of WakeUpInterval property (PIN 11) in IDP service has been set to 5_seconds when leaving LPM
+function test_LPM_WhenTerminalEntersAndLeavesLPM_ValueOfWakeUpIntervalPropertyInIdpServiceIsChangedToLpmModemWakeUpIntervalWhenEnteringLPMAndSet5_secondsWhenLeaving()
+
+  local lpmEntryDelay = 1                                                                                     -- minutes
+  local lpmModemWakeUpInterval = "30_minutes"                                                                 -- lpmModemWakeUpInterval value
+  local wakeUpInterval = "3_minutes"                                                                          -- wakeUpInterval value
+  local wakeUpIntervalOnExitFromLpm = "5_seconds"                                                             -- value of wakeUpInterval which should be set when leaving LPM (this cannot be modified)
+  -- helper variables
+  local lpmModemWakeUpIntervalEnum = avlAgentCons.lpmModemWakeUpIntervalValues[lpmModemWakeUpInterval]        -- lpmModemWakeUpInterval enum representation (enum type property)
+  local wakeUpIntervalEnum = avlAgentCons.modemWakeUpIntervalValues[wakeUpInterval]                           -- wakeUpInterval num representation
+  local wakeUpIntervalOnExitFromLpmEnum = avlAgentCons.modemWakeUpIntervalValues[wakeUpIntervalOnExitFromLpm] -- wakeUpIntervalOnExitFromLpm enum representation
+
+
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+
+
+  -- setting the wakeUpInterval property in IDP service properties
+  lsf.setProperties(avlAgentCons.idpSIN,{
+                                                {avlPropertiesPINs.wakeUpInterval,wakeUpIntervalEnum},     -- saving wakeUpIntervalEnum  to wakeUpInterval property
+                                        }
+                   )
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn},    -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                       -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 1},                                      -- 1 is for Ignition Off
+                                                {avlPropertiesPINs.lpmModemWakeUpInterval, lpmModemWakeUpIntervalEnum}, -- saving lpmModemWakeUpIntervalEnum  to lpmModemWakeUpInterval property
+                                             }
+                   )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+
+  -- checking state of the terminal, Low Power Mode is not expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
+  framework.delay(2)
+
+  -- reading wakeUpInterval property property (PIN 11) in IDP service (SIN 27) when terminal not in LPM
+  local wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
+  framework.delay(2)
+
+  -- checking if wakeUpInterval property has been correctly set
+  assert_equal(wakeUpIntervalEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property has not been correctly set")
+
+  device.setIO(1, 0) -- that should trigger IgnitionOff
+  framework.delay(2)
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+  -- checking state of the terminal, Low Power Mode is expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state as expected")
+
+  -- reading wakeUpInterval property property (PIN 11) in IDP service (SIN 27) when terminal in LPM
+  local wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
+  framework.delay(2)
+  -- checking if  wakeUpInterval property has been set to lpmModemWakeUpInterval when entering LPM
+  assert_equal(lpmModemWakeUpIntervalEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property in IDP service has not been set to LpmModemWakeUpInterval when entering LPM")
+
+  device.setIO(1, 1) -- IgnitionOn line becomes active, that should trigger IgnitionOn
+  framework.delay(2)
+
+  -- checking state of the terminal, Low Power Mode is not expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
+  framework.delay(2)
+
+  -- reading wakeUpInterval property property (PIN 11) in IDP service (SIN 27) when terminal out of LPM
+  local wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
+  framework.delay(2)
+  -- checking if  wakeUpInterval property has been set to wakeUpIntervalOnExit when leaving LPM
+  assert_equal(wakeUpIntervalOnExitFromLpmEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property in IDP service has not been set to WakeUpIntervalOnExit when leaving LPM")
+
+
+
+end
+
+
+
+
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
   lunatest.run()

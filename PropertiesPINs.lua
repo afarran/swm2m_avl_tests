@@ -63,7 +63,10 @@ avlPropertiesPINs = {
       funcDigOut5 = 120,
       gpsReadInterval = 15,
       lpmGeoInterval  = 33,
-      lpmModemWakeupInterval = 34,
+      lpmModemWakeUpInterval = 34,
+      wakeUpInterval = 11,
+
+
 
 
 
