@@ -1,6 +1,6 @@
 --- Lua Services Test Framework.
 -- You may find it convenient to run your test suite from SciTE.
--- @usage
+-- @usage 
 -- shell> lua -e "debugLevel = 0|1|2" <test file name>
 -- @usage
 -- -- Here, debugLevel 0 is implied
@@ -33,10 +33,10 @@ local gateway = {}
 local lsf = {}
 local device = {}
 local gps = {}
-local framework = {}
+local tf = {}
 
 gateway.returnMsgList = {}
-cfg.PORTMAP = { }
+cfg.PORTMAP = {1, 2, 3, 4}
 local function getTableLength(table)
 	local len = 0
 	for _ in pairs(table) do len = len + 1 end
@@ -80,46 +80,46 @@ local function lowerCaseNoSpace(str)
 end
 
 if debugLevel == 2 then
-	framework.trace2 = printfLineDate
-	framework.trace1 = printfLineDate
-	print "framework.trace1 ON, framework.trace2 ON"
+	tf.trace2 = printfLineDate
+	tf.trace1 = printfLineDate
+	print "tf.trace1 ON, tf.trace2 ON"
 elseif debugLevel == 1 then
-	framework.trace2 = dummyFunc
-	framework.trace1 = printfLineDate
-	print "framework.trace1 ON, framework.trace2 OFF"
+	tf.trace2 = dummyFunc
+	tf.trace1 = printfLineDate
+	print "tf.trace1 ON, tf.trace2 OFF"
 else
-	framework.trace2 = dummyFunc
-	framework.trace1 = dummyFunc
-	print "framework.trace1 OFF, framework.trace2 OFF"
+	tf.trace2 = dummyFunc
+	tf.trace1 = dummyFunc
+	print "tf.trace1 OFF, tf.trace2 OFF"
 end
-framework.trace0 = printfLineDate
+tf.trace0 = printfLineDate
 
 --- print regardless of debugLevel
--- @function framework.trace0
+-- @function tf.trace0
 -- @param ... variable arguments that could be passed to string.format
--- @usage
--- -- output will be similar to this:
+-- @usage 
+-- -- output will be similar to this: 
 -- -- [2014-06-24 21:18:16] Hello World!
--- framework.trace0("Hello %s!", "World")
--- @within framework
+-- tf.trace0("Hello %s!", "World")
+-- @within tf
 
 --- print when debug level is 1 or higher
--- @function framework.trace1
+-- @function tf.trace1
 -- @param ... variable arguments that could be passed to string.format
--- @usage
--- -- output will be similar to this:
+-- @usage 
+-- -- output will be similar to this: 
 -- -- [2014-06-24 21:18:16] Today's day of week: Tuesday
--- framework.trace1("Today's day of week: %s", os.date("%A"))
--- @within framework
+-- tf.trace1("Today's day of week: %s", os.date("%A"))
+-- @within tf
 
 --- print when debug level is 2
--- @function framework.trace2
+-- @function tf.trace2
 -- @param ... variable arguments that could be passed to string.format
--- @usage
--- -- output will be similar to this:
+-- @usage 
+-- -- output will be similar to this: 
 -- -- [2014-06-24 21:18:16] He said, "thank you".
--- framework.trace2("He said, %q.", "thank you")
--- @within framework
+-- tf.trace2("He said, %q.", "thank you")
+-- @within tf
 
 local function escape(s)
 	s = string.gsub(s, "[&=+:%%%c]", function(c)
@@ -144,7 +144,7 @@ end
 -- end
 
 local function webServiceGet(fullURL, decode)
-	framework.firstCallHouseKeeping()
+	tf.firstCallHouseKeeping()
 	local encoded = json.encode(nil)
 	local source = ltn12.source.string(encoded);
 	local response = {}
@@ -157,7 +157,7 @@ local function webServiceGet(fullURL, decode)
 	if decode == nil then
 		decode = true
 	end
-	framework.trace2(fullURL)
+	tf.trace2(fullURL)
 	ok, code, headers = http.request {
 		url = fullURL,
 		proxy = cfg.HTTP_PROXY,
@@ -221,16 +221,16 @@ end
 local function recordAndPrintMsg(msg)
 	local brief = {id=msg.ID, time=msg.MessageUTC, sin=msg.SIN, name=msg.Payload.Name}
 	if msg.SIN == 18 and msg.Payload.MIN == 3 then
-		print("Invalid ToTerminal msg: " .. framework.dump(msg))
+		print("Invalid ToTerminal msg: " .. tf.dump(msg))
 	elseif msg.SIN == 18 and msg.Payload.MIN == 4 then
-		print("Terminal couldn't process msg: " .. framework.dump(msg))
+		print("Terminal couldn't process msg: " .. tf.dump(msg))
 	elseif msg.SIN == 26 and msg.Payload.MIN == 1 and msg.Payload.success=="False" then
-		print("Invalid shell command: " .. framework.dump(msg))
+		print("Invalid shell command: " .. tf.dump(msg))
 	else
-		if framework.trace2 == dummyFunc then
-			framework.trace1("Received: " ..  oneLineDump(msg.Payload))
+		if tf.trace2 == dummyFunc then
+			tf.trace1("Received: " ..  oneLineDump(msg.Payload))
 		else
-			framework.trace2("Received: " .. framework.dump(msg.Payload))
+			tf.trace2("Received: " .. tf.dump(msg.Payload))
 		end
 	end
 	gateway.returnMsgList[#gateway.returnMsgList+1] = brief
@@ -238,7 +238,7 @@ end
 
 local function checkShellResponse(msg, substring)
 	substring = substring and substring or ""
-	local colmsg = framework.collapseMessage(msg)
+	local colmsg = tf.collapseMessage(msg)
 	if(colmsg.Payload.Name == "cmdResult" and colmsg.Payload.output:find(substring)) then
 		return true
 	end
@@ -247,13 +247,13 @@ end
 -- local function checkSinMin(msg, tbl)
 -- 	--print("checking sin, min... ", msg.Payload.SIN, tbl[1], msg.Payload.MIN, tbl[2])
 -- 	assert(msg, "Message with specified (SIN, MIN) = (" .. tostring(tbl[1]) .. ", " .. tostring(tbl[2]) .. ") never received")
--- 	local colmsg = framework.collapseMessage(msg)
+-- 	local colmsg = tf.collapseMessage(msg)
 -- 	if colmsg.Payload.SIN == tbl[1] and colmsg.Payload.MIN == tbl[2] then return true end
 -- end
 
 local function checkPropValResponse(msg)
 	assert(msg, "PropertyValues response never received.")
-	local colmsg = framework.collapseMessage(msg)
+	local colmsg = tf.collapseMessage(msg)
 	if colmsg.Payload.Name == "propertyValues" then return true end
 end
 
@@ -287,7 +287,7 @@ local function getSettingsTable(settings)
 end
 
 local function getReturnMessages()
-	framework.firstCallHouseKeeping()
+	tf.firstCallHouseKeeping()
 	local encoded = json.encode(msgs)
 	local source = ltn12.source.string(encoded);
 
@@ -366,7 +366,7 @@ local function getTerminalResponse(payload, checkFunction, cbfParam)
 	return gateway.getReturnMessage(checkFunction, cbfParam)
 end
 
-function framework.firstCallHouseKeeping()
+function tf.firstCallHouseKeeping()
 	if not calledGateway then
 		calledGateway = true
 		local gatewayTime = getGatewayTime()
@@ -374,24 +374,24 @@ function framework.firstCallHouseKeeping()
 		timeOffset = gatewayTime - localTime
 		gatewayVersion = getGatewayResource("info_version")
 		gateway.setHighWaterMark()
-
+	
 		gateway.submitForwardMessage{SIN = 16, MIN = 1}
 		local msg = gateway.getReturnMessage(
 			function(msg)
-				if not msg then
+				if not msg then 
 					print "Unable to retrieve terminal info. Tests will continue."
 					return false
 				end
-				local colmsg = framework.collapseMessage(msg)
+				local colmsg = tf.collapseMessage(msg)
 				if colmsg.Payload.SIN == 16 and colmsg.Payload.MIN == 1 then
 					return true
 				end
 			end
 		)
 		if msg then
-			local colmsg = framework.collapseMessage(msg)
+			local colmsg = tf.collapseMessage(msg)
 			if debugLevel == 2 then
-				terminalInfo = "Terminal info: " .. framework.dump(colmsg.Payload);
+				terminalInfo = "Terminal info: " .. tf.dump(colmsg.Payload);
 			else
 				terminalInfo = colmsg.Payload.packageVersion and "Terminal package: " .. colmsg.Payload.packageVersion or "LSF Version: " .. colmsg.Payload.LSFVersion
 			end
@@ -401,8 +401,8 @@ end
 
 -----------------Test Framework Helper Functions-----------------
 
-framework.version = "2.0." .. getRevision()
-framework.failureCount = 0
+tf.version = "2.0." .. getRevision()
+tf.failureCount = 0
 
 --- Gets string representation of a table; normally used to print tables.
 -- @return string representation of Lua object
@@ -410,7 +410,7 @@ framework.failureCount = 0
 -- @tparam[opt=0] ?number depth #spaces to indent table
 -- @usage
 -- local x = {1, "a", {"b"}}
--- print(framework.dump(x))
+-- print(tf.dump(x))
 -- -- this prints:
 -- {
 --     1 = 1
@@ -419,8 +419,8 @@ framework.failureCount = 0
 --         1 = "b"
 --     }
 -- }
--- @within framework
-function framework.dump(var, depth)
+-- @within tf
+function tf.dump(var, depth)
 	depth = depth or 0
 	if type(var) == "string" then
 		return '"' .. var .. '"\n'
@@ -428,7 +428,7 @@ function framework.dump(var, depth)
 		depth = depth + 1
 		out = "{\n"
 		for k,v in pairs(var) do
-			out = out .. (" "):rep(depth*4) .. tostring(k) .." = " .. framework.dump(v, depth)
+			out = out .. (" "):rep(depth*4) .. tostring(k) .." = " .. tf.dump(v, depth)
 		end
 		return out .. (" "):rep((depth-1)*4) .. "}\n"
 	else
@@ -448,38 +448,38 @@ end
 -- local payload = {SIN=16, MIN=3}
 -- gateway.submitForwardMessage(payload)
 -- -- verify that from-mobile message with (SIN, MIN) = (16, 3) is received; (serviceList)
--- local msg = gateway.getReturnMessage(framework.checkMessageType(16, 3))
--- print(framework.dump(msg))
--- @within framework
-function framework.checkMessageType(sin, min)
+-- local msg = gateway.getReturnMessage(tf.checkMessageType(16, 3))
+-- print(tf.dump(msg))
+-- @within tf
+function tf.checkMessageType(sin, min)
 	return function(msg)
 		assert(msg, string.format("Message - (sin, min) = (%d, %d) - expected but not received.", sin, min))
-		local colmsg = framework.collapseMessage(msg)
+		local colmsg = tf.collapseMessage(msg)
 		return colmsg.Payload.SIN == sin and colmsg.Payload.MIN == min
 	end
 end
 
 --- Sleep specified number of seconds before executing next line of code
 -- @number seconds duration to sleep
--- @within framework
-function framework.delay(seconds)
+-- @within tf
+function tf.delay(seconds)
 	socket.sleep(seconds)
 end
 
 --- Data fields in to-or-from terminal messages are encoded in base64 format; this function encodes string data to base64 format
 -- @param data string or array or numbers in range [0, 255]: the data to encode
 -- @treturn string base64-encoded data
--- @usage
+-- @usage 
 -- -- These are equivalent calls:
--- framework.base64Encode({65, 66, 67})
--- framework.base64Encode("ABC")
--- @within framework
-function framework.base64Encode(data)
+-- tf.base64Encode({65, 66, 67})
+-- tf.base64Encode("ABC")
+-- @within tf
+function tf.base64Encode(data)
 	local data1 = data
 	if type(data) == "table" then
 		data1 = string.char(unpack(data))
 	end
-
+	
     return ((data1:gsub('.', function(x)
         local r,b='',x:byte()
         for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
@@ -515,11 +515,11 @@ end
 -- -- This is how getSinList uses b64dec to decode data represented in b64 format:
 -- local payload = {SIN=16, MIN=3}
 -- gateway.submitForwardMessage(payload)
--- local msg = gateway.getReturnMessage(framework.checkMesssageType(16, 3))
+-- local msg = gateway.getReturnMessage(tf.checkMesssageType(16, 3))
 -- local sinList = msg.Payload.sinList
--- sinList = framework.base64Decode(sinList)
--- @within framework
-function framework.base64Decode(data)
+-- sinList = tf.base64Decode(sinList)
+-- @within tf
+function tf.base64Decode(data)
     local str = base64Decode(data)
 	return {str:byte(1, str:len())}, str
 end
@@ -538,7 +538,7 @@ local function collapseMsg(tbl)
 
 	for k,v in pairs(tbl) do
 		if type(v) == "table" then
-			tbl[k] = framework.collapseMessage(v)
+			tbl[k] = tf.collapseMessage(v)
 		end
 	end
 end
@@ -550,13 +550,13 @@ end
 -- -- This gets return messages from the gateway and makes them more readable
 -- local msgs = getReturnMessages()
 -- for _, msg in ipairs(msgs) do
--- 	msg = framework.collapseMessage(msg)
---	print(framework.dump(msg))
+-- 	msg = tf.collapseMessage(msg)
+--	print(tf.dump(msg)) 
 -- end
 -- -- or simply:
--- framework.dump(getReturnMessages())
--- @within framework
-function framework.collapseMessage(tbl)
+-- tf.dump(getReturnMessages())
+-- @within tf
+function tf.collapseMessage(tbl)
 	local t2 = {}
 	for k,v in pairs(tbl) do
 		if k == "Index" and type(v) == "number" then
@@ -571,7 +571,7 @@ function framework.collapseMessage(tbl)
 	end
 	for k,v in pairs(t2) do
 		if type(v) == "table" then
-			t2[k] = framework.collapseMessage(v)
+			t2[k] = tf.collapseMessage(v)
 		end
 	end
 	return t2
@@ -585,9 +585,9 @@ end
 -- @usage
 -- -- get return messages from gateway and determine how many are position reports (SIN 20, MIN 1)
 -- local msgs = gateway.getReturnMessages()
--- local matching = framework.filterMessages(msgs, checkMessageType (20, 1))
--- @within framework
-function framework.filterMessages(msgs, checkFunction, checkParam)
+-- local matching = tf.filterMessages(msgs, checkMessageType (20, 1))
+-- @within tf
+function tf.filterMessages(msgs, checkFunction, checkParam)
 	local filtered = {}
 	for _, msg in ipairs(msgs) do
 		local success, retVal = pcall(checkFunction, msg, checkParam)
@@ -601,10 +601,10 @@ end
 --- Test suite run can be looped multiple times. This function prints statistics after the test run; call after runTests().
 -- See TestSuiteExample0X for details.
 -- @tparam[opt=false] bool ?testSuiteSuccess
--- @within framework
-function framework.printResults(testSuiteSuccess)
+-- @within tf
+function tf.printResults(testSuiteSuccess)
 	if testSuiteSuccess == false then	-- no param if using lunatest; don't treat it as failure
-		framework.failureCount = framework.failureCount + 1
+		tf.failureCount = tf.failureCount + 1
 	end
 	print()
 	print("--------------------------------")
@@ -622,15 +622,15 @@ function framework.printResults(testSuiteSuccess)
 	local diff = os.time() - testStartTime
 	print("Time to run tests: " .. os.date("!%H:%M:%S", diff) .. ".")
 	print("")
-	printf("Framework version: %s \n", framework.version)
+	printf("Framework version: %s \n", tf.version)
 	if gatewayVersion then
 		printf("Gateway version: %s \n", gatewayVersion)
 	end
-
+	
 	if terminalInfo then		--if debugLevel == 2 then all msgs are logged automatically
 		print(terminalInfo)
 	end
-
+	
 	--resetStats
 	testStartTime = os.time()
 	gateway.returnMsgList = {}
@@ -642,12 +642,12 @@ end
 --- Submits a forward message payload. Specify only the payload - message metadata can be configured in the TestConfiguration file.
 -- @tparam table payload the payload field of the forward message
 -- @tparam[opt=false] ?boolean raw nil regarded as false; if true, this specifies the message's RawPayload field.
--- @usage
+-- @usage 
 -- -- Submit (SIN, MIN) = (16, 1) (getTerminalInfo) message to terminal
 -- gateway.submitForwardMessage{SIN = 16, MIN = 1}
 -- @within gateway
 function gateway.submitForwardMessage(payload, raw)
-	framework.firstCallHouseKeeping()
+	tf.firstCallHouseKeeping()
 	local msg = { DestinationID = cfg.MOBILE_ID, UserMessageID = lastForwardID+1}
 	lastForwardID = lastForwardID + 1
 	if raw then
@@ -673,17 +673,17 @@ function gateway.submitForwardMessage(payload, raw)
 		method = "POST", headers = headers, source = source, sink = sink
 	}
 	if not raw then
-		if framework.trace2 == dummyFunc then
-			framework.trace1("Submitted: " .. oneLineDump(payload))
+		if tf.trace2 == dummyFunc then
+			tf.trace1("Submitted: " .. oneLineDump(payload))
 		else
-			framework.trace2("Submitted: " .. framework.dump(framework.collapseMessage(payload)))
+			tf.trace2("Submitted: " .. tf.dump(tf.collapseMessage(payload)))
 		end
 	end
-
+	
 	-- retry submission if gateway temporarily unavailable.
 	while code == 503 do
 		print "Gateway temporarily unavailable; retry submission."
-		framework.delay(2)
+		tf.delay(2)
 		ok, code, headers = http.request {
 			url = cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX .. "/submit_messages.json/",
 			proxy = cfg.HTTP_PROXY,
@@ -711,19 +711,19 @@ function gateway.submitForwardMessage(payload, raw)
 end
 
 --- Polls the gateway every 3 seconds; records every message retrieved from gateway; and returns the first instance of message that matches criteria.<br /><br />
--- NOTE: table hierarchy of each message is collapsed to a simpler table before being returned by calling framework.collapseMessage()
+-- NOTE: table hierarchy of each message is collapsed to a simpler table before being returned by calling tf.collapseMessage()
 -- @tparam function checkFunction function to call to determine if criteria matches; should throw exception if criteria doesn't match
 -- @tparam[opt=nil] ?AnyType checkParam callback function parameter; use table if >1 parameter needed
 -- @tparam[opt=DEFAULT] ?number timeout parameter to control the timeout for this funciton
 -- @treturn table the first message that matches criteria; nil otherwise
 -- @usage
 -- -- See TestSuiteExample* for more details...
--- gateway.getReturnMessage(<your own callback or framework.checkMessageType>)
+-- gateway.getReturnMessage(<your own callback or tf.checkMessageType>)
 -- @within gateway
 function gateway.getReturnMessage(
-			checkFunction,
-			checkParam,
-			timeout
+			checkFunction, 			
+			checkParam, 			
+			timeout					
 		)
 	assert(checkFunction, "checkFunction not provided to getReturnMessage")
 	time1 = os.time()
@@ -731,7 +731,7 @@ function gateway.getReturnMessage(
 	while(true) do
 		local msgs = getReturnMessages()
 		for i, msg in ipairs(msgs) do
-			colmsg = framework.collapseMessage(msg)
+			colmsg = tf.collapseMessage(msg)
 			colmsg.Payload = colmsg.Payload and colmsg.Payload or {}
 			recordAndPrintMsg(colmsg)
 			if checkFunction(msg, checkParam) then
@@ -742,7 +742,7 @@ function gateway.getReturnMessage(
 			checkFunction(nil, checkParam)
 			break;
 		end
-		framework.delay(3)
+		tf.delay(3)
 	end
 	return nil
 end
@@ -753,12 +753,12 @@ end
 -- @within gateway
 function gateway.getReturnMessages(timeout)
 	timeout = timeout and timeout or cfg.GATEWAY_TIMEOUT
-	framework.delay(timeout)
+	tf.delay(timeout)
 	local msgs = getReturnMessages()
 	local retMsgs = {}
 	for i,msg in ipairs(msgs) do
-		msg = framework.collapseMessage(msg)
-		local colmsg = framework.collapseMessage(msg)
+		msg = tf.collapseMessage(msg)
+		local colmsg = tf.collapseMessage(msg)
 		colmsg.Payload = colmsg.Payload and colmsg.Payload or {}
 		recordAndPrintMsg(colmsg)
 		retMsgs[#retMsgs+1] = msg
@@ -815,7 +815,7 @@ local function shellCommand(cmd)
 	for i=1,cmd:len() do
 		rawPayload[i+4] = string.byte(cmd, i)
 	end
-	framework.trace2("submit shell command: " .. cmd)
+	tf.trace2("submit shell command: " .. cmd)
 	return gateway.submitForwardMessage(rawPayload, true)
 end
 
@@ -829,14 +829,14 @@ function lsf.getProperties(sin, pinList)
 	if type(pinList) ~= "table" then
 		pinList = {pinList}
 	end
-
-	local b64str = framework.base64Encode(string.char(unpack(pinList)))
+	
+	local b64str = tf.base64Encode(string.char(unpack(pinList)))
 	local payload={Fields={{Elements={{Fields={{Name="sin",Value=sin},{Name="pinList",Value=b64str}},Index=0}},Name="list"}},MIN=8,Name="getProperties",SIN=16}
 	local msg = getTerminalResponse(payload, checkPropValResponse)
 	if msg == nil then
 		error("Property Values response from gateway not received!!")
 	end
-	msg = framework.collapseMessage(msg)
+	msg = tf.collapseMessage(msg)
 	return msg.Payload.list[1].propList
 end
 
@@ -845,13 +845,13 @@ end
 -- @within lsf
 function lsf.getSinList()
 	local payload = {SIN=16, MIN=3}
-	local msg = getTerminalResponse(payload, framework.checkMessageType(16, 3))
+	local msg = getTerminalResponse(payload, tf.checkMessageType(16, 3))
 	if msg == nil then return nil end
-	msg = framework.collapseMessage(msg)
+	msg = tf.collapseMessage(msg)
 	local sinList = msg.Payload.sinList
 	local disabledList = msg.Payload.disabledList
-	sinList = framework.base64Decode(sinList)
-	disabledList = framework.base64Decode(disabledList)
+	sinList = tf.base64Decode(sinList)
+	disabledList = tf.base64Decode(disabledList)
 	return {sinList = sinList, disabledList = disabledList}
 end
 
@@ -900,15 +900,15 @@ end
 -- @within lsf
 function lsf.getPosition(forceNewFix)
 	forceNewFix = forceNewFix and forceNewFix or false
-	framework.delay(2)
+	tf.delay(2)
 	local age = forceNewFix and 1 or 30
 	payload={Fields={{Name="fixType",Value="3D"},{Name="timeout",Value=cfg.GATEWAY_TIMEOUT},{Name="age",Value=age}},MIN=1,Name="getPosition",SIN=20}
 	gateway.submitForwardMessage(payload)
-
+	
 	local msg = gateway.getReturnMessage(
 		function(msg)
 			if msg == nil then return false end
-			local colmsg = framework.collapseMessage(msg)
+			local colmsg = tf.collapseMessage(msg)
 			if colmsg.Payload.SIN == 20 and colmsg.Payload.MIN == 1 then
 				return true
 			end
@@ -921,8 +921,8 @@ end
 -- @string shellCmd shell command to execute
 -- @tparam[opt=false] ?bool needResponse whether to wait for a response to the shell command
 -- @return returns first shell response received if result needed; immediately returns true if result not requested; returns false if result requested but not received
--- @usage
--- -- this prints the output of "mem" command on the terminal; note: since the response contains "%" character, you cannot use framework.trace0 here.
+-- @usage 
+-- -- this prints the output of "mem" command on the terminal; note: since the response contains "%" character, you cannot use tf.trace0 here.
 -- print(lsf.shellCommand("mem", true))
 -- @within lsf
 function lsf.shellCommand(shellCmd, needResponse)
@@ -933,7 +933,7 @@ function lsf.shellCommand(shellCmd, needResponse)
 	  return true
 	end
 	local msg = gateway.getReturnMessage(checkShellResponse)
-	msg = framework.collapseMessage(msg)
+	msg = tf.collapseMessage(msg)
 	return msg and msg.Payload and msg.Payload.output
 end
 
@@ -971,7 +971,7 @@ function device.setIO(port, value)
 	if type(value) == "boolean" then
 		value = value and "1" or "0"
 	end
-	framework.trace1("set device port %d value to %s", port, tostring(value))
+	tf.trace1("set device port %d value to %s", port, tostring(value))
 	return configureDevice("GPIO", "value", port, value)
 end
 
@@ -980,7 +980,7 @@ end
 -- func: "in" or "out"
 function device.setPortFunction(port, func)
 	assert(func == "in" or func == "out", "Function must be one of two string values: 'in' or 'out'")
-	framework.trace1("set device port %d function to %s", port, func)
+	tf.trace1("set device port %d function to %s", port, func)
 	return configureDevice("GPIO", "function", port, func)
 end
 
@@ -1005,13 +1005,13 @@ function device.setAccel(
 	if not found then
 		error("setAccel accepts these values: " .. "'X+', 'X-', 'Y+', 'Y-', 'Z+', 'Z-'")
 	end
-	framework.trace1("set accel id %d value to %s", id, value)
+	tf.trace1("set accel id %d value to %s", id, value)
 	return configureDevice("accel", "value", id, value)	-- TODO: "value" is redundant; shouldn't need to pass
 end
 
 --- Configure power service parameters
 -- @usage -- set battery voltage to 15V
--- device.setPower(3, 15000)
+-- device.setPower(3, 15000) 
 -- @tparam number id power service property ID to change (corresponds to PID of power service)
 --
 -- 3 - battery voltage, 4 - battery temp, 8 - external power present
@@ -1120,7 +1120,7 @@ local acceptedKeys = {latitude = gpsSetLocation, longitude = gpsSetLocation, alt
 -- <li>simulateLinearMotion: bool - whether or not the lat/long values change due to movement</li>
 -- </ul>
 -- @param parameters a table of GPS settings
--- @usage
+-- @usage 
 -- -- This sets the speed to 50km/h, heading to East, and updates lat/long according to movement
 -- gps.set({speed=50, heading=90, simulateLinearMotion=true})
 -- @within gps
@@ -1137,8 +1137,8 @@ function gps.set(parameters)
 			end
 		end
 		if not found then
-			framework.trace0("*** Unknown parameter passed to gps.set(): %s. Accepted parameters:", k1)
-			framework.trace0("fixType, latitude, longitude, altitude, speed, heading, simulateLinearMotion")
+			tf.trace0("*** Unknown parameter passed to gps.set(): %s. Accepted parameters:", k1)
+			tf.trace0("fixType, latitude, longitude, altitude, speed, heading, simulateLinearMotion")
 		end
 	end
 	for k, _ in pairs(callFunction) do
@@ -1152,4 +1152,4 @@ function gps.set(parameters)
 	end
 end
 
-return function() return cfg, framework, gateway, lsf, device, gps end
+return function() return cfg, tf, gateway, lsf, device, gps end

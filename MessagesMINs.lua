@@ -54,7 +54,7 @@ messagesMINs = {
   digitalInp11Lo = 71,
   digitalInp12Hi = 72,
   digitalInp12Lo = 73,
-
+  saveProperties = 11,
 
 
 

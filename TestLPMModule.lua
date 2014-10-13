@@ -583,20 +583,22 @@ end
   -- Steps:
   --
   -- 1. Set Continues  property (PIN 15) in Position service (SIN 20) to value gpsReadInterval
-  -- 2. Set LpmTrigger (PIN 31) to 1 to make IgnitionOff the trigger of entering LPM
-  -- 3. Simulate IgnitionOn line in non-active state for time longer than LpmEntryDelay and check terminals state
-  -- 4. Read Continues property (PIN 15) in Position service (SIN 20) and verify that is has value 0 (feature disabled)
-  -- 5. Simulate IgnitionOn line in active state and check terminals state
-  -- 6. Read Continues property (PIN 15) and verify if it has been reverted to value gpsReadInterval
+  -- 2. Save all properties of Position service
+  -- 3. Set LpmTrigger (PIN 31) to 1 to make IgnitionOff the trigger of entering LPM
+  -- 4. Simulate IgnitionOn line in non-active state for time longer than LpmEntryDelay and check terminals state
+  -- 5. Read Continues property (PIN 15) in Position service (SIN 20) and verify that is has value 0 (feature disabled)
+  -- 6. Simulate IgnitionOn line in active state and check terminals state
+  -- 7. Read Continues property (PIN 15) and verify if it has been reverted to value gpsReadInterval
   --
   -- Results:
   --
   -- 1. Continues  property (PIN 15) set to value gpsReadInterval
-  -- 2. IgnitionOff set as trigger for LPM
-  -- 3. Terminal enters LPM after LpmEntryDelay (PIN 32)
-  -- 4. Value of Continues property (PIN 15) has been changed to 0 after entering LPM
-  -- 5. Terminal goes out of LPM
-  -- 6. Value of Continues property (PIN 15) has been reverted to gpsReadInterval (user-saved) when leaving LPM
+  -- 2. Position service properties saved
+  -- 3. IgnitionOff set as trigger for LPM
+  -- 4. Terminal enters LPM after LpmEntryDelay (PIN 32)
+  -- 5. Value of Continues property (PIN 15) has been changed to 0 after entering LPM
+  -- 6. Terminal goes out of LPM
+  -- 7. Value of Continues property (PIN 15) has been reverted to gpsReadInterval (user-saved) when leaving LPM
 function test_LPM_WhenTerminalEntersAndLeavesLPM_ValueOfContinuesPropertyInPositionServiceIsChangedTo0WhenEnteringLPMAndRevertedWhenLeaving()
 
   local lpmEntryDelay = 1           -- minutes
@@ -614,6 +616,13 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValueOfContinuesPropertyInPosit
                                                {avlPropertiesPINs.gpsReadInterval,gpsReadInterval}   -- setting the continues mode of position service (SIN 20, PIN 15)
                                              }
                     )
+
+
+  local savePropertiesMessage = {SIN = avlAgentCons.systemSIN, MIN = avlMessagesMINs.saveProperties}
+	savePropertiesMessage.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=avlAgentCons.positionSIN},}}}}}
+	gateway.submitForwardMessage(savePropertiesMessage)
+
+
 
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -636,7 +645,6 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValueOfContinuesPropertyInPosit
   -- reading Continues property (PIN 15) in Position service (SIN 20) when terminal not in LPM
   local continuesProperty = lsf.getProperties(avlAgentCons.positionSIN,avlPropertiesPINs.gpsReadInterval)
   framework.delay(2)
-  print(framework.dump(tonumber(continuesProperty[1].value)))
   -- checking if Continues property has been correctly set
   assert_equal(gpsReadInterval,tonumber(continuesProperty[1].value), "Value of Continues property has not been correctly set")
 
@@ -652,7 +660,6 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValueOfContinuesPropertyInPosit
   -- reading Continues property (PIN 15) in Position service (SIN 20) when terminal in LPM
   local continuesProperty = lsf.getProperties(avlAgentCons.positionSIN,avlPropertiesPINs.gpsReadInterval)
   framework.delay(2)
-  print(framework.dump(tonumber(continuesProperty[1].value)))
   -- checking if  Continues property (PIN 15) has been set to 0 when entering LPM
   assert_equal(0,tonumber(continuesProperty[1].value), "Value of Continues property in Position service has not been set to 0 when entering LPM")
 
@@ -668,7 +675,6 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValueOfContinuesPropertyInPosit
   -- reading Continues property (PIN 15) in Position service (SIN 20) when terminal out of LPM
   local continuesProperty = lsf.getProperties(avlAgentCons.positionSIN,avlPropertiesPINs.gpsReadInterval)
   framework.delay(2)
-  print(framework.dump(tonumber(continuesProperty[1].value)))
   -- checking if Continues property has been reverted to user-saved value when leaving LPM
   assert_equal(gpsReadInterval,tonumber(continuesProperty[1].value), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
 
