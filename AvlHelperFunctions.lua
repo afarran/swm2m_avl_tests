@@ -272,14 +272,17 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
   -- gps settings table
   local gpsSettings={
               speed = 0,
-              fixType= 3,
+              longitude = 0,                   -- degrees
+              latitude = 0,                    -- degrees
+              fixType= 3,                      -- valid fix provided
                      }
 
   -- set the speed to zero and wait for stationaryDebounceTime
   gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
+  framework.delay(stationaryDebounceTime+gpsReadInterval+6) -- 6 seconds are added to make sure terminal changes state
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in stationary state as expected")
 
@@ -307,7 +310,9 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   -- gps settings table
   local gpsSettings={
               speed = stationarySpeedThld+5,   -- kmh
-              fixType= 3,
+              longitude = 0,                   -- degrees
+              latitude = 0,                    -- degrees
+              fixType= 3,                      -- valid fix provided
                      }
 
   -- set the speed above stationarySpeedThld and wait longer than movingDebounceTime
@@ -315,6 +320,7 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   framework.delay(movingDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
 
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+   framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to true
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
 
