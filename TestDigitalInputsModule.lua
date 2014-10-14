@@ -134,20 +134,32 @@ end
 
 --]]
 
---- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 3); then simulate port 1 value change to high state and
-  -- wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
-  -- and check if terminal entered IgnitionOn state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
-  -- have correct values
-function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
+--- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Configure port as a digital input and associate this port with IgnitionOn line
+  -- 2. Set the high state of the port to be a trigger for line activation
+  -- 3. Simulate terminals position in stationary state in Point#1
+  -- 4. Simulate port value change to high state
+  -- 5. Receive IgnitionOn message
+  -- 6. Verify fields of message against expected values
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital input and assiociated with IgnitionOn line
+  -- 2. High state of the port set to be the trigger for IgnitionOn line activation
+  -- 3. Point#1 is terminals simulated position in stationary state
+  -- 4. High state of digital input simulated
+  -- 5. IgnitionOn messaage received
+  -- 6. Message fields contain Point#1 GPS and time information
+ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -195,25 +207,32 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
 
 end
 
-
-
-
---- TC checks if IgnitionOn message is sent when digital input port changes to low state for DigStatesDefBitmap = 0 .
+--- TC checks if IgnitionOn message is sent when digital input port changes to low state .
   -- Initial Conditions:
   --
-  -- * Port configured as digital input and associated it with IgnitionOn function
-  -- * DigStatesDefBitmap set to 0
-  -- * GPS signal is good
+  -- * Terminal not in LPM
+  -- * Terminal not moving
   -- * Air communication not blocked
+  -- * GPS is good
   --
   -- Steps:
   --
-  -- 1. Set GPS position to Point#1
-  -- 2. Port state changes from high to low
+  -- 1. Configure port as a digital input and associate this port with IgnitionOn line
+  -- 2. Set the low state of the port to be a trigger for line activation
+  -- 3. Simulate terminals position in stationary state in Point#1
+  -- 4. Simulate port value change to high state and than back to low
+  -- 5. Receive IgnitionOn message
+  -- 6. Verify fields of message against expected values
+  --
   -- Results:
   --
-  -- 1. Receive IgnitionOn message (MIN 4)
-  -- 2. Validate that message fields contain Point#1 and time information
+  -- 1. Port configured as digital input and assiociated with IgnitionOn line
+  -- 2. Low state of the port set to be the trigger for IgnitionOn line activation (DigStatesDefBitmap set to 0)
+  -- 3. Point#1 is terminals simulated position in stationary state
+  -- 4. Change between high and low state is simulated
+  -- 5. IgnitionOn messaage received
+  -- 6. Message fields contain Point#1 GPS and time information
+
  function test_Ignition_WhenPortValueChangesFromHighToLowForDigStatesDefBitmapSetToZero_IgnitionOnMessageSent()
 
   local digStatesDefBitmap = 0          -- DigStatesDefBitmap set to 0
@@ -276,30 +295,45 @@ end
 end
 
 
-
---- TC checks if IgnitionOn message is correctly sent when port 1 changes to high state
-  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- set the high state of the port to be a trigger for line activation
-  -- (digStatesDefBitmap = 1); then simulate port 1 value change to high state and
-  -- wait for IgnitionOn message; check if message has been correctly sent, verify reported fields
-  -- and check if terminal entered IgnitionOn state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal correctly put in the IgnitionOn state, IgnitionOn message sent and report fields
-  -- have correct values
+--- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high and GpsFixAge is reported .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * no GPS signal
+  --
+  -- Steps:
+  --
+  -- 1. Configure port as a digital input and associate this port with IgnitionOn line
+  -- 2. Set the high state of the port to be a trigger for line activation
+  -- 3. Simulate terminals position in stationary state in Point#1 with no valid fix (gps signal loss)
+  -- 4. Simulate port value change to high state
+  -- 5. Receive IgnitionOn message
+  -- 6. Verify fields of message against expected values
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital input and assiociated with IgnitionOn line
+  -- 2. High state of the port set to be the trigger for IgnitionOn line activation
+  -- 3. Point#1 is terminals simulated position in stationary state and there are no new fixes provided
+  -- 4. High state of digital input simulated
+  -- 5. IgnitionOn messaage received
+  -- 6. Message fields contain Point#1 GPS and time information and GpsFixAge is included in report
 function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAgeReported()
 
-  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  -- gps signal is good at this point
   local gpsSettings={
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
-              fixType = 1,                    -- no valid fix provided, gps signal loss simulated
+              fixType = 3,                    -- valid fix provided at this point
                      }
+  gps.set(gpsSettings)
+  framework.delay(gpsReadInterval+2)          -- wait until terminal reads the gps position
+
+  -- gps signal loss is simulated at this moment
+  local gpsSettings.fixType = 1              -- no valid fix provided, gps signal loss
 
   gps.set(gpsSettings)
   framework.delay(7)          -- to make sure gpsFix age is above 5 seconds
