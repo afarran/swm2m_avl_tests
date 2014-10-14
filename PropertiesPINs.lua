@@ -65,9 +65,7 @@ avlPropertiesPINs = {
       lpmGeoInterval  = 33,
       lpmModemWakeUpInterval = 34,
       wakeUpInterval = 11,
-
-
-
+      ledControl = 6,
 
 
 
