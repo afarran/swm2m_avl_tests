@@ -140,6 +140,7 @@ end
 
 --]]
 
+
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
   -- Initial Conditions:
   --
@@ -565,7 +566,6 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
 end
 
 
-
 --- TC checks if some specific properties are changing values when terminal enters LPM and are correctly reverted when terminal leaves it .
   -- Initial Conditions:
   --
@@ -578,18 +578,20 @@ end
   -- 2. Set Continues  property (PIN 15) in Position service (SIN 20) to value gpsReadInterval
   -- 3. Set Interval property (PIN 2) in Geofence service (SIN 21) to value A and LpmGeoInterval (PIN 33) in AVL service (SIN 126) to value B
   -- 4. Set WakeUpInterval property (PIN 11) in IDP service  (SIN 27) to value C and LpmModemWakeUpInterval property (PIN 34) in AVL service (SIN 126) to value D
-  -- 5. Save all properties of System, Position and Geofence service
-  -- 6. Set LpmTrigger (PIN 31) to 1 to make IgnitionOff the trigger of entering LPM
-  -- 7. Simulate IgnitionOn line in non-active state for time longer than LpmEntryDelay and check terminals state
-  -- 8. Read ledControl  property (PIN 6) in System service (SIN 16) and verify that is has value 1 (User)
-  -- 9. Read Continues property (PIN 15) in Position service (SIN 20) and verify that is has value 0 (feature disabled)
-  -- 10. Read Interval (PIN 2) in Geofence (SIN 21) service and verify that is has value B (LpmGeoInterval)
-  -- 11. Read WakeUpInterval property (PIN 11) in IDP service (SIN 27) and verify that is has value D (LpmModemWakeUpInterval)
-  -- 12. Simulate IgnitionOn line in active state and check terminals state
-  -- 13. Read ledControl property (PIN 6) in System service (SIN 16) and verify that is has been reverted to user saved (ledControlUserSet)
-  -- 14. Read Continues property (PIN 15) and verify if it has been reverted to value gpsReadInterval
-  -- 15. Read geofence check Interval (PIN 2) and verify if it has been reverted to value A
-  -- 16. Read WakeUpInterval property (PIN 11) and verify if it has been set to 5_seconds
+  -- 5. Set powerMode property (PIN 11) in IDP service  (SIN 27) to value powerModeUserSet
+  -- 6. Save all properties of System, Position, IDP and Geofence service
+  -- 7. Set LpmTrigger (PIN 31) to 1 to make IgnitionOff the trigger of entering LPM
+  -- 8. Simulate IgnitionOn line in non-active state for time longer than LpmEntryDelay and check terminals state
+  -- 9. Read ledControl  property (PIN 6) in System service (SIN 16) and verify that is has value 1 (User)
+  -- 10. Read Continues property (PIN 15) in Position service (SIN 20) and verify that is has value 0 (feature disabled)
+  -- 11. Read Interval (PIN 2) in Geofence (SIN 21) service and verify that is has value B (LpmGeoInterval)
+  -- 12. Read WakeUpInterval property (PIN 11) in IDP service (SIN 27) and verify that is has value D (LpmModemWakeUpInterval)
+  -- 13. Simulate IgnitionOn line in active state and check terminals state
+  -- 14. Read ledControl property (PIN 6) in System service (SIN 16) and verify that is has been reverted to user saved (ledControlUserSet)
+  -- 15. Read Continues property (PIN 15) and verify if it has been reverted to value gpsReadInterval
+  -- 16. Read geofence check Interval (PIN 2) and verify if it has been reverted to value A
+  -- 17. Read WakeUpInterval property (PIN 11) and verify if it has been set to 5_seconds
+  -- 18. Read powerMode property (PIN 10) and verify if it has been reverted to powerModeUserSet
   --
   -- Results:
   --
@@ -597,6 +599,7 @@ end
   -- 2. Continues set to to value gpsReadInterval
   -- 3. Interval set to value A and LpmGeoInterval set to value B
   -- 4. WakeUpInterval set to value C and LpmModemWakeUpInterval set to value D
+  -- 5. PowerMode property set to powerModeUserSet
   -- 5. All properties of System, Position and Geofence services saved
   -- 6. IgnitionOff set as trigger for LPM
   -- 7. Terminal enters LPM after LpmEntryDelay
@@ -604,17 +607,20 @@ end
   -- 9. Continues property set to 0
   -- 10. Geofence Interval set to value B (LpmGeoInterval)
   -- 11. WakeUpInterval set to value D (LpmModemWakeUpInterval)
-  -- 12. Terminal goes out of LPM
-  -- 13. Value of ledControl property (PIN 6, SIN 16) has been reverted to ledControlUserSet (user-saved) when leaving LPM
-  -- 14. Value of Continues property (PIN 15, SIN 20) has been reverted to gpsReadInterval when leaving LPM
-  -- 15. Value of Interval property (PIN 2, SIN 21) has been reverted to value A when leaving LPM
-  -- 16. Value of WakeUpInterval property (PIN 11, SIN 27) has been set to 5_seconds when leaving LPM
+  -- 12. powerMode property set to 2 - MobileBattery
+  -- 13. Terminal goes out of LPM
+  -- 14. Value of ledControl property (PIN 6, SIN 16) has been reverted to ledControlUserSet (user-saved) when leaving LPM
+  -- 15. Value of Continues property (PIN 15, SIN 20) has been reverted to gpsReadInterval when leaving LPM
+  -- 16. Value of Interval property (PIN 2, SIN 21) has been reverted to value A when leaving LPM
+  -- 17. Value of WakeUpInterval property (PIN 11, SIN 27) has been set to 5_seconds when leaving LPM
+  -- 18. Value of powerMode (PIN 10, SIN 27) has been reverted to powerModeUserSet
 function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChangedwhenEnteringLpmAndRevertedWhenLeavingLpm()
 
   local lpmEntryDelay = 1                             -- minutes (1 minute is the minimal value)
   local ledControlUserSet = 0                         -- enum type property (0 - Terminal, 1 - User)
   local lpmGeoInterval = 120                          -- seconds
   local geofenceInterval = 50                         -- seconds
+  local powerModeUserSet = 4                          -- enum type (0-Mobile Powered, 1 - FixedPowered, 2 - MobileBattery, 3 - FixedBattery, 4 - MobileMinBattery)
   local lpmModemWakeUpInterval = "30_minutes"         -- lpmModemWakeUpInterval value
   local wakeUpInterval = "3_minutes"                  -- wakeUpInterval value
   local wakeUpIntervalOnExitFromLpm = "5_seconds"     -- value of wakeUpInterval which should be set when leaving LPM (this cannot be modified)
@@ -644,6 +650,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- setting properties of IDP Service
   lsf.setProperties(avlAgentCons.idpSIN,{
                                                {avlPropertiesPINs.wakeUpInterval,wakeUpIntervalEnum},     -- saving wakeUpIntervalEnum  to wakeUpInterval property
+                                               {avlPropertiesPINs.powerMode,powerModeUserSet},            -- saving powerModeUserSet  to powerMode property
                                         }
                    )
 
@@ -668,8 +675,9 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   local savePropertiesMessage = {SIN = avlAgentCons.systemSIN, MIN = avlMessagesMINs.saveProperties}
 	savePropertiesMessage.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=avlAgentCons.systemSIN},}},
                                                          {Index=1,Fields={{Name="sin",Value=avlAgentCons.geofenceSIN},}},
-                                                         {Index=2,Fields={{Name="sin",Value=avlAgentCons.positionSIN},}}}}}
-	gateway.submitForwardMessage(savePropertiesMessage)
+                                                         {Index=2,Fields={{Name="sin",Value=avlAgentCons.positionSIN},}},
+                                                         {Index=3,Fields={{Name="sin",Value=avlAgentCons.idpSIN},}}}}}
+  gateway.submitForwardMessage(savePropertiesMessage)
 
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
@@ -708,6 +716,12 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   framework.delay(2)
   -- checking if wakeUpInterval property has been correctly set
   assert_equal(wakeUpIntervalEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property has not been correctly set")
+
+  -- reading powerMode property (PIN 10) in IDP service (SIN 27) when terminal not in LPM
+  local powerModeProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.powerMode)
+  framework.delay(2)
+  -- checking if powerMode property has been correctly set
+  assert_equal(powerModeUserSet,tonumber(powerModeProperty[1].value), "Value of powerMode property has not been correctly set")
 
   ------------------------------------------------------------------------------------------------------------------
   -- Terminal enters Low Power Mode
@@ -748,6 +762,12 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- checking if  wakeUpInterval property has been set to lpmModemWakeUpInterval when entering LPM
   assert_equal(lpmModemWakeUpIntervalEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property in IDP service has not been set to LpmModemWakeUpInterval when entering LPM")
 
+  -- reading powerMode property (PIN 10) in IDP service (SIN 27) when terminal in LPM
+  powerModeProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.powerMode)
+  framework.delay(2)
+  -- checking if powerMode property has been correctly changed
+  assert_equal(2,tonumber(powerModeProperty[1].value), "Value of powerMode property has not been changed to MobileBattery when entering LPM")
+
   ------------------------------------------------------------------------------------------------------------------
   -- Terminal leaves Low Power Mode
   ------------------------------------------------------------------------------------------------------------------
@@ -780,6 +800,10 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
   framework.delay(2)
 
+  -- reading powerMode property (PIN 10) in IDP service (SIN 27) when terminal not in LPM
+  powerModeProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.powerMode)
+  framework.delay(2)
+
   -- checking if ledControl property has been correctly reverted to value ledControlUserSet
   assert_equal(ledControlUserSet,tonumber(ledControlProperty[1].value), "Value of ledControl property has not been correctly reverted to user setting when leaving LPM")
   -- checking if Continues property has been reverted to user-saved value when leaving LPM
@@ -788,12 +812,12 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
   -- checking if  wakeUpInterval property has been set to wakeUpIntervalOnExit when leaving LPM
   assert_equal(wakeUpIntervalOnExitFromLpmEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property in IDP service has not been set to WakeUpIntervalOnExit when leaving LPM")
+  -- checking if powerMode property has been correctly reverted to user saved when leaving LPM
+  assert_equal(powerModeUserSet,tonumber(powerModeProperty[1].value), "Value of powerMode property property has not been correctly set")
 
 
 
 end
-
-
 
 
 

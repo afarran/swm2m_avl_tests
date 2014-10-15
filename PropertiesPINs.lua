@@ -21,6 +21,7 @@ avlPropertiesPINs = {
       funcDigInp6 = 52,
       funcDigInp7 = 53,
       funcDigInp8 = 54,
+      funcDigInp13 = 59,
       port1Config = 1,
       port1EdgeDetect = 4,
       port1EdgeSampleCount = 5,
@@ -69,9 +70,7 @@ avlPropertiesPINs = {
       funcDigInp = { [1]= 47, [2] = 48, [3] = 49, [4] = 50},
       portConfig = { [1] = 1, [2] = 12, [3] = 23, [4] = 34},
       portEdgeDetect = { [1] = 4, [2] = 15, [3] = 26, [4] = 37},
-
-
-
+      powerMode = 10,
 
 
 
