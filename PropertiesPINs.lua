@@ -66,6 +66,11 @@ avlPropertiesPINs = {
       lpmModemWakeUpInterval = 34,
       wakeUpInterval = 11,
       ledControl = 6,
+      funcDigInp = { [1]= 47, [2] = 48, [3] = 49, [4] = 50},
+      portConfig = { [1] = 1, [2] = 12, [3] = 23, [4] = 34},
+      portEdgeDetect = { [1] = 4, [2] = 15, [3] = 26, [4] = 37},
+
+
 
 
 

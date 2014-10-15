@@ -8,7 +8,8 @@ local lunatest              = require "lunatest"
 local avlMessagesMINs       = require("MessagesMINs")           -- the MINs of the messages are taken from the external file
 local avlPopertiesPINs      = require("PropertiesPINs")         -- the PINs of the properties are taken from the external file
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlAgentCons          = require("AvlAgentCons")
+local avlAgentCons          = require("AvlAgentCons")           -- all AVL Agent constants in avlAgentCons
+local math = require("math")
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
@@ -37,6 +38,12 @@ function suite_setup()
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
+
+  -- selecting random number of port
+  math.randomseed(os.time())                -- os.time used as randomseed
+  math.random(1,4)
+  randomPortNumber = math.random(1,4)
+
 
 end
 
@@ -116,7 +123,14 @@ function setup()
                                         }
                     )
 
-
+  -- disabling all digital input lines in AVL
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp[1], 0},   -- 0 is for line disabled
+                                                {avlPropertiesPINs.funcDigInp[2], 0},
+                                                {avlPropertiesPINs.funcDigInp[3], 0},
+                                                {avlPropertiesPINs.funcDigInp[4], 0},
+                                             }
+                   )
 
 end
 -----------------------------------------------------------------------------------------------
@@ -175,20 +189,20 @@ end
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port set as digital input
+                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
                                              }
                    )
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
-  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
+  device.setIO(randomPortNumber, 1)  -- port  to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
@@ -206,6 +220,7 @@ end
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
 end
+
 
 --- TC checks if IgnitionOn message is sent when digital input port changes to low state .
   -- Initial Conditions:
