@@ -28,18 +28,40 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
  -- GPS Web Service switched on
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
-function suite_setup()
+
+
+
+--- Suite setup function is run before every suite .
+  -- Initial Conditions:
+  --
+  -- * Terminal Simulator running with AVL agent loaded and started
+  -- * Gateway Webservice running
+  -- * GPS Webservice running
+  -- * Device Webservice running
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmTrigger (PIN 31) in AVL (SIN 126) to 0
+  -- 2. Read AvlStates property to check if terminal is not in LPM
+  -- 3. Set randomPortNumber (value from range 1-4) using math.random function
+  --
+  -- Results:
+  --
+  -- 1. LpmTrigger (PIN 31) set to 0 (nothing can trigger entering LPM)
+  -- 2. Terminal not in the Low Power Mode
+  -- 3. Value of randomPortNumber set by using math.random function (different with every run of suite_setup)
+ function suite_setup()
 
  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                               {avlPropertiesPINs.lpmTrigger, 0},
                                              }
                     )
-  -- checking the terminal state
+  -- checking the state of terminal
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
-  -- selecting random number of port
+  -- selecting random number of port to be used in TCs
   math.randomseed(os.time())                -- os.time used as randomseed
   math.random(1,4)
   randomPortNumber = math.random(1,4)
@@ -56,54 +78,37 @@ function suite_teardown()
 end
 
 
---- setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval, sets all 4 ports to low state
-  -- and checks if terminal is not in the IgnitionOn state
-  -- executed before each unit test
-  -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
-  -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
-  -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
-  -- set all 4 ports to low state and check if terminal is not in the IgnitionOn state
-  -- *initial conditions:
-  -- terminal not in the low power mode
-  -- *expected results:
-  -- terminal correctly put in the stationary state and IgnitionOn false state
-function setup()
+--- Setup function is run before every TC, it puts terminal into known state so that every TC starts in the same conditions .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set continues property (PIN 15) in Position service (SIN 20) to value gpsReadInterval
+  -- 2. Put terminal into stationary state
+  -- 3. Simulate all 4 port change to low state
+  -- 4. Disable 4 digital input lines
+  --
+  -- Results:
+  --
+  -- 1. continues property set to gpsReadInterval, GPS read periodically
+  -- 2. Terminal put into stationary state
+  -- 3. All 4 ports in low state
+  -- 4. Digital input lines 1-4 disabled
+ function setup()
 
   lsf.setProperties(20,{
                         {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
                                                  -- gps will be read every gpsReadInterval (in seconds)
                       }
                     )
+  -- put terminal into stationary state
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
-
-  -- gps settings table
-  local gpsSettings={
-              speed = 0,
-              fixType=3,
-              heading = 90,
-                     }
-
-  --setting properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
-                                             }
-                    )
-
-
-  -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
-
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
-
-  -- setting all 4 ports to low state
+  -- set all 4 ports to low state
   for counter = 1, 4, 1 do
     device.setIO(counter, 0)
   end
@@ -119,7 +124,6 @@ function setup()
                                             {avlPropertiesPINs.port2Config, 0},      -- port disabled
                                             {avlPropertiesPINs.port3Config, 0},      -- port disabled
                                             {avlPropertiesPINs.port4Config, 0},      -- port disabled
-
                                         }
                     )
 
@@ -147,6 +151,7 @@ end
     Each test case is a global function whose name begins with "test"
 
 --]]
+
 
 --- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high .
   -- Initial Conditions:
@@ -198,7 +203,7 @@ end
                                                 {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
@@ -245,9 +250,8 @@ end
   -- 2. Low state of the port set to be the trigger for IgnitionOn line activation (DigStatesDefBitmap set to 0)
   -- 3. Point#1 is terminals simulated position in stationary state
   -- 4. Change between high and low state is simulated
-  -- 5. IgnitionOn messaage received
+  -- 5. IgnitionOn message received
   -- 6. Message fields contain Point#1 GPS and time information
-
  function test_Ignition_WhenPortValueChangesFromHighToLowForDigStatesDefBitmapSetToZero_IgnitionOnMessageSent()
 
   local digStatesDefBitmap = 0          -- DigStatesDefBitmap set to 0
@@ -364,7 +368,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
                                                 {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
@@ -389,21 +393,34 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
 
 end
 
-
---- TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- set the high state of the port to be a trigger for line activation (digStatesDefBitmap = 3);
-  -- then simulate port 1 value change to high state and check if
-  -- terminal enters IgnitionOn state; then simulate port 1 value change to low state and
-  -- wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
-  -- and check if terminal is no longer in IgnitionOn state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
-  -- have correct values
+--]]
+--- TC checks if IgnitionOff message is sent when digital input port changes to low state .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Configure port as a digital input and associate this port with IgnitionOn line
+  -- 2. Set the high state of the port to be a trigger for line activation
+  -- 3. Simulate terminals position in stationary state in Point#1
+  -- 4. Simulate port value change to high state and check terminals state
+  -- 5. Simulate port value change back to low state
+  -- 6. Receive IgnitionOff message and check terminals state
+  -- 7. Verify fields of message against expected values
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital input and assiociated with IgnitionOn line
+  -- 2. High state of the port set to be the trigger for IgnitionOn line activation
+  -- 3. Point#1 is terminals simulated position in stationary state
+  -- 4. Terminal goes to IgnitionOn state after setting port state to high level
+  -- 5. Port changes value back to low level
+  -- 5. IgnitionOff message received and terminal goes to IgnitionOn=false state
+  -- 6. Message fields contain Point#1 GPS and time information
 function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
@@ -414,31 +431,30 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
               fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
                      }
 
-  gps.set(gpsSettings)
+  gps.set(gpsSettings)    -- applying gps settings
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port set as digital input
+                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},         -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},  -- digital input line set for Ignition function
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
-
-  device.setIO(1, 1) -- that should trigger IgnitionOn
+  device.setIO(randomPortNumber, 1) -- that should trigger IgnitionOn
   framework.delay(2)
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   gateway.setHighWaterMark()         -- to get the newest messages
-  device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
+  device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
   framework.delay(5)                 -- wait for report to be generated
 
   --IgnitionOff message expected
@@ -452,12 +468,14 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
-  -- checking if terminal correctly goes to IgnitionOn false state
+
+  -- checking if terminal correctly goes to IgnitionOn = false state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
 end
 
+--[[
 
 --- TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
@@ -498,7 +516,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
                                                 {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
@@ -571,7 +589,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                                                 {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()
@@ -652,7 +670,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                                                 {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()
@@ -732,7 +750,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                                                 {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
@@ -811,7 +829,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                                                 {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1)                                         -- port 1 to high level - that should trigger IgnitionOn
@@ -904,7 +922,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
                                                 {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},                -- moving debounce time
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
@@ -980,7 +998,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxI
                                                 {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
 
@@ -1138,7 +1156,7 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_Movi
                                                 {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   -- setting the EIO properties
@@ -1246,7 +1264,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
 
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SM1Active"})
 
   gateway.setHighWaterMark()                -- to get the newest messages
@@ -1330,7 +1348,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
                                              }
                    )
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SM1Active"})
 
   gateway.setHighWaterMark()                -- to get the newest messages
@@ -1398,7 +1416,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
   -- terminal should be put in the moving state
@@ -1479,7 +1497,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
@@ -1563,7 +1581,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
@@ -1652,7 +1670,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
@@ -1735,7 +1753,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
@@ -1822,7 +1840,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
   device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
@@ -1915,7 +1933,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
   device.setIO(1, 1)                         -- port 1 to high level - that should trigger IgnitionOn
@@ -2011,7 +2029,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
                                              }
                    )
 
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
 
