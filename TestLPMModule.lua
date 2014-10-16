@@ -144,25 +144,28 @@ end
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
   -- Initial Conditions:
   --
-  -- * Terminal in LPM and IgnitionOn
-  -- * LpmTrigger (PIN 31) set to IgnitionOff
+  -- * Terminal not in LPM
+  -- * Terminal in IgnitionOn state
   -- * Air communication not blocked
   --
   -- Steps:
   --
-  -- 1. Trigger IgnitionOff (MIN 5)
-  -- 2. Stay in IgnitionOff longer than LpmEntryDelay (PIN 32)
+  -- 1. Set port as digital input and associate it with IgnitionOn line
+  -- 2. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 3. Check terminals state
   --
   -- Results:
   --
-  -- 1. Terminal enters LPM after LpmEntryDelay
-function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEntryDelay_TerminalPutToLowPowerMode()
+  -- 1. Port set as digital input and associated with IgnitionOn line
+  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 3. Terminal goes to LPM
+function test_LPM_WhenLpmTriggerSetToIgnitionOffAndIgnitionOffStateTrueForPeriodAboveLpmEntryDelay_TerminalPutToLowPowerMode()
 
-  local lpmEntryDelay = 1    -- in minutes
+  local lpmEntryDelay = 0    -- in minutes
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1Config, 3},     -- port as digital input
                                                 {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
@@ -191,7 +194,6 @@ function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEn
   avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
-
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
   framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
 
@@ -206,20 +208,21 @@ end
   -- Initial Conditions:
   --
   -- * Terminal not in the LPM
-  -- * IgnitonOn is false
-  -- * LpmTrigger (PIN 31) set to IgnitionOff
+  -- * IgnitonOn is true
   -- * Air communication not blocked
   --
   -- Steps:
   --
-  -- 1. Put terminal to IgnitionOn state
-  -- 2. Trigger IgnitionOff (MIN 5)
-  -- 3. Stay in IgnitionOff shorter than LpmEntryDelay (PIN 32)
+  -- 1. Set port as digital input and associate it with IgnitionOn line
+  -- 2. Simulate low level of port for period shorter than LpmEntryDelay (PIN 32)
+  -- 3. Check terminals state
   --
   -- Results:
   --
-  -- 1. Terminal does not enter LPM after LpmEntryDelay
-function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodBelowpmEntryDelay_TerminalNotPutToLowPowerMode()
+  -- 1. Port set as digital input and associated with IgnitionOn line
+  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time shorter than LpmEntryDelay
+  -- 3. Terminal does not go  to LPM
+function test_LPM_WhenLpmTriggerSetToIgnitionOffAndIgnitionOffStateTrueForPeriodBelowpmEntryDelay_TerminalNotPutToLowPowerMode()
 
   local lpmEntryDelay = 1    -- minutes
 
@@ -271,18 +274,25 @@ end
 --- TC checks if terminal is put out of Low Power Mode if the trigger of LPM is set to IgnitionOff and IgnitionOn state becomes true .
   -- Initial Conditions:
   --
-  -- * Terminal in LPM
-  -- * LpmTrigger (PIN 31) set to IgnitionOff
+  -- * Terminal not in LPM
   -- * Air communication not blocked
   --
   -- Steps:
   --
-  -- 1. Trigger IgnitionOn message (MIN 4)
+  -- 1. Set port as digital input and associate it with IgnitionOn line
+  -- 2. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 3. Check terminals state
+  -- 4. Simulate high level of port
+  -- 5. Check terminals state
   --
   -- Results:
   --
-  -- 1. Terminal put out of LPM
-function test_LPM_WhenLpmTriggerSetTo1TerminalInLpmAndIgnitionOnStateBecomesTrue_TerminalPutOutOfLowPowerMode()
+  -- 1. Port set as digital input and associated with IgnitionOn line
+  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 3. Terminal goes to LPM
+  -- 4. IgnitionOn event generated
+  -- 5. Terminal put out of LPM
+function test_LPM_WhenLpmTriggerSetToIgnitionOffTerminalInLpmAndIgnitionOnStateBecomesTrue_TerminalPutOutOfLowPowerMode()
 
   local lpmEntryDelay = 1   -- minutes
 
@@ -616,7 +626,7 @@ end
   -- 18. Value of powerMode (PIN 10, SIN 27) has been reverted to powerModeUserSet
 function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChangedwhenEnteringLpmAndRevertedWhenLeavingLpm()
 
-  local lpmEntryDelay = 1                             -- minutes (1 minute is the minimal value)
+  local lpmEntryDelay = 1                             -- minutes
   local ledControlUserSet = 0                         -- enum type property (0 - Terminal, 1 - User)
   local lpmGeoInterval = 120                          -- seconds
   local geofenceInterval = 50                         -- seconds
@@ -847,7 +857,7 @@ end
   -- 6. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
-  local lpmEntryDelay = 1    -- in minutes
+  local lpmEntryDelay = 0    -- in minutes
 
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -923,7 +933,7 @@ end
   -- 7. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
-  local lpmEntryDelay = 1    -- in minutes
+  local lpmEntryDelay = 0    -- in minutes
 
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
