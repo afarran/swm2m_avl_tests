@@ -139,7 +139,7 @@ end
     Each test case is a global function whose name begins with "test"
 
 --]]
---[[
+
 
 
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
@@ -1070,7 +1070,7 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 
 end
 
---]]
+
 
 --- TC checks if terminal is not put in Low Power Mode by IgnitionOff event when LPM trigger is set to Built-in Battery .
   -- Initial Conditions:
