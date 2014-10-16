@@ -57,11 +57,11 @@ end
   --
   -- Steps:
   --
-  -- 1. Set LpmTrigger (PIN 31)
+  -- 1. Set LpmTrigger (PIN 31) to 0
   --
   -- Results:
   --
-  -- 1. LpmTrigger (PIN 31) set
+  -- 1. LpmTrigger (PIN 31) set to 0
 function teardown()
 
 -- terminal should be put out of the low power mode after each test case
@@ -141,6 +141,7 @@ end
 --]]
 
 
+
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
   -- Initial Conditions:
   --
@@ -151,14 +152,16 @@ end
   -- Steps:
   --
   -- 1. Set port as digital input and associate it with IgnitionOn line
-  -- 2. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
-  -- 3. Check terminals state
+  -- 2. Set LpmTrigger (PIN 31) to 1 (IgnitionOff)
+  -- 3. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 4. Check terminals state
   --
   -- Results:
   --
   -- 1. Port set as digital input and associated with IgnitionOn line
-  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
-  -- 3. Terminal goes to LPM
+  -- 2. LpmTrigger (PIN 31) set to 1
+  -- 3. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 4. Terminal goes to LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndIgnitionOffStateTrueForPeriodAboveLpmEntryDelay_TerminalPutToLowPowerMode()
 
   local lpmEntryDelay = 0    -- in minutes
@@ -214,14 +217,16 @@ end
   -- Steps:
   --
   -- 1. Set port as digital input and associate it with IgnitionOn line
-  -- 2. Simulate low level of port for period shorter than LpmEntryDelay (PIN 32)
-  -- 3. Check terminals state
+  -- 2. Set LpmTrigger (PIN 31) to 1 (IgnitionOff)
+  -- 3. Simulate low level of port for period shorter than LpmEntryDelay (PIN 32)
+  -- 4. Check terminals state
   --
   -- Results:
   --
   -- 1. Port set as digital input and associated with IgnitionOn line
-  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time shorter than LpmEntryDelay
-  -- 3. Terminal does not go  to LPM
+  -- 2. LpmTrigger (PIN 31) set to 1
+  -- 3. IgnitionOff event generated and terminal in IgnitionOn = false for time shorter than LpmEntryDelay
+  -- 4. Terminal does not go  to LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndIgnitionOffStateTrueForPeriodBelowpmEntryDelay_TerminalNotPutToLowPowerMode()
 
   local lpmEntryDelay = 1    -- minutes
@@ -280,18 +285,20 @@ end
   -- Steps:
   --
   -- 1. Set port as digital input and associate it with IgnitionOn line
-  -- 2. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
-  -- 3. Check terminals state
-  -- 4. Simulate high level of port
-  -- 5. Check terminals state
+  -- 2. Set LpmTrigger (PIN 31) to 1 (IgnitionOff)
+  -- 3. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 4. Check terminals state
+  -- 5. Simulate high level of port
+  -- 6. Check terminals state
   --
   -- Results:
   --
   -- 1. Port set as digital input and associated with IgnitionOn line
-  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
-  -- 3. Terminal goes to LPM
-  -- 4. IgnitionOn event generated
-  -- 5. Terminal put out of LPM
+  -- 2. LpmTrigger (PIN 31) set to 1
+  -- 3. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 4. Terminal goes to LPM
+  -- 5. IgnitionOn event generated
+  -- 6. Terminal put out of LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffTerminalInLpmAndIgnitionOnStateBecomesTrue_TerminalPutOutOfLowPowerMode()
 
   local lpmEntryDelay = 1   -- minutes
@@ -985,7 +992,83 @@ end
 
 
 
+--- TC checks if terminal is put in and out of Low Power Mode according to IgnitionOn and IgnitionOff events if the trigger of LPM is set to both IgnitionOff and Built-in Battery .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set port as digital input and associate it with IgnitionOn line
+  -- 2. Set LpmTrigger (PIN 31) to 3 (IgnitionOff and Built-in Battery)
+  -- 2. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 3. Check terminals state
+  -- 4. Simulate high level of port
+  -- 5. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. Port set as digital input and associated with IgnitionOn line
+  -- 2. LpmTrigger (PIN 31) set to 3
+  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 3. Terminal goes to LPM
+  -- 4. IgnitionOn event generated
+  -- 5. Terminal put out of LPM
+function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutInLpmAfterIgnitionOffAndPutOutOfLpmAfterIgnitionOn()
 
+  local lpmEntryDelay = 0   -- minutes
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 3},                                   -- 3 is for both IgnitionOff and Built-in Battery
+                                             }
+                   )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+  -- checking if terminal correctly goes to IgnitionOn state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
+  framework.delay(5)                 -- waiting for the state to change
+
+  -- checking if terminal correctly goes to IgnitionOn false state
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+  -- checking state of the terminal, Low Power Mode is expected
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+
+  -- checking if terminal correctly goes to IgnitionOn state
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+  framework.delay(5)   -- waiting for the state to change
+
+  -- checking state of the terminal, low power mode is not expected
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
+
+
+end
 
 
 
