@@ -1,0 +1,316 @@
+Starting...
+Attaching shell
+[05:39:59 AVL] Service started v3.2.2 r1625
+[05:39:59 Utility] Service started v1.1.0 r1569
+shell> [05:39:59 AVL] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[05:39:59 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[05:39:59 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[05:39:59 AVL] TxQ Msg#1 Evnt="Reset" MIN=1 Cell=false
+[06:39:59 AVL] Parameters Saved
+
+Stopped
+Starting...
+Attaching shell
+[06:40:23 AVL] Service started v3.2.2 r1625
+[06:40:23 AVL] Starting event GeoDwelling debounce timer (14400.0 sec)
+[06:40:23 Utility] Service started v1.1.0 r1569
+shell> [06:40:23 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[06:40:23 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[06:40:23 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[06:40:23 AVL] TxQ Msg#1 Evnt="PowerMain" MIN=2 Cell=false
+[06:40:23 AVL] Starting event LowPower debounce timer (0.1 sec)
+[06:40:23 AVL] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[06:40:23 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[06:40:23 AVL] TxQ Msg#2 Evnt="Reset" MIN=1 Cell=false
+[06:40:23 AVL] Entering LPM 0x2
+[06:40:28 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[06:40:28 AVL] TxQ Msg#3 Evnt="PowerMain" MIN=2 Cell=false
+[06:40:28 AVL] Starting event LowPower debounce timer (0.1 sec)
+[06:40:28 AVL] Exiting LPM 0x2
+[06:41:27 AVL] Parameters Saved
+[06:41:39 AVL] Evnt="PowerBackup" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[06:41:39 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[06:41:39 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[06:41:39 AVL] TxQ Msg#4 Evnt="PowerBackup" MIN=3 Cell=false
+[06:41:39 AVL] Starting event LowPower debounce timer (60.0 sec)
+[06:42:34 AVL] Debounce timer stopped - LowPower
+[06:49:30 AVL] Starting event LowPower debounce timer (60.0 sec)
+[06:49:30 AVL] Debounce timer stopped - LowPower
+[06:50:39 AVL] Starting event LowPower debounce timer (60.0 sec)
+[06:50:39 AVL] Debounce timer stopped - LowPower
+[07:40:28 AVL] Parameters Saved
+[07:49:11 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[07:49:11 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[07:49:11 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[07:49:11 AVL] TxQ Msg#5 Evnt="PowerMain" MIN=2 Cell=false
+[07:50:58 AVL] Evnt="PowerBackup" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[07:50:58 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[07:50:58 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[07:50:58 AVL] TxQ Msg#6 Evnt="PowerBackup" MIN=3 Cell=false
+[07:50:58 AVL] Starting event LowPower debounce timer (60.0 sec)
+[07:51:03 AVL] Debounce timer stopped - LowPower
+[07:52:33 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[07:52:33 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[07:52:33 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[07:52:33 AVL] TxQ Msg#7 Evnt="PowerMain" MIN=2 Cell=false
+[09:08:07 AVL] Evnt="PowerBackup" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[09:08:07 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[09:08:07 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[09:08:07 AVL] TxQ Msg#8 Evnt="PowerBackup" MIN=3 Cell=false
+prop set power 9 true
+Error: invalid value type
+shell> prop set power 9 1
+Error: power.onSetVolatile(9, 1) returned (R/O property)
+shell> [10:03:21 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:03:21 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:03:21 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[10:03:21 AVL] TxQ Msg#9 Evnt="PowerMain" MIN=2 Cell=false
+[10:06:50 AVL] Evnt="PowerBackup" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:06:50 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:06:50 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[10:06:50 AVL] TxQ Msg#10 Evnt="PowerBackup" MIN=3 Cell=false
+[10:06:50 AVL] Starting event LowPower debounce timer (60.0 sec)
+[10:07:32 AVL] Debounce timer stopped - LowPower
+[10:09:23 AVL] Starting event LowPower debounce timer (60.0 sec)
+prop get power 9
+SIN=17(power) PIN=9(extPowerVoltage) val=24000
+shell> prop get power 8
+SIN=17(power) PIN=8(extPowerPresent) val=0
+shell> [10:10:23 AVL] Entering LPM 0x2
+[10:10:23 AVL] Parameters Saved
+prop get power 8
+SIN=17(power) PIN=8(extPowerPresent) val=0
+shell> [10:10:49 AVL] Starting event LowPower debounce timer (0.1 sec)
+[10:10:49 AVL] Exiting LPM 0x0
+prop get power 8
+SIN=17(power) PIN=8(extPowerPresent) val=0
+shell> prop get power 9
+SIN=17(power) PIN=9(extPowerVoltage) val=24000
+shell> [10:12:18 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:12:18 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:12:18 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[10:12:18 AVL] TxQ Msg#11 Evnt="PowerMain" MIN=2 Cell=false
+prop get power
+SIN=17(power) PIN=1(batteryConfig) val=Primary
+SIN=17(power) PIN=2(batteryChargerState) val=Disabled
+SIN=17(power) PIN=3(batteryVoltage) val=24000
+SIN=17(power) PIN=4(batteryTemperature) val=24
+SIN=17(power) PIN=5(extPowerPresentStateDetect) val=Both
+SIN=17(power) PIN=6(extPowerPresentAlarmMsg) val=false
+SIN=17(power) PIN=7(extPowerPresentAlarmLog) val=false
+SIN=17(power) PIN=8(extPowerPresent) val=1
+SIN=17(power) PIN=9(extPowerVoltage) val=24000
+SIN=17(power) PIN=10(extPowerGoodThreshold) val=9000
+SIN=17(power) PIN=11(powerAvailableTime) val=16676
+SIN=17(power) PIN=12(autoPowerOnConfig) val=false
+SIN=17(power) PIN=13(powerOnReason) val=External
+SIN=17(power) PIN=14(powerOnSwitchAlarmMsg) val=false
+SIN=17(power) PIN=15(powerOnSwitchAlarmLog) val=false
+SIN=17(power) PIN=16(powerOnBatteryAlarmMsg) val=false
+SIN=17(power) PIN=17(powerOnBatteryAlarmLog) val=false
+SIN=17(power) PIN=18(preLoadVoltage) val=24000
+SIN=17(power) PIN=19(postLoadVoltage) val=23000
+shell> [10:40:23 AVL] Evnt="GeoDwellStart" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:40:23 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:40:23 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[10:40:23 AVL] TxQ Msg#12 Evnt="GeoDwellStart" MIN=30 Cell=false
+
+Stopped
+Starting...
+Attaching shell
+[10:52:47 AVL] Service started v3.2.2 r1625
+[10:52:47 Utility] Service started v1.1.0 r1569
+shell> [10:52:48 AVL] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:52:48 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:52:48 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[10:52:48 AVL] TxQ Msg#1 Evnt="Reset" MIN=1 Cell=false
+prop get power
+*** error: Invalid SIN
+shell> 
+Stopped
+Starting...
+Attaching shell
+[10:53:24 AVL] Service started v3.2.2 r1625
+[10:53:24 AVL] Starting event GeoDwelling debounce timer (14400.0 sec)
+[10:53:24 Utility] Service started v1.1.0 r1569
+shell> [10:53:25 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:53:25 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:53:25 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[10:53:25 AVL] TxQ Msg#1 Evnt="PowerMain" MIN=2 Cell=false
+[10:53:25 AVL] Starting event LowPower debounce timer (0.1 sec)
+[10:53:25 AVL] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[10:53:25 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[10:53:25 AVL] TxQ Msg#2 Evnt="Reset" MIN=1 Cell=false
+[10:53:25 AVL] Entering LPM 0x2
+[10:54:28 AVL] Parameters Saved
+prop get power
+SIN=17(power) PIN=1(batteryConfig) val=Primary
+SIN=17(power) PIN=2(batteryChargerState) val=Disabled
+SIN=17(power) PIN=3(batteryVoltage) val=24000
+SIN=17(power) PIN=4(batteryTemperature) val=24
+SIN=17(power) PIN=5(extPowerPresentStateDetect) val=Both
+SIN=17(power) PIN=6(extPowerPresentAlarmMsg) val=false
+SIN=17(power) PIN=7(extPowerPresentAlarmLog) val=false
+SIN=17(power) PIN=8(extPowerPresent) val=1
+SIN=17(power) PIN=9(extPowerVoltage) val=24000
+SIN=17(power) PIN=10(extPowerGoodThreshold) val=9000
+SIN=17(power) PIN=11(powerAvailableTime) val=18872
+SIN=17(power) PIN=12(autoPowerOnConfig) val=false
+SIN=17(power) PIN=13(powerOnReason) val=External
+SIN=17(power) PIN=14(powerOnSwitchAlarmMsg) val=false
+SIN=17(power) PIN=15(powerOnSwitchAlarmLog) val=false
+SIN=17(power) PIN=16(powerOnBatteryAlarmMsg) val=false
+SIN=17(power) PIN=17(powerOnBatteryAlarmLog) val=false
+SIN=17(power) PIN=18(preLoadVoltage) val=24000
+SIN=17(power) PIN=19(postLoadVoltage) val=23000
+shell> prop get AVL
+SIN=126(AVL) PIN=1(StationarySpeedThld) val=5
+SIN=126(AVL) PIN=2(StationaryDebounceTime) val=60
+SIN=126(AVL) PIN=3(MovingDebounceTime) val=30
+SIN=126(AVL) PIN=4(CurrentZoneId) val=128
+SIN=126(AVL) PIN=5(DefaultSpeedLimit) val=100
+SIN=126(AVL) PIN=6(SpeedingTimeOver) val=120
+SIN=126(AVL) PIN=7(SpeedingTimeUnder) val=30
+SIN=126(AVL) PIN=8(LoggingPositionsInterval) val=0
+SIN=126(AVL) PIN=9(StationaryIntervalCell) val=7200
+SIN=126(AVL) PIN=10(MovingIntervalCell) val=120
+SIN=126(AVL) PIN=11(StationaryIntervalSat) val=86400
+SIN=126(AVL) PIN=12(MovingIntervalSat) val=900
+SIN=126(AVL) PIN=13(SmReportingHour) val=0
+SIN=126(AVL) PIN=14(OdometerDistanceIncrement) val=100
+SIN=126(AVL) PIN=15(Odometer) val=1.37047e+009
+SIN=126(AVL) PIN=16(TurnThreshold) val=0
+SIN=126(AVL) PIN=17(TurnDebounceTime) val=7
+SIN=126(AVL) PIN=18(DistanceCellThld) val=0
+SIN=126(AVL) PIN=19(DistanceSatThld) val=0
+SIN=126(AVL) PIN=20(MaxDrivingTime) val=0
+SIN=126(AVL) PIN=21(MinRestTime) val=480
+SIN=126(AVL) PIN=22(AirBlockageTime) val=20
+SIN=126(AVL) PIN=23(MaxIdlingTime) val=600
+SIN=126(AVL) PIN=24(DigPorts) val=4096
+SIN=126(AVL) PIN=25(DefaultGeoDwellTime) val=0
+SIN=126(AVL) PIN=26(PositionMsgInterval) val=0
+SIN=126(AVL) PIN=27(OptionalFieldsInMsgs) val=0
+SIN=126(AVL) PIN=28(GpsJamDebounceTime) val=10
+SIN=126(AVL) PIN=29(CellJamDebounceTime) val=10
+SIN=126(AVL) PIN=30(Version) val={0x03, 0x02, 0x02}
+SIN=126(AVL) PIN=31(LpmTrigger) val=2
+SIN=126(AVL) PIN=32(LpmEntryDelay) val=0
+SIN=126(AVL) PIN=33(LpmGeoInterval) val=604800
+SIN=126(AVL) PIN=34(LpmModemWakeupInterval) val=60_minutes
+SIN=126(AVL) PIN=35(TowMotionThld) val=100
+SIN=126(AVL) PIN=36(TowStartCheckInterval) val=20
+SIN=126(AVL) PIN=37(TowStartDebCount) val=3
+SIN=126(AVL) PIN=38(TowStopCheckInterval) val=60
+SIN=126(AVL) PIN=39(TowStopDebCount) val=3
+SIN=126(AVL) PIN=40(TowInterval) val=900
+SIN=126(AVL) PIN=41(AvlStates) val=1
+SIN=126(AVL) PIN=42(SendMsgBitmap) val={0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+SIN=126(AVL) PIN=43(LogMsgBitmap) val={0xFF, 0xFF, 0x3E, 0xFF, 0xFF, 0xFF, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+SIN=126(AVL) PIN=44(PersistentMsgBitmap) val={0xFF, 0x0F, 0x3E, 0xFF, 0xEF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+SIN=126(AVL) PIN=45(CellOnlyMsgBitmap) val={0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+SIN=126(AVL) PIN=46(DigStatesDefBitmap) val=3
+SIN=126(AVL) PIN=47(FuncDigInp1) val=Disabled
+SIN=126(AVL) PIN=48(FuncDigInp2) val=Disabled
+SIN=126(AVL) PIN=49(FuncDigInp3) val=Disabled
+SIN=126(AVL) PIN=50(FuncDigInp4) val=Disabled
+SIN=126(AVL) PIN=51(FuncDigInp5) val=Disabled
+SIN=126(AVL) PIN=52(FuncDigInp6) val=Disabled
+SIN=126(AVL) PIN=53(FuncDigInp7) val=Disabled
+SIN=126(AVL) PIN=54(FuncDigInp8) val=Disabled
+SIN=126(AVL) PIN=55(FuncDigInp9) val=Disabled
+SIN=126(AVL) PIN=56(FuncDigInp10) val=Disabled
+SIN=126(AVL) PIN=57(FuncDigInp11) val=Disabled
+SIN=126(AVL) PIN=58(FuncDigInp12) val=Disabled
+SIN=126(AVL) PIN=59(FuncDigInp13) val=GeneralPurpose
+SIN=126(AVL) PIN=60(SensorReportingInterval) val=0
+SIN=126(AVL) PIN=61(Sensor1Source) val={}
+SIN=126(AVL) PIN=62(Sensor1NormalSampleInterval) val=0
+SIN=126(AVL) PIN=63(Sensor1LpmSampleInterval) val=0
+SIN=126(AVL) PIN=64(Sensor1MaxReportInterval) val=300
+SIN=126(AVL) PIN=65(Sensor1ChangeThld) val=0
+SIN=126(AVL) PIN=66(Sensor1MinThld) val=-32768
+SIN=126(AVL) PIN=67(Sensor1MaxThld) val=32767
+SIN=126(AVL) PIN=68(Sensor2Source) val={}
+SIN=126(AVL) PIN=69(Sensor2NormalSampleInterval) val=0
+SIN=126(AVL) PIN=70(Sensor2LpmSampleInterval) val=0
+SIN=126(AVL) PIN=71(Sensor2MaxReportInterval) val=300
+SIN=126(AVL) PIN=72(Sensor2ChangeThld) val=0
+SIN=126(AVL) PIN=73(Sensor2MinThld) val=-32768
+SIN=126(AVL) PIN=74(Sensor2MaxThld) val=32767
+SIN=126(AVL) PIN=75(Sensor3Source) val={}
+SIN=126(AVL) PIN=76(Sensor3NormalSampleInterval) val=0
+SIN=126(AVL) PIN=77(Sensor3LpmSampleInterval) val=0
+SIN=126(AVL) PIN=78(Sensor3MaxReportInterval) val=300
+SIN=126(AVL) PIN=79(Sensor3ChangeThld) val=0
+SIN=126(AVL) PIN=80(Sensor3MinThld) val=-32768
+SIN=126(AVL) PIN=81(Sensor3MaxThld) val=32767
+SIN=126(AVL) PIN=82(Sensor4Source) val={}
+SIN=126(AVL) PIN=83(Sensor4NormalSampleInterval) val=0
+SIN=126(AVL) PIN=84(Sensor4LpmSampleInterval) val=0
+SIN=126(AVL) PIN=85(Sensor4MaxReportInterval) val=300
+SIN=126(AVL) PIN=86(Sensor4ChangeThld) val=0
+SIN=126(AVL) PIN=87(Sensor4MinThld) val=-32768
+SIN=126(AVL) PIN=88(Sensor4MaxThld) val=32767
+SIN=126(AVL) PIN=91(SM0Time) val=36000
+SIN=126(AVL) PIN=92(SM0Distance) val=500000
+SIN=126(AVL) PIN=93(SM1Time) val=7
+SIN=126(AVL) PIN=94(SM1Distance) val=111232
+SIN=126(AVL) PIN=95(SM2Time) val=360007
+SIN=126(AVL) PIN=96(SM2Distance) val=311232
+SIN=126(AVL) PIN=97(SM3Time) val=158407
+SIN=126(AVL) PIN=98(SM3Distance) val=155232
+SIN=126(AVL) PIN=99(SM4Time) val=1800000
+SIN=126(AVL) PIN=100(SM4Distance) val=500000
+SIN=126(AVL) PIN=101(HarshBrakingThld) val=434
+SIN=126(AVL) PIN=102(MinHarshBrakingTime) val=3100
+SIN=126(AVL) PIN=103(ReArmHarshBrakingTime) val=150
+SIN=126(AVL) PIN=104(HarshBrakingCount) val=0
+SIN=126(AVL) PIN=105(HarshAccelThld) val=241
+SIN=126(AVL) PIN=106(MinHarshAccelTime) val=3100
+SIN=126(AVL) PIN=107(ReArmHarshAccelTime) val=150
+SIN=126(AVL) PIN=108(HarshAccelCount) val=0
+SIN=126(AVL) PIN=109(AccidentThld) val=11000
+SIN=126(AVL) PIN=110(MinAccidentTime) val=100
+SIN=126(AVL) PIN=112(AccidentCount) val=0
+SIN=126(AVL) PIN=113(AccidentAccelDataCapture) val=0
+SIN=126(AVL) PIN=114(AccidentGpsDataCapture) val=0
+SIN=126(AVL) PIN=115(SeatbeltDebounceTime) val=0
+SIN=126(AVL) PIN=116(DigOutActiveBitmap) val=255
+SIN=126(AVL) PIN=117(FuncDigOut1) val=None
+SIN=126(AVL) PIN=118(FuncDigOut2) val=None
+SIN=126(AVL) PIN=119(FuncDigOut3) val=None
+SIN=126(AVL) PIN=120(FuncDigOut4) val=None
+SIN=126(AVL) PIN=121(FuncDigOut5) val=None
+SIN=126(AVL) PIN=130(DriverIdPort) val=rs232aux
+SIN=126(AVL) PIN=131(DriverIdPollingInterval) val=0
+SIN=126(AVL) PIN=132(DriverIdAutoLogoutDelay) val=0
+SIN=126(AVL) PIN=133(DriverId) val={}
+SIN=126(AVL) PIN=134(ExternalSpeedSource) val={}
+SIN=126(AVL) PIN=135(ExternalOdometerSource) val={}
+SIN=126(AVL) PIN=201(DeleteData) val=0
+SIN=126(AVL) PIN=202(ParamSaveInterval) val=60
+SIN=126(AVL) PIN=203(ParamSaveIntervalLpm) val=120
+SIN=126(AVL) PIN=204(ParamSaveThrtlInterval) val=1
+SIN=126(AVL) PIN=205(MaxBatteryTime) val=0
+shell> prop get power 
+SIN=17(power) PIN=1(batteryConfig) val=Primary
+SIN=17(power) PIN=2(batteryChargerState) val=Disabled
+SIN=17(power) PIN=3(batteryVoltage) val=24000
+SIN=17(power) PIN=4(batteryTemperature) val=24
+SIN=17(power) PIN=5(extPowerPresentStateDetect) val=Both
+SIN=17(power) PIN=6(extPowerPresentAlarmMsg) val=false
+SIN=17(power) PIN=7(extPowerPresentAlarmLog) val=false
+SIN=17(power) PIN=8(extPowerPresent) val=1
+SIN=17(power) PIN=9(extPowerVoltage) val=24000
+SIN=17(power) PIN=10(extPowerGoodThreshold) val=9000
+SIN=17(power) PIN=11(powerAvailableTime) val=18878
+SIN=17(power) PIN=12(autoPowerOnConfig) val=false
+SIN=17(power) PIN=13(powerOnReason) val=External
+SIN=17(power) PIN=14(powerOnSwitchAlarmMsg) val=false
+SIN=17(power) PIN=15(powerOnSwitchAlarmLog) val=false
+SIN=17(power) PIN=16(powerOnBatteryAlarmMsg) val=false
+SIN=17(power) PIN=17(powerOnBatteryAlarmLog) val=false
+SIN=17(power) PIN=18(preLoadVoltage) val=24000
+SIN=17(power) PIN=19(postLoadVoltage) val=23000
+shell> 

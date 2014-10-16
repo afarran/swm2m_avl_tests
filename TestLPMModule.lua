@@ -821,6 +821,57 @@ end
 
 
 
+--- TC checks if terminal is put into LPM if the trigger of LPM is set to Built-in battery and trigger is true longer than lpmEntryDelay .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * Device powered by external power source (in eg. cigarette lighter)
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmEntryDelay (PIN 32) in AVL service to value lpmEntryDelay
+  -- 2. Set LpmTrigger (PIN 31) in AVL service to 2 (that is Built-in battery)
+  -- 3. Simulate external power not present for time longer than
+  --
+  -- Results:
+  --
+  -- 1. LpmEntryDelay (PIN 32) set to lpmEntryDelay
+  -- 2. LpmTrigger (PIN 31) set to Built-in battery
+  -- 3.
+function test_LPM_WhenLpmTriggerSetTo2AndTerminalIsPoweredByBuiltInBatteryForForPeriodAboveLpmEntryDelay_TerminalPutToLowPowerMode()
+
+  local lpmEntryDelay = 1    -- in minutes
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},            -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 2},                           -- 1 is for Built-in battery
+                                             }
+                   )
+
+  device.setPower(8,1)             -- external power present (terminal pluged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  device.setPower(8,0)             -- external power not present from now (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- checking ExtPowerPresent property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source not expectedly present")
+  print(framework.dump(externalPowerPresentProperty[1].value))
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+
+  -- checking if terminal entered Low Power Mode after it was powered by built-in battery for time longer than LpmEntryDelay
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state as expected")
+
+end
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
