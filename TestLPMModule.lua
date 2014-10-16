@@ -188,14 +188,14 @@ function test_LPM_WhenLpmTriggerSetTo1AndIgnitionOffStateTrueForPeriodAboveLpmEn
   framework.delay(5)                 -- wait until terminal changes state
 
   -- checking if terminal correctly goes to IgnitionOn false state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
 
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
   framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
 
 end
@@ -891,6 +891,88 @@ function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternal
 
 
 end
+
+
+
+--- TC checks if terminal is put in and out of LPM if the trigger of LPM is set to both Built-in battery and IgnitionOff depening on the external power source presence .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * Device powered by external power source (in eg. cigarette lighter)
+  -- * Terminal not in IgnitionOn state
+  --
+  -- Steps:
+  --
+  -- 1. Read avlStates property and check IgnitionOn state
+  -- 2. Set LpmEntryDelay (PIN 32) in AVL service to value lpmEntryDelay
+  -- 3. Set LpmTrigger (PIN 31) in AVL service to 3 (that is both IgnitionOn and Built-in battery)
+  -- 4. Simulate external power not present for time longer than LpmEntryDelay
+  -- 5. Check terminals state
+  -- 6. Simulate external power present
+  -- 7. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. Terminal not in IgnitionOn
+  -- 2. LpmEntryDelay (PIN 32) set to lpmEntryDelay
+  -- 3. LpmTrigger (PIN 31) set to IgnitionOn and Built-in battery
+  -- 4. External Power not present for LpmEntryDelay
+  -- 5. Terminal enters LPM
+  -- 6. External power present
+  -- 7. Terminal leaves LPM
+function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
+
+  local lpmEntryDelay = 1    -- in minutes
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},            -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 3},                           -- 3 is for IgnitionOn and Built-in battery
+                                             }
+                   )
+
+  -- checking if terminal is not in IgnitionOn state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- Important: there is bug reported for setPower function
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  device.setPower(8,0)             -- external power not present from now (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- checking ExtPowerPresent property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+  print(framework.dump(externalPowerPresentProperty[1].value))
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+
+  -- checking if terminal entered Low Power Mode after it was powered by built-in battery for time longer than LpmEntryDelay
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state as expected")
+
+  device.setPower(8,1)             -- external power present again (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+  -- check external power property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  -- checking if terminal left Low Power Mode after it was plugged back to external power source
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal unexpectedly in the Low Power Mode")
+
+
+
+end
+
 
 
 
