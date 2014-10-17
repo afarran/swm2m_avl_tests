@@ -1158,19 +1158,19 @@ end
   --
   -- 1. Set port as digital input and associate it with IgnitionOn line
   -- 2. Set LpmTrigger (PIN 31) to 0
-  -- 2. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
-  -- 3. Check terminals state
-  -- 4. Simulate external power source change to 0 (terminal unplugged from external power source)
-  -- 5. Check terminal state
+  -- 3. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 4. Check terminals state
+  -- 5. Simulate external power source change to 0 (terminal unplugged from external power source)
+  -- 6. Check terminal state
   --
   -- Results:
   --
   -- 1. Port set as digital input and associated with IgnitionOn line
   -- 2. LpmTrigger (PIN 31) set to 0
-  -- 2. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
-  -- 3. Terminal does not enter LPM
-  -- 4. Terminal unplugged from external power source
-  -- 5. Terminal doesn not entet LPM
+  -- 3. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 4. Terminal does not enter LPM
+  -- 5. Terminal unplugged from external power source
+  -- 6. Terminal doesn not enter LPM
  function test_LPM_WhenLpmTriggerSetToZero_TerminalIsNotPutIntoLpmByIgnitionOffEventOrUnpluggingExternalPowerSource()
 
   local lpmEntryDelay = 0   -- minutes
@@ -1227,11 +1227,7 @@ end
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
 
 
-
-
 end
-
-
 
 
 
@@ -1245,7 +1241,7 @@ end
   -- Steps:
   --
   -- 1. Set LpmTrigger (PIN 31) to 1 (IgnitionOff)
-  -- 2. Simulate external power not present for time longer than LpmEntryDelay
+  -- 2. Simulate external power source not present for time longer than LpmEntryDelay
   -- 3. Check terminals state
   --
   -- Results:
@@ -1261,10 +1257,10 @@ end
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
                                                 {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
-                                                {avlPropertiesPINs.lpmTrigger, 1},                                   -- setting
+                                                {avlPropertiesPINs.lpmTrigger, lpmTrigger},                          -- setting lpmTrigger
                                              }
                    )
-  print("ext power present")
+
   -- Important: there is bug reported for setPower function
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   framework.delay(2)               -- wait until setting is applied
@@ -1272,7 +1268,7 @@ end
   -- check external power property
   local externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
   assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present")
-  print("ext power not present")
+
   device.setPower(8,0)             -- external power not present from now (terminal unplugged from external power source)
   framework.delay(2)               -- wait until setting is applied
 
@@ -1287,10 +1283,115 @@ end
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
 
+end
 
+
+
+
+--- TC checks if terminal is put in and out of Low Power Mode when both Ignition is on and External power is present for the LPM trigger set to both IgnitionOff and Built-in Battery .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set port as digital input and associate it with IgnitionOn line
+  -- 2. Set LpmTrigger (PIN 31) to 3 (IgnitionOff and Built-in Battery)
+  -- 3. Simulate low level of port for period longer than LpmEntryDelay (PIN 32)
+  -- 4. Check terminals state
+  -- 5. Simulate external power source change to 0 (terminal unplugged from external power source)
+  -- 6. Simulate high level of port
+  -- 7. Check terminals state
+  -- 8. Simulate external power source change to 1 (terminal plugged to external power source)
+  -- 9. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. Port set as digital input and associated with IgnitionOn line
+  -- 2. LpmTrigger (PIN 31) set to 3
+  -- 3. IgnitionOff event generated and terminal in IgnitionOn = false for time longer than LpmEntryDelay
+  -- 4. Terminal enters LPM
+  -- 5. External power source not present
+  -- 6. IgnitionOn event generated
+  -- 7. Terminal not put out of LPM (terminal still powered by Built-in battery)
+  -- 8. External power present
+  -- 9. Terminal leaves LPM
+function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutOutOfLpmWhenBothIgnitionIsOnAndExternalPowerIsPresent()
+
+  local lpmEntryDelay = 0   -- minutes
+  local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery
+
+  -- setting the EIO properties
+  lsf.setProperties(avlAgentCons.EioSIN,{
+                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, lpmTrigger},                          -- setting lpmTrigger
+                                             }
+                   )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+  -- checking if terminal correctly goes to IgnitionOn state
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
+  framework.delay(5)                 -- waiting for the state to change
+
+  -- checking if terminal correctly goes to IgnitionOn false state
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+
+  -- setting external power source
+  device.setPower(8,0)             -- external power not present from now (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- checking ExtPowerPresent property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+  -- checking state of the terminal, Low Power Mode is expected
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
+
+  device.setIO(1, 1) -- that should trigger IgnitionOn
+  framework.delay(2)
+
+  -- checking if terminal correctly goes to IgnitionOn state
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+  framework.delay(5)   -- waiting for the state to change
+
+  -- checking state of the terminal, Low Power Mode is expected (terminal still powered by Built-in Battery - trigger is true)
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
+
+  device.setPower(8,1)             -- external power present (terminal plugged back to external power source)
+  framework.delay(2)               -- wait until setting is applied
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  -- checking state of the terminal, low power mode is not expected from now (both triggers are not true)
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
 
 
 end
+
 
 
 
