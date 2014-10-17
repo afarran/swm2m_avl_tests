@@ -140,7 +140,7 @@ end
 
 --]]
 
---[[
+
 
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
   -- Initial Conditions:
@@ -1285,7 +1285,7 @@ end
 
 end
 
---]]
+
 
 
 --- TC checks if terminal is put in and out of Low Power Mode when both Ignition is on and external power is present for the LPM trigger set to both IgnitionOff and Built-in Battery .
@@ -1325,6 +1325,7 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery
+
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
