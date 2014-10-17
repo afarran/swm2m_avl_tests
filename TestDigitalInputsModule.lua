@@ -78,6 +78,7 @@ function suite_teardown()
 end
 
 
+
 --- Setup function is run before every TC, it puts terminal into known state so that every TC starts in the same conditions .
   -- Initial Conditions:
   --
@@ -475,7 +476,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
 
 end
 
---[[
+
 
 --- TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
@@ -2604,6 +2605,82 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
 
 
 end
+
+
+
+--- TC checks if PowerMain message is sent when virtual line number 13 changes state to 1 (external power source becomes present) .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Simulate terminals position in stationary state in Point#1
+  -- 2. Simulate external power source not present (PIN 8 in Power service)
+  -- 3. Set External Input Voltage to value A
+  -- 4. Simulate external power source present
+  -- 5. Receive PowerMain message (MIN 2)
+  -- 6. Verify messages fields against expected values
+  -- 7. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. Point#1 is terminals simulated position in stationary state
+  -- 2. External power source not present (PIN 8 in Power service is 0)
+  -- 3. Value of External Input Voltage set to value A
+  -- 4. External power source not present (PIN 8 in Power service is 0)
+  -- 5. PowerMain message received (MIN 2)
+  -- 6. Message fields contain Point#1 GPS and time information and reported InputVoltage is value A
+  -- 7. PowerMain is true
+  --
+ function test_PowerMain_WhenVirtualLine13ChangesStateTo1_PowerMainMessageSentAndPowerMainStateBecomesTrue()
+
+  local inputVoltageTC = 240      -- tenths of volts, external power voltage value
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                     }
+
+  gps.set(gpsSettings)               -- applying gps settings
+  framework.delay(3)
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  -- setting external power source
+  device.setPower(8,0)                    -- external power not present (terminal unplugged from external power source)
+  framework.delay(2)
+
+  device.setPower(9,inputVoltageTC*100)  -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
+  framework.delay(2)
+
+  -- setting external power source
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  timeOfEventTC = os.time()
+  framework.delay(2)               -- wait until setting is applied
+
+  -- PowerMain message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.powerMain))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "PowerMain",
+                  currentTime = timeOfEventTC,
+                  inputVoltage = inputVoltageTC
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - onMainPower true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not in onMainPower state")
+
+end
+
 
 
 

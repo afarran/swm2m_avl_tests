@@ -2,6 +2,8 @@
 --
 messagesMINs = {
   positionRequest = 1,
+  powerMain = 2,
+  powerBackup = 3,
   ignitionON = 4,
   ignitionOFF = 5,
 	movingStart = 6,

@@ -204,6 +204,10 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_equal(expectedValues.SM4Distance,tonumber(colmsg.Payload.SM4Distance), 2, "SM4Distance value is not correct in the report")  -- in the expectedValues table
   end
 
+  if(expectedValues.inputVoltage) then                                                                                                   -- checking inputVoltage if that parameter has been passed
+    assert_equal(expectedValues.inputVoltage,tonumber(colmsg.Payload.InputVoltage), 2, "InputVoltage value is not correct in the report")  -- in the expectedValues table
+  end
+
 
 end
 
