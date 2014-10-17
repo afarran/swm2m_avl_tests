@@ -140,7 +140,7 @@ end
 
 --]]
 
---[[
+
 
 --- TC checks if terminal is put into LPM if the trigger of LPM is set to IgnitionOff and trigger is true longer than lpmEntryDelay .
   -- Initial Conditions:
@@ -844,6 +844,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * Device powered by external power source (in eg. cigarette lighter)
+  -- * IDP 800 terminal simulated
   --
   -- Steps:
   --
@@ -918,6 +919,7 @@ end
   -- * Air communication not blocked
   -- * Device powered by external power source (in eg. cigarette lighter)
   -- * Terminal not in IgnitionOn state
+  -- * IDP 800 terminal simulated
   --
   -- Steps:
   --
@@ -1070,7 +1072,7 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 
 end
 
---]]
+
 
 --- TC checks if terminal is not put in Low Power Mode by IgnitionOff event when LPM trigger is set to Built-in Battery .
   -- Initial Conditions:
@@ -1193,6 +1195,67 @@ end
   -- checking state of the terminal, Low Power Mode is not expected (LPM trigger is set to 0)
   avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal in the Low Power Mode state")
+
+
+end
+
+
+
+
+
+--- TC checks if terminal is not put in Low Power Mode when terminal is unplugged from external power source for LPM trigger set to IgnitionOff .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * IDP 800 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmTrigger (PIN 31) to 1 (IgnitionOff)
+  -- 2. Simulate external power not present for time longer than LpmEntryDelay
+  -- 3. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. LpmTrigger (PIN 31) set to 1 (IgnitionOff)
+  -- 2. External Power not present for LpmEntryDelay
+  -- 3. Terminal does not enter LPM
+ function test_LPM_WhenLpmTriggerSetToIgnitionOff_TerminalIsNotPutIntoLpmWhenExternalPowerSourceIsNotPresent()
+
+  local lpmEntryDelay = 0   -- minutes
+  local lpmTrigger = 1      -- 1 is for IgnitionOff
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, 1},                                   -- setting
+                                             }
+                   )
+  print("ext power present")
+  -- Important: there is bug reported for setPower function
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present")
+  print("ext power not present")
+  -- device.setPower(8,0)             -- external power not present from now (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- checking ExtPowerPresent property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+
+  -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
+  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+
+  -- checking if terminal has not entered Low Power Mode after it was powered by built-in battery for time longer than LpmEntryDelay
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
+
+
 
 
 end
