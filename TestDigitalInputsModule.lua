@@ -394,7 +394,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
 
 end
 
---]]
+
 --- TC checks if IgnitionOff message is sent when digital input port changes to low state .
   -- Initial Conditions:
   --
@@ -2628,7 +2628,7 @@ end
   -- Results:
   --
   -- 1. Point#1 is terminals simulated position in stationary state
-  -- 2. External power source not present (PIN 8 in Power service is 0)
+  -- 2. External power source not present (PIN 8 in Power service is 1)
   -- 3. Value of External Input Voltage set to value A
   -- 4. External power source not present (PIN 8 in Power service is 0)
   -- 5. PowerMain message received (MIN 2)
@@ -2678,6 +2678,82 @@ end
   -- verification of the state of terminal - onMainPower true expected
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not in onMainPower state")
+
+end
+
+
+
+
+--- TC checks if PowerBackup message is sent when virtual line number 13 changes state to 0 (external power source becomes not present) .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Simulate terminals position in stationary state in Point#1
+  -- 2. Simulate external power source present (PIN 8 in Power service)
+  -- 3. Set Battery Voltage to value A
+  -- 4. Simulate external power source not present
+  -- 5. Receive PowerBackup message (MIN 3)
+  -- 6. Verify messages fields against expected values
+  -- 7. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. Point#1 is terminals simulated position in stationary state
+  -- 2. External power source present (PIN 8 in Power service is 1)
+  -- 3. Value of External Input Voltage set to value A
+  -- 4. External power source present (PIN 8 in Power service is 0)
+  -- 5. PowerBackup message received (MIN 2)
+  -- 6. Message fields contain Point#1 GPS and time information and InputVoltage is value A (Battery Voltage)
+  -- 7. PowerMain is true
+  --
+ function test_PowerBackup_WhenVirtualLine13ChangesStateTo0_PowerBackupMessageSentAndPowerMainStateBecomesFalse()
+
+  local inputVoltageTC = 240      -- tenths of volts, external power voltage value
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                     }
+
+  gps.set(gpsSettings)               -- applying gps settings
+  framework.delay(3)
+  gateway.setHighWaterMark()         -- to get the newest messages
+print("power on")
+  -- setting external power source
+  --device.setPower(8,1)                    -- external power present (terminal plugged to external power source
+  framework.delay(2)
+
+  device.setPower(3,inputVoltageTC*100)  -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
+  framework.delay(2)
+print("power off")
+  -- setting external power source
+  --device.setPower(8,0)            -- external power not present (terminal unplugged from external power source)
+  timeOfEventTC = os.time()
+  framework.delay(2)               -- wait until setting is applied
+
+  -- PowerMain message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.powerBackup))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "PowerBackup",
+                  currentTime = timeOfEventTC,
+                  inputVoltage = inputVoltageTC
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - onMainPower false expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "onMainPower state is incorrectly true")
 
 end
 
