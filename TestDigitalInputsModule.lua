@@ -2824,7 +2824,6 @@ end
                   gps = gpsSettings,
                   messageName = "IgnitionOn",
                   currentTime = timeOfEventTC,
-                  inputVoltage = inputVoltageTC
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
@@ -2833,6 +2832,84 @@ end
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
 
 end
+
+
+
+--- TC checks if IgnitionOff message is sent when virtual line number 13 changes state to 0 (external power source becomes not present) .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set funcDigInp13 (PIN 59) to associate digital input line 13 with IgnitionOn function
+  -- 2. Simulate terminals position in stationary state in Point#1
+  -- 3. Simulate external power source present
+  -- 4. Simulate external power source not present
+  -- 5. Receive IgnitionOff message (MIN 5)
+  -- 6. Verify messages fields against expected values
+  -- 7. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. Line number 13 associated with IgnitionOn function
+  -- 2. Point#1 is terminals simulated position in stationary state
+  -- 3. External power source present (line 13 in high state)
+  -- 4. Line 13 changes state to 0
+  -- 5. IgnitionOn message received (MIN 5)
+  -- 6. Message fields contain Point#1 GPS and time information
+  -- 7. IgnitionOn is false
+ function test_Line13_WhenVirtualLine13ChangesStateTo0_IgnitionOffMessageSent()
+
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.IgnitionOn}, -- digital input line 13 associated with IgnitionOn function
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                     }
+
+  gps.set(gpsSettings)                    -- applying gps settings
+  framework.delay(3)
+
+  -- setting external power source
+  device.setPower(8,1)                    -- external power present (terminal plugged to external power source)
+  framework.delay(2)
+  gateway.setHighWaterMark()              -- to get the newest messages
+
+  local timeOfEventTC = os.time()        -- to get correct timestamp
+  -- setting external power source
+  device.setPower(8,0)                    -- external power becomes not present (line 13 changes state to 0)
+  framework.delay(2)
+
+  -- IgnitionOff message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IgnitionOff",
+                  currentTime = timeOfEventTC,
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionON true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is incorrectly true")
+
+end
+
 
 
 

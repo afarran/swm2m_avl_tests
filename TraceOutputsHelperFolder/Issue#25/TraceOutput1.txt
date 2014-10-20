@@ -1,0 +1,202 @@
+[ 11:09:36.069 ] Lua Services Framework starting (Version 7.0.2)
+[ 11:09:36.076 ] Starting svcmgr.init
+[ 11:09:36.079 ] Loading core services from act/svc/svclist.lua
+[ 11:09:36.080 ] Ignoring 'svc.eeio'
+[ 11:09:36.080 ] Ignoring 'svc.cell'
+[ 11:09:36.146 ] Services loaded in 0 seconds
+[ 11:09:36.146 ] Starting svcmgr.startall
+[ 11:09:36.146 ] svcmgr: calling log.init()
+[ 11:09:36.147 ] svcmgr: calling system.init()
+[ 11:09:36.147 ] svcmgr: calling idp.init()
+[ 11:09:36.147 ] svcmgr: calling message.init()
+[ 11:09:36.147 ] svcmgr: calling serial.init()
+[ 11:09:36.147 ] svcmgr: calling eio.init()
+[ 11:09:36.147 ] svcmgr: calling power.init()
+[ 11:09:36.147 ] svcmgr: calling position.init()
+[ 11:09:36.147 ] svcmgr: calling filesystem.init()
+[ 11:09:36.147 ] svcmgr: calling shell.init()
+[ 11:09:36.147 ] svcmgr: calling geofence.init()
+[ 11:09:36.147 ] svcmgr: calling campaign.init()
+[ 11:09:36.147 ] svcmgr: calling AVL.init()
+[ 11:09:36.147 ] svcmgr: calling Utility.init()
+[ 11:09:36.156 ] log.init() done
+[ 11:09:36.156 ] [16:INFO] Skywave package version: 4.1.4.6768
+[ 11:09:36.156 ] system.init() done
+[ 11:09:36.157 ] [27:INFO] IDP modem: === initializing communication ===
+[ 11:09:36.159 ] [27:INFO] cmd: AT%CRC=0*BBEB
+[ 11:09:36.183 ] message.init() done
+[ 11:09:36.183 ] serial.init() done
+[ 11:09:36.184 ] eio.init() done
+[ 11:09:36.184 ] power.init() done
+[ 11:09:36.184 ] position.init() done
+[ 11:09:36.184 ] filesystem.init() done
+[ 11:09:36.185 ] shell.init() done
+[ 11:09:36.186 ] campaign.init() done
+[ 11:09:36.195 ] AVL.init() done
+[ 11:09:36.247 ] Utility.init() done
+[ 11:09:36.247 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.247 ] [27:INFO] cmd: ATS88?
+[ 11:09:36.248 ] [27:INFO] res: \r\n016\r\n
+[ 11:09:36.248 ] [27:INFO] cmd: ATS88=16
+[ 11:09:36.250 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.250 ] [27:INFO] cmd: AT&W
+[ 11:09:36.289 ] [21:INFO] 4 fences
+[ 11:09:36.289 ] geofence.init() done
+[ 11:09:36.289 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.289 ] [27:INFO] cmd: AT%CRC=1
+[ 11:09:36.290 ] [27:INFO] Rx CRC error, rcv=0x86C5, calc=0xC1FB, data="\r\nOK\r\n\r\nOK\r\n"
+[ 11:09:36.290 ] [27:INFO] cmd: AT%CRC=1
+[ 11:09:36.290 ] [27:INFO] res: \r\nERROR\r\n
+[ 11:09:36.290 ] [27:INFO] cmd: ATS81?
+[ 11:09:36.291 ] [27:INFO] res: \r\nERROR\r\n
+[ 11:09:36.291 ] [27:INFO] cmd: ATE0*DA8C
+[ 11:09:36.292 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.292 ] [27:INFO] cmd: ATV1*9C8D
+[ 11:09:36.293 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.293 ] [27:INFO] cmd: ATQ0*153B
+[ 11:09:36.294 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.294 ] [27:INFO] cmd: ATS3=13*19C3
+[ 11:09:36.295 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.295 ] [27:INFO] cmd: ATS4=10*788D
+[ 11:09:36.296 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.296 ] [27:INFO] cmd: AT+GMM*EE01
+[ 11:09:36.296 ] [27:INFO] res: \r\n+GMM: IsatDataPro Modem Simulator\r\n\r\nOK\r\n
+[ 11:09:36.296 ] [27:INFO] cmd: ATS88=2047*2104
+[ 11:09:36.297 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.297 ] [27:INFO] IDP modem: == communication established ===
+[ 11:09:36.297 ] [27:INFO] cmd: AT+GSN*FE1E
+[ 11:09:36.299 ] [27:INFO] res: \r\n+GSN: 00000000SKYEE3D\r\n\r\nOK\r\n
+[ 11:09:36.299 ] [27:INFO] cmd: AT+GMR*0DDF
+[ 11:09:36.300 ] [27:INFO] res: \r\n+GMR: 1.000,1.0,7\r\n\r\nOK\r\n
+[ 11:09:36.300 ] [27:INFO] cmd: ATS56?*15A9
+[ 11:09:36.301 ] [27:INFO] res: \r\n001\r\n\r\nOK\r\n
+[ 11:09:36.301 ] [27:INFO] cmd: ATS57?*2698
+[ 11:09:36.301 ] [27:INFO] res: \r\n000\r\n\r\nOK\r\n
+[ 11:09:36.301 ] [27:INFO] cmd: ATS51?*8C3E
+[ 11:09:36.302 ] [27:INFO] res: \r\n000\r\n\r\nOK\r\n
+[ 11:09:36.302 ] [27:INFO] cmd: at%evmon=*778B
+[ 11:09:36.303 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.303 ] [27:INFO] cmd: AT%TRK=0,0*D778
+[ 11:09:36.304 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.304 ] [27:INFO] cmd: ATS39=0*B00D
+[ 11:09:36.305 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.305 ] [27:INFO] cmd: AT%TRK=2,0*B918
+[ 11:09:36.306 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.306 ] [27:INFO] cmd: ATS40=0*7FB1
+[ 11:09:36.307 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.307 ] [27:INFO] cmd: ATS41=180*8893
+[ 11:09:36.308 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.308 ] [27:INFO] cmd: ATS52=2500*1ADF
+[ 11:09:36.309 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.309 ] [27:INFO] cmd: ATS50=0*0905
+[ 11:09:36.309 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.309 ] [27:INFO] cmd: AT%MGRS*04F9
+[ 11:09:36.313 ] [27:INFO] res: \r\n%MGRS: \r\n\r\nOK\r\n
+[ 11:09:36.313 ] idp.init() done
+[ 11:09:36.313 ] svcmgr: spawning log.entry()
+[ 11:09:36.314 ] svcmgr: spawning system.entry()
+[ 11:09:36.314 ] svcmgr: spawning idp.entry()
+[ 11:09:36.314 ] svcmgr: spawning message.entry()
+[ 11:09:36.314 ] svcmgr: spawning serial.entry()
+[ 11:09:36.314 ] svcmgr: spawning eio.entry()
+[ 11:09:36.314 ] svcmgr: spawning power.entry()
+[ 11:09:36.314 ] svcmgr: spawning position.entry()
+[ 11:09:36.314 ] svcmgr: spawning filesystem.entry()
+[ 11:09:36.314 ] svcmgr: spawning shell.entry()
+[ 11:09:36.314 ] svcmgr: spawning geofence.entry()
+[ 11:09:36.314 ] svcmgr: spawning campaign.entry()
+[ 11:09:36.314 ] svcmgr: spawning AVL.entry()
+[ 11:09:36.314 ] svcmgr: spawning Utility.entry()
+[ 11:09:36.314 ] Services loaded and initialized in 0 seconds
+[ 11:09:36.315 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:09:36.316 ] [17:INFO] powerOnReason = External
+[ 11:09:36.316 ] [26:INFO] spawning Shell Cmd Processor
+[ 11:09:36.316 ] [26:INFO] attach
+[ 11:09:36.316 ] [22:INFO] Opening rs232main port @ 9600 baud
+[ 11:09:36.317 ] [26:INFO] spawning Shell CLI
+[ 11:09:36.330 ] [16:INFO] Hardware reset reason = SOFTWARE, software cause = CONSOLE, desc= 
+[ 11:09:36.330 ] [18:INFO] queuing log #1 (SIN=16, bits=16)
+[ 11:09:36.331 ] [18:INFO] queuing RL msg #2 (SIN=16, bits=328)
+[ 11:09:36.331 ] [27:INFO] res: \r\n016\r\n
+[ 11:09:36.332 ] [27:INFO] cmd: AT%MGFN*08D2
+[ 11:09:36.333 ] [26:INFO] CLI Thread: starting
+[ 11:09:36.449 ] [18:INFO] queuing log #3 (SIN=126, bits=134)
+[ 11:09:36.476 ] [18:INFO] queuing RL msg #4 (SIN=126, bits=134)
+[ 11:09:36.479 ] [18:INFO] sending RL msg #2 trn #1 (SIN=16, bits=328)
+[ 11:09:36.480 ] [27:INFO] res: \r\n%MGFN: \r\n\r\nOK\r\n
+[ 11:09:36.480 ] [27:INFO] cmd: ATS85?*02AB
+[ 11:09:36.481 ] [27:INFO] res: \r\n00250\r\n\r\nOK\r\n
+[ 11:09:36.481 ] [27:INFO] cmd: AT%GPS=5,1,"GGA","RMC"*AE99
+[ 11:09:36.488 ] [27:INFO] res: \r\n%GPS: $GPGGA,110936.000,0100.0000,N,00100.0000,E,1,09,1.0,0.00,M,,,,0000*3B\r\n$GPRMC,110936.000,A,0100.0000,N,00100.0000,E,0.00,000.00,201014,,,A*64\r\n\r\nOK\r\n
+[ 11:09:36.494 ] [18:INFO] queuing log #5 (SIN=126, bits=219)
+[ 11:09:36.512 ] [27:INFO] cmd: AT%MGRT="00000001",3,16,3,CAMEBgcAAwU3LjAuMgsOEBES
+[ 11:09:36.515 ] [16:INFO] config changes for service 'geofence'
+[ 11:09:36.516 ] [16:INFO] config changes for service 'position'
+[ 11:09:36.516 ] [16:INFO] config changes for service 'idp'
+[ 11:09:36.517 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.517 ] [27:INFO] cmd: AT%TRK=0,0*D778
+[ 11:09:36.520 ] [18:ERROR] Invalid transport: 2
+[ 11:09:36.520 ] [18:INFO] sending RL msg #4 trn #1 (SIN=126, bits=134)
+[ 11:09:36.521 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.522 ] [27:INFO] cmd: ATS50=2*2947
+[ 11:09:36.523 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.523 ] [27:INFO] cmd: ATS51=6*5EF3
+[ 11:09:36.524 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.524 ] [27:INFO] cmd: AT%MGRT="00000002",3,126,3,AgDqYAB1MABaaiJ2uENTwA=
+[ 11:09:36.525 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:36.525 ] [18:INFO] Setting timeout 5
+[ 11:09:41.570 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:09:41.571 ] [27:INFO] res: \r\n004\r\n\r\nOK\r\n
+[ 11:09:41.571 ] [27:INFO] cmd: AT%MGRS*04F9
+[ 11:09:41.576 ] [27:INFO] res: \r\n%MGRS: "00000001",0.1,3,16,6,40,0\r\n"00000002",0.1,3,126,5,16,0\r\n\r\n\r\nOK\r\n
+[ 11:09:41.576 ] [18:INFO] completed RL msg #2 (SIN=16), status=Success
+[ 11:09:41.584 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:09:41.584 ] [27:INFO] res: \r\n004\r\n\r\nOK\r\n
+[ 11:09:41.584 ] [27:INFO] cmd: AT%MGRS*04F9
+[ 11:09:41.585 ] [27:INFO] res: \r\n%MGRS: "00000002",0.1,3,126,6,16,0\r\n\r\n\r\nOK\r\n
+[ 11:09:41.585 ] [18:INFO] completed RL msg #4 (SIN=126), status=Success
+[ 11:09:41.600 ] [18:INFO] queuing RL msg #6 (SIN=126, bits=219)
+[ 11:09:41.600 ] [18:ERROR] Invalid transport: 2
+[ 11:09:41.601 ] [18:INFO] sending RL msg #6 trn #1 (SIN=126, bits=219)
+[ 11:09:41.601 ] [27:INFO] cmd: AT%MGRT="00000003",3,126,3,AQDqYAB1MABaaiJ2uAAdTAA
+[ 11:09:41.602 ] [27:INFO] res: \r\nOK\r\n
+[ 11:09:41.603 ] [18:INFO] Setting timeout 5
+[ 11:09:46.612 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:09:46.613 ] [27:INFO] res: \r\n004\r\n\r\nOK\r\n
+[ 11:09:46.613 ] [27:INFO] cmd: AT%MGRS*04F9
+[ 11:09:46.614 ] [27:INFO] res: \r\n%MGRS: "00000003",0.1,3,126,6,27,0\r\n\r\n\r\nOK\r\n
+[ 11:09:46.614 ] [18:INFO] completed RL msg #6 (SIN=126), status=Success
+[ 11:09:51.223 ] [21:INFO] fix req
+[ 11:09:51.223 ] [21:INFO] next run in 604800
+[ 11:09:51.223 ] [21:INFO] check start
+[ 11:09:51.226 ] [21:INFO] check done in 0 seconds
+[ 11:10:16.628 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:10:16.630 ] [27:INFO] res: \r\n000\r\n\r\nOK\r\n
+[ 11:10:46.641 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:10:46.642 ] [27:INFO] res: \r\n000\r\n\r\nOK\r\n
+[ 11:11:02.820 ] [26:INFO] CLI Cmd: [prop set AVL 59 2]
+[ 11:11:02.821 ] [16:INFO] config changes for service 'AVL'
+[ 11:11:05.573 ] [26:INFO] CLI Cmd: [prop get AVL 59]
+[ 11:11:11.146 ] [17:INFO] External power ABSENT
+[ 11:11:11.159 ] [18:INFO] queuing log #7 (SIN=126, bits=125)
+[ 11:11:11.202 ] [18:INFO] queuing RL msg #8 (SIN=126, bits=125)
+[ 11:11:11.204 ] [18:ERROR] Invalid transport: 2
+[ 11:11:11.204 ] [18:INFO] sending RL msg #8 trn #1 (SIN=126, bits=125)
+[ 11:11:11.204 ] [27:INFO] cmd: AT%MGRT="00000004",3,126,3,BADqYAB1MABaaiJ258Xw*DC
+[ 11:11:11.205 ] [27:INFO] res: \r\nOK\r\n
+[ 11:11:11.205 ] [18:INFO] Setting timeout 5
+[ 11:11:12.929 ] [17:INFO] External power PRESENT
+[ 11:11:13.036 ] [16:INFO] config changes for service 'geofence'
+[ 11:11:13.036 ] [21:INFO] next run in 25
+[ 11:11:13.038 ] [16:INFO] config changes for service 'position'
+[ 11:11:13.038 ] [16:INFO] config changes for service 'idp'
+[ 11:11:13.041 ] [27:INFO] cmd: AT%TRK=2,0*B918
+[ 11:11:13.043 ] [27:INFO] res: \r\nOK\r\n
+[ 11:11:13.044 ] [27:INFO] cmd: ATS50=0*0905
+[ 11:11:13.046 ] [27:INFO] res: \r\nOK\r\n
+[ 11:11:13.046 ] [27:INFO] cmd: ATS51=0*3E35
+[ 11:11:13.048 ] [27:INFO] res: \r\nOK\r\n
+[ 11:11:15.049 ] [27:INFO] cmd: ATS89?*47C6
+[ 11:11:15.051 ] [27:INFO] res: \r\n001\r\n\r\nOK\r\n
+[ 11:11:15.051 ] [27:INFO] cmd: AT%GPS=30,2,"RMC","GGA"*D90A
+[ 11:11:15.055 ] [27:INFO] res: \r\n%GPS: $GPGGA,111115.000,0100.0000,N,00100.0000,E,1,09,1.0,0.00,M,,,,0000*33\r\n$GPRMC,111115.000,A,0100.0000,N,00100.0000,E,0.00,000.00,201014,,,A*6C\r\n\r\nOK\r\n

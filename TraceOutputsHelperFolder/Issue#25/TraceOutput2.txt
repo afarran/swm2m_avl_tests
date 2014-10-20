@@ -1,0 +1,27 @@
+Starting...
+Attaching shell
+[11:09:36 AVL] Service started v3.2.2 r1625
+[11:09:36 AVL] Starting event GeoDwelling debounce timer (14400.0 sec)
+[11:09:36 Utility] Service started v1.1.0 r1569
+shell> [11:09:36 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[11:09:36 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[11:09:36 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[11:09:36 AVL] TxQ Msg#1 Evnt="PowerMain" MIN=2 Cell=false
+[11:09:36 AVL] Starting event LowPower debounce timer (0.1 sec)
+[11:09:36 AVL] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[11:09:36 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[11:09:36 AVL] TxQ Msg#2 Evnt="Reset" MIN=1 Cell=false
+[11:09:36 AVL] Entering LPM 0x2
+[11:10:40 AVL] Parameters Saved
+prop set AVL 59 2
+Set done
+shell> prop get AVL 59 
+SIN=126(AVL) PIN=59(FuncDigInp13) val=Ignition
+shell> [11:11:11 AVL] Starting event Idling debounce timer (600.0 sec)
+[11:11:11 AVL] Evnt="IgnitionOn" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[11:11:11 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[11:11:11 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[11:11:11 AVL] TxQ Msg#3 Evnt="IgnitionOn" MIN=4 Cell=false
+[11:11:12 AVL] Starting event LowPower debounce timer (0.1 sec)
+[11:11:13 AVL] Exiting LPM 0x2
+[11:11:17 AVL] Starting event GeoDwelling debounce timer (14400.0 sec)
