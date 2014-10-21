@@ -3230,6 +3230,72 @@ end
 end
 
 
+--- TC checks if Service Meter 4 is activated and deactivated when virtual line number 13 controls SM4 .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set funcDigInp13 (PIN 59) to associate digital input line 13 with SM4 function
+  -- 2. Set DigStatesDefBitmap (PIN 46) to make high state of the line be a trigger for SM4Active
+  -- 3. Simulate external power source not present
+  -- 4. Read avlStates property (PIN 41) and verify if SM4Active bit is not true
+  -- 5. Simulate external power source present
+  -- 6. Read avlStates property (PIN 41) and verify if SM4Active bit is true
+  -- 7. Simulate external power source not present
+  -- 8. Read avlStates property (PIN 41) and verify if SM4Active bit is not true
+  --
+  -- Results:
+  --
+  -- 1. Line number 13 associated with SM4 function
+  -- 2. High state of the line is set to be a trigger for SM4Active
+  -- 3. External power source not present - line 13 in low state
+  -- 4. SM4Active bit in avlStates property is not true
+  -- 5. External power source present - line 13 changes state to high
+  -- 6. SM4Active bit in avlStates property is true
+  -- 7. External power source not present - line 13 in low state
+  -- 8. SM4Active bit in avlStates property is not true
+ function test_Line13_WhenVirtualLine13IsAssociatedWithSM4_ServiceMeter4BecomesActiveAndInactiveAccordingToStateOfLine13()
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SM4}, -- digital input line 13 associated with SM4 function
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigStatesDefBitmap({"SM4Active"})
+
+  -- setting external power source
+  device.setPower(8,0)                 -- external power not present (terminal unplugged to external power source, line 13 in low state)
+  framework.delay(2)
+
+  -- verification of the state of terminal - SM4Active false is expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly true")
+
+  -- setting external power source
+  device.setPower(8,1)                -- external power present (terminal plugged to external power source and line 13 changes state to 1)
+  framework.delay(2)
+
+  -- verification of the state of terminal - SM4Active true is expected
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly not true")
+
+  -- setting external power source
+  device.setPower(8,0)                 -- external power not present (terminal unplugged to external power source, line 13 in low state)
+  framework.delay(2)
+
+  -- verification of the state of terminal - SM4Active false is expected
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly true")
+
+
+end
+
+
+
 
 
 
