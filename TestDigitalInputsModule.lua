@@ -2911,8 +2911,6 @@ end
 end
 
 
-
-
 --- TC checks if terminal enters and leaves SeatbeltViolation state when line number 13 is controls SeatbeltOff function .
   -- Initial Conditions:
   --
@@ -3033,6 +3031,174 @@ end
 
 end
 
+
+
+--- TC checks if IgnitionOn message is sent and Service Meter 0 becomes active according to state of line number 13 .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set funcDigInp13 (PIN 59) to associate digital input line 13 with IgnitionOn and SM0 functions
+  -- 2. Simulate terminals position in stationary state in Point#1
+  -- 3. Simulate external power source not present
+  -- 4. Send setServiceMeter (MIN 11) message to set SM0Time and SM0Distance to 0
+  -- 5. Simulate external power source present
+  -- 6. Receive IgnitionOn message (MIN 4)
+  -- 7. Verify messages fields against expected values
+  -- 8. Read avlStates (PIN 41) property and check terminals state
+  -- 9. Simulate terminals position in Point#2 1 degree (111,12 km) away from Point#1
+  -- 10. Send getServiceMeterMessage
+  -- 11. Verify content of received ServiceMeter message
+  -- 12. Simulate external power source not present
+  -- 13. Receive IgnitionOff message (MIN 5)
+  -- 14. Verify messages fields against expected values
+  -- 15. Read avlStates (PIN 41) property and check terminals state
+  -- 16. Simulate terminals position in Point#3 111,12 km away from Point#2
+  -- 17. Send getServiceMeterMessage
+  -- 18. Verify content of received ServiceMeter message
+  --
+  -- Results:
+  --
+  -- 1. Line number 13 associated with IgnitionOn and SM0 functions
+  -- 2. Point#1 is terminals simulated position in stationary state
+  -- 3. External power source not present (line 13 in low state)
+  -- 4. SM0Time and SM0Distance set to 0
+  -- 5. Line 13 changes state to 1
+  -- 6. IgnitionOn message received (MIN 4)
+  -- 7. Message fields contain Point#1 GPS and time information
+  -- 8. IgnitionOn is true
+  -- 9. Terminal is in Point#2 111,12 km away from Point#1
+  -- 10. ServiceMeter message sent from terminal after GetServiceMeter request
+  -- 11. SM0Distance is 111 km and SM0Time is 0
+  -- 12. External power source not present (line 13 in low state)
+  -- 13. IgnitionOff message (MIN 5) received
+  -- 14. Message fields contain Point#2 GPS and time information
+  -- 15. IgnitionOn is false
+  -- 16. Terminal is in Point#3 111,12 km away from Point#2
+  -- 17. ServiceMeter message sent from terminal after GetServiceMeter request
+  -- 18. SM0Distance is 111 km and SM0Time is 0 (SM0 has been deactivated after reaching Point#2)
+ function test_Line13_WhenVirtualLine13IsAssociatedWithIgnitionAndSM0_IgnitionAndSM0AreActivatedAndDeactivatedAccordingToStateOfLine13()
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.IgnitionAndSM0}, -- digital input line 13 associated with IgnitionOn and SM0 functions
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+  -- Point#1
+  local gpsSettings={
+              speed = 0,                      -- terminal in stationary state
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                     }
+
+  gps.set(gpsSettings)                    -- applying gps settings
+  framework.delay(3)
+
+  -- setting external power source
+  device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
+  framework.delay(2)
+
+  -- setting SM0Time and SM0Distance to 0
+  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setServiceMeter}
+	message.Fields = {{Name="SM0Time",Value=0},{Name="SM0Distance",Value=0},}
+	gateway.submitForwardMessage(message)
+
+  gateway.setHighWaterMark()              -- to get the newest messages
+  local timeOfEventTC = os.time()        -- to get correct timestamp
+  -- setting external power source
+  device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
+  framework.delay(2)
+
+  -- IgnitionOn message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IgnitionOn",
+                  currentTime = timeOfEventTC,
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionON true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
+
+  -- Point#2 -- 111,12 kilometers away from Point#1
+  local gpsSettings.latitude = 2
+  gps.set(gpsSettings)                    -- applying gps settings
+  framework.delay(3)
+
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getServiceMeter}    -- to trigger ServiceMeter event
+	gateway.submitForwardMessage(getServiceMeterMessage)
+  framework.delay(3)  -- wait until message is received
+
+  -- ServiceMeter message is expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.serviceMeter))
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ServiceMeter",
+                  currentTime = os.time(),
+                  SM0Time = 0,                             -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
+                  SM0Distance = 111.12                     -- 1 degree of travel is 111.12 kilometers and number iteration
+                        }
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+  gateway.setHighWaterMark()              -- to get the newest messages
+  -- setting external power source
+  device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
+  timeOfEventTC = os.time()        -- to get correct timestamp
+  framework.delay(2)
+
+  -- IgnitionOff message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "IgnitionOff",
+                  currentTime = timeOfEventTC,
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  -- verification of the state of terminal - IgnitionON true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not false as expected")
+
+  -- Point#3 -- 111,12 kilometers away from Point#2
+  local gpsSettings.latitude = 3
+  gps.set(gpsSettings)                    -- applying gps settings
+  framework.delay(3)
+
+  gateway.setHighWaterMark()              -- to get the newest messages
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getServiceMeter}    -- to trigger ServiceMeter event
+	gateway.submitForwardMessage(getServiceMeterMessage)
+  framework.delay(3)  -- wait until message is received
+
+  -- ServiceMeter message is expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.serviceMeter))
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ServiceMeter",
+                  currentTime = os.time(),
+                  SM0Time = 0,                             -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
+                  SM0Distance = 111.12                     -- no increase in SM0Distance is expected is it has been disabled after travelling to Point#2
+                        }
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+
+
+end
 
 
 --- TC checks if Service Meter 1 is activated and deactivated when virtual line number 13 controls SM1 .
