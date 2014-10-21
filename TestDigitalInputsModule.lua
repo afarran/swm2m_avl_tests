@@ -2913,6 +2913,126 @@ end
 
 
 
+--- TC checks if terminal enters and leaves SeatbeltViolation state when line number 13 is controls SeatbeltOff function .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set funcDigInp13 (PIN 59) to associate digital input line 13 with SeatbeltOff function
+  -- 2. Set SeatbeltDebounceTime (PIN 115) to value above zero to enable seatbelt violation feature
+  -- 3. Simulate terminals position in moving state in Point#1
+  -- 4. Simulate external power source not present
+  -- 5. Simulate external power source present and wait longer than SeatbeltDebounceTime
+  -- 6. Receive SeatbeltViolationStart message (MIN 19)
+  -- 7. Verify if message contains Point#1 GPS and time information
+  -- 8. Simulate terminals position in moving state in Point#2
+  -- 9. Simulate external power source not present
+  -- 10. Receive SeatbeltViolationEnd message (MIN 20)
+  -- 11. Verify if message contains Point#2 GPS and time information
+  --
+  -- Results:
+  --
+  -- 1. Line number 13 associated with SeatbeltOff function
+  -- 2. SeatbeltDebounceTime property set to value greater than zero
+  -- 3. Point#1 is terminals simulated position in moving state
+  -- 4. External power source not present (line 13 in low state)
+  -- 5. Line 13 becomes high and stays high longer than SeatbeltDebounceTime
+  -- 6. SeatbeltViolationStart message received (MIN 19)
+  -- 7. Message fields contain Point#1 GPS and time information
+  -- 8. Point#1 is terminals simulated position in moving state
+  -- 9. External power source not present (line 13 in low state again)
+  -- 10. SeatbeltViolationEnd message received (MIN 20)
+  -- 11. Message fields contain Point#2 GPS and time information
+  function test_Line13_WhenVirtualLine13IsAssociatedWithSeatbeltOffFunction_SeatbeltViolationStartAndSeatbeltViolationEndMessageSentAccordingToStateOfLine13()
+
+  local seatbeltDebounceTime = 10       -- seconds
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SeatbeltOff}, -- digital input line 13 associated with SeatbeltOff function
+                                                {avlPropertiesPINs.seatbeltDebounceTime, seatbeltDebounceTime},          -- setting seatbeltDebounceTime
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
+
+  avlHelperFunctions.putTerminalIntoMovingState()
+
+  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  -- Point#1 GPS Settings
+  local gpsSettings={
+              speed = 50,                     -- terminal moving
+              latitude = 1,                   -- degrees
+              longitude = 1,                  -- degrees
+              fixType = 3,                    -- valid fix provided
+                     }
+
+  gps.set(gpsSettings)                        -- applying gps settings
+  framework.delay(3)
+
+  -- setting external power source
+  device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
+  framework.delay(2)
+  gateway.setHighWaterMark()              -- to get the newest messages
+
+  -- setting external power source
+  device.setPower(8,1)                     -- external power present (terminal plugged to external power source - line 13 changes state to high)
+  local timeOfEventTC = os.time()         -- to get exact timestamp
+  framework.delay(seatbeltDebounceTime+2)  -- wait longer than seatbeltDebounceTime to get seatbeltViolationStart message
+
+  -- seatbeltViolationStart message expected
+  local message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SeatbeltViolationStart",
+                  currentTime = timeOfEventTC,
+                        }
+  -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues)
+
+  -- verification of the state of terminal - SeatbeltViolation true expected
+  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is not true")
+
+  -- Point#2 GPS Settings
+  gpsSettings={
+              speed = 51,                     -- terminal moving
+              latitude = 2,                   -- degrees
+              longitude = 2,                  -- degrees
+                     }
+
+  gps.set(gpsSettings)                        -- applying gps settings
+  framework.delay(3)
+
+  gateway.setHighWaterMark()              -- to get the newest messages
+  -- setting external power source
+  device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
+  timeOfEventTC = os.time()               -- to get exact timestamp
+  framework.delay(2)
+
+  -- seatbeltViolationEnd message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  expectedValues={
+                  gps = gpsSettings,
+                  messageName = "SeatbeltViolationEnd",
+                  currentTime = timeOfEventTC,
+                        }
+  -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues)
+
+  -- verification of the state of terminal - SeatbeltViolation false expected
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is incorrectly true")
+
+
+
+end
+
+--]]
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
