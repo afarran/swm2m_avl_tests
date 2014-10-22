@@ -638,7 +638,8 @@ end
   -- 18. Value of powerMode (PIN 10, SIN 27) has been reverted to powerModeUserSet
 function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChangedwhenEnteringLpmAndRevertedWhenLeavingLpm()
 
-  local lpmEntryDelay = 1                             -- minutes
+  local gpsReadInterval = 1                           -- seconds
+  local lpmEntryDelay = 0                             -- minutes
   local lpmTrigger = 1                                -- 1 is for IgnitionOff
   local ledControlUserSet = 0                         -- enum type property (0 - Terminal, 1 - User)
   local lpmGeoInterval = 120                          -- seconds
@@ -648,34 +649,15 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   local wakeUpInterval = "3_minutes"                  -- wakeUpInterval value
   local wakeUpIntervalOnExitFromLpm = "5_seconds"     -- value of wakeUpInterval which should be set when leaving LPM (this cannot be modified)
   -- helper variables for handling wakeUpInterval
-  local lpmModemWakeUpIntervalEnum = avlAgentCons.lpmModemWakeUpIntervalValues[lpmModemWakeUpInterval]        -- lpmModemWakeUpInterval enum representation (enum type property)
+  local lpmModemWakeUpIntervalEnum = avlAgentCons.modemWakeUpIntervalValues[lpmModemWakeUpInterval]           -- lpmModemWakeUpInterval enum representation (enum type property)
   local wakeUpIntervalEnum = avlAgentCons.modemWakeUpIntervalValues[wakeUpInterval]                           -- wakeUpInterval num representation
   local wakeUpIntervalOnExitFromLpmEnum = avlAgentCons.modemWakeUpIntervalValues[wakeUpIntervalOnExitFromLpm] -- wakeUpIntervalOnExitFromLpm enum representation
-
-  -- setting properties of System service
-  lsf.setProperties(avlAgentCons.systemSIN,{
-                                               {avlPropertiesPINs.ledControl,ledControlUserSet}        -- setting ledControl property in System service (SIN 16, PIN 6)
-                                           }
-                    )
-
-  -- setting properties of Position service
-  lsf.setProperties(avlAgentCons.positionSIN,{
-                                               {avlPropertiesPINs.gpsReadInterval,gpsReadInterval}      -- setting the continues mode of Position service (SIN 20, PIN 15)
-                                             }
-                    )
-
-  -- setting properties of Geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                               {avlPropertiesPINs.geofenceInterval, geofenceInterval},   -- setting geofence check Interval in Geofence service (SIN 21, PIN 2)
-                                             }
-                   )
-
-  -- setting properties of IDP Service
-  lsf.setProperties(avlAgentCons.idpSIN,{
-                                               {avlPropertiesPINs.wakeUpInterval,wakeUpIntervalEnum},     -- saving wakeUpIntervalEnum  to wakeUpInterval property
-                                               {avlPropertiesPINs.powerMode,powerModeUserSet},            -- saving powerModeUserSet  to powerMode property
-                                        }
-                   )
+  -- definition of getProperties message to read properties from 4 services at once
+  local getPropertiesMessage = {SIN = 16, MIN = 8}
+	getPropertiesMessage.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=avlAgentCons.systemSIN},{Name="pinList",Value="Bg=="}}},    -- PIN 6
+                                                        {Index=1,Fields={{Name="sin",Value=avlAgentCons.positionSIN},{Name="pinList",Value="Dw=="}}},  -- PIN 15
+                                                        {Index=2,Fields={{Name="sin",Value=avlAgentCons.geofenceSIN},{Name="pinList",Value="Ag=="}}},  -- PIN 2
+                                                        {Index=3,Fields={{Name="sin",Value=avlAgentCons.idpSIN},{Name="pinList",Value="Cgs="}}}}}}     -- PIN 10 and 11
 
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
@@ -687,22 +669,19 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
                                              }
                    )
 
-  -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port set as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
-                                        }
-                   )
+  -- sending setProperties to set properties in System, Position, Geofence, IDP and EIO services
+	local message = {SIN = 16, MIN = 9}
+	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=avlAgentCons.systemSIN},  {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=avlPropertiesPINs.ledControl},      {Name="value",Type="enum",Value=ledControlUserSet}}}}}}},
+                                           {Index=1,Fields={{Name="sin",Value=avlAgentCons.positionSIN},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=avlPropertiesPINs.gpsReadInterval}, {Name="value",Type="unsignedint",Value=gpsReadInterval}}}}}}},
+                                           {Index=2,Fields={{Name="sin",Value=avlAgentCons.geofenceSIN},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=avlPropertiesPINs.geofenceInterval},{Name="value",Type="unsignedint",Value=geofenceInterval}}}}}}},
+                                           {Index=3,Fields={{Name="sin",Value=avlAgentCons.idpSIN},     {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=avlPropertiesPINs.wakeUpInterval},  {Name="value",Type="enum",Value=wakeUpIntervalEnum}}},
+                                                                                                                                  { Index=1,Fields={{Name="pin",Value=avlPropertiesPINs.powerMode},       {Name="value",Type="enum",Value=powerModeUserSet}}}}}}},
+                                           {Index=4,Fields={{Name="sin",Value=avlAgentCons.EioSIN},     {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=avlPropertiesPINs.port1Config},     {Name="value",Type="unsignedint",Value=3}}},
+                                                                                                                                  { Index=1,Fields={{Name="pin",Value=avlPropertiesPINs.port1EdgeDetect}, {Name="value",Type="unsignedint",Value=3}}}}}}}}},
+                                           {Name="save",Value=true}}
+	gateway.submitForwardMessage(message)
 
-  -- saving properties of System, Geofence and Position service (by sending saveProperties message from System service)
-  local savePropertiesMessage = {SIN = avlAgentCons.systemSIN, MIN = avlMessagesMINs.saveProperties}
-	savePropertiesMessage.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=avlAgentCons.systemSIN},}},
-                                                         {Index=1,Fields={{Name="sin",Value=avlAgentCons.geofenceSIN},}},
-                                                         {Index=2,Fields={{Name="sin",Value=avlAgentCons.positionSIN},}},
-                                                         {Index=3,Fields={{Name="sin",Value=avlAgentCons.idpSIN},}}}}}
-  gateway.submitForwardMessage(savePropertiesMessage)
-
-  -- activating special input function
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
@@ -715,36 +694,26 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   ------------------------------------------------------------------------------------------------------------------
   -- Checking properties before entering Low Power Mode
   ------------------------------------------------------------------------------------------------------------------
+  -- sending getProperties message (SIN 16, MIN 8) to mobile
+  gateway.submitForwardMessage(getPropertiesMessage)
 
-  -- reading ledControl property (PIN 6) in System service (SIN 16) when terminal not in LPM
-  local ledControlProperty = lsf.getProperties(avlAgentCons.systemSIN,avlPropertiesPINs.ledControl)
-  framework.delay(2)
-  -- checking if ledControl property has been correctly set to value of ledControlUserSet
-  assert_equal(ledControlUserSet,tonumber(ledControlProperty[1].value), "Value of ledControl property has not been correctly set")
+  -- propertyValues message expected in response to getProperties
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.systemSIN, messagesMINs.propertyValues))
 
-  -- reading Continues property (PIN 15) in Position service (SIN 20) when terminal not in LPM
-  local continuesProperty = lsf.getProperties(avlAgentCons.positionSIN,avlPropertiesPINs.gpsReadInterval)
-  framework.delay(2)
-  -- checking if Continues property has been correctly set
-  assert_equal(gpsReadInterval,tonumber(continuesProperty[1].value), "Value of Continues property has not been correctly set")
+  local ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
+  assert_equal(ledControlUserSet,tonumber(ledControlProperty), "Value of ledControl property has not been correctly set")
 
-  -- reading Interval property (PIN 2) in Geofence service (SIN 21) when terminal not in LPM
-  local geofenceIntervalProperty = lsf.getProperties(avlAgentCons.geofenceSIN,avlPropertiesPINs.geofenceInterval)
-  framework.delay(2)
-  -- checking if geofence Interval has been correctly set
-  assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been correctly set")
+  local continuesProperty = propertyValuesMessage.Payload.Fields[1].Elements[2].Fields[2].Elements[1].Fields[2].Value
+  assert_equal(gpsReadInterval,tonumber(continuesProperty), "Value of Continues property has not been correctly set")
 
-  -- reading wakeUpInterval property (PIN 11) in IDP service (SIN 27) when terminal not in LPM
-  local wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
-  framework.delay(2)
-  -- checking if wakeUpInterval property has been correctly set
-  assert_equal(wakeUpIntervalEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property has not been correctly set")
+  local geofenceIntervalProperty = propertyValuesMessage.Payload.Fields[1].Elements[3].Fields[2].Elements[1].Fields[2].Value
+  assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty), "Value of Interval property in Geofence service has not been correctly set")
 
-  -- reading powerMode property (PIN 10) in IDP service (SIN 27) when terminal not in LPM
-  local powerModeProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.powerMode)
-  framework.delay(2)
-  -- checking if powerMode property has been correctly set
-  assert_equal(powerModeUserSet,tonumber(powerModeProperty[1].value), "Value of powerMode property has not been correctly set")
+  local wakeUpIntervalProperty =  propertyValuesMessage.Payload.Fields[1].Elements[4].Fields[2].Elements[2].Fields[2].Value
+  assert_equal(wakeUpIntervalEnum,tonumber(wakeUpIntervalProperty), "Value of WakeUpInterval property has not been correctly set")
+
+  local powerModeProperty = propertyValuesMessage.Payload.Fields[1].Elements[4].Fields[2].Elements[1].Fields[2].Value
+  assert_equal(powerModeUserSet,tonumber(powerModeProperty), "Value of powerMode property has not been correctly set")
 
   ------------------------------------------------------------------------------------------------------------------
   -- Terminal enters Low Power Mode
@@ -761,42 +730,37 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   ------------------------------------------------------------------------------------------------------------------
   -- Checking properties after entering Low Power Mode
   ------------------------------------------------------------------------------------------------------------------
-  -- reading ledControl property (PIN 6) in System service (SIN 16) when terminal in LPM
-  ledControlProperty = lsf.getProperties(avlAgentCons.systemSIN,avlPropertiesPINs.ledControl)
-  framework.delay(2)
+  -- sending getProperties message (SIN 16, MIN 8) to mobile
+  gateway.submitForwardMessage(getPropertiesMessage)
+  -- propertyValues message expected in response to getProperties
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.systemSIN, messagesMINs.propertyValues))
+
+  ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if  ledControl property (PIN 6)  has been set to 1 - Terminal when entering LPM
-  assert_equal(1,tonumber(ledControlProperty[1].value), "Value of ledControl property in System service has not been set to 1 when entering LPM")
+  assert_equal(1,tonumber(ledControlProperty), "Value of ledControl property in System service has not been set to 1 when entering LPM")
 
-  -- reading Continues property (PIN 15) in Position service (SIN 20) when terminal in LPM
-  continuesProperty = lsf.getProperties(avlAgentCons.positionSIN,avlPropertiesPINs.gpsReadInterval)
-  framework.delay(2)
+  continuesProperty = propertyValuesMessage.Payload.Fields[1].Elements[2].Fields[2].Elements[1].Fields[2].Value
   -- checking if  Continues property (PIN 15) has been set to 0 when entering LPM
-  assert_equal(0,tonumber(continuesProperty[1].value), "Value of Continues property in Position service has not been set to 0 when entering LPM")
+  assert_equal(0,tonumber(continuesProperty), "Value of Continues property in Position service has not been set to 0 when entering LPM")
 
-  -- reading Interval (PIN 2) in Geofence service (SIN 21) when terminal in LPM
-  geofenceIntervalProperty = lsf.getProperties(avlAgentCons.geofenceSIN,avlPropertiesPINs.geofenceInterval)
-  framework.delay(2)
+  geofenceIntervalProperty = propertyValuesMessage.Payload.Fields[1].Elements[3].Fields[2].Elements[1].Fields[2].Value
   -- checking if geofence Interval has been changed to LpmGeoInterval when entering LPM
-  assert_equal(lpmGeoInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been changed when entering LPM")
+  assert_equal(lpmGeoInterval,tonumber(geofenceIntervalProperty), "Value of Interval property in Geofence service has not been changed when entering LPM")
 
-  -- reading wakeUpInterval property property (PIN 11) in IDP service (SIN 27) when terminal in LPM
-  wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
-  framework.delay(2)
+  wakeUpIntervalProperty =  propertyValuesMessage.Payload.Fields[1].Elements[4].Fields[2].Elements[2].Fields[2].Value
   -- checking if  wakeUpInterval property has been set to lpmModemWakeUpInterval when entering LPM
-  assert_equal(lpmModemWakeUpIntervalEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property in IDP service has not been set to LpmModemWakeUpInterval when entering LPM")
+  assert_equal(lpmModemWakeUpIntervalEnum,tonumber(wakeUpIntervalProperty), "Value of WakeUpInterval property in IDP service has not been set to LpmModemWakeUpInterval when entering LPM")
 
-  -- reading powerMode property (PIN 10) in IDP service (SIN 27) when terminal in LPM
-  powerModeProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.powerMode)
-  framework.delay(2)
+  powerModeProperty = propertyValuesMessage.Payload.Fields[1].Elements[4].Fields[2].Elements[1].Fields[2].Value
   -- checking if powerMode property has been correctly changed
-  assert_equal(2,tonumber(powerModeProperty[1].value), "Value of powerMode property has not been changed to MobileBattery when entering LPM")
+  assert_equal(2,tonumber(powerModeProperty), "Value of powerMode property has not been changed to MobileBattery when entering LPM")
 
   ------------------------------------------------------------------------------------------------------------------
   -- Terminal leaves Low Power Mode
   ------------------------------------------------------------------------------------------------------------------
 
   device.setIO(1, 1) -- IgnitionOn line becomes active, that should trigger IgnitionOn
-  framework.delay(20)
+  framework.delay(4)
 
   -- checking state of the terminal, Low Power Mode is not expected
   avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
@@ -806,38 +770,30 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   ------------------------------------------------------------------------------------------------------------------
   -- Checking properties after leaving Low Power Mode
   ------------------------------------------------------------------------------------------------------------------
+  -- sending getProperties message (SIN 16, MIN 8) to mobile
+	gateway.submitForwardMessage(getPropertiesMessage)
+  -- propertyValues message expected in response to getProperties
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.systemSIN, messagesMINs.propertyValues))
 
-  -- reading ledControl property (PIN 6) in System service (SIN 16)
-  ledControlProperty = lsf.getProperties(avlAgentCons.systemSIN,avlPropertiesPINs.ledControl)
-  framework.delay(2)
-
-  -- reading Continues property (PIN 15) in Position service (SIN 20)
-  continuesProperty = lsf.getProperties(avlAgentCons.positionSIN,avlPropertiesPINs.gpsReadInterval)
-  framework.delay(2)
-
-  -- reading Interval (PIN 2) in Geofence service (SIN 21)
-  geofenceIntervalProperty = lsf.getProperties(avlAgentCons.geofenceSIN,avlPropertiesPINs.geofenceInterval)
-  framework.delay(2)
-
-  -- reading wakeUpInterval property property (PIN 11) in IDP service (SIN 27)
-  wakeUpIntervalProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.wakeUpInterval)
-  framework.delay(2)
-
-  -- reading powerMode property (PIN 10) in IDP service (SIN 27) when terminal not in LPM
-  powerModeProperty = lsf.getProperties(avlAgentCons.idpSIN,avlPropertiesPINs.powerMode)
-  framework.delay(2)
-
+  ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if ledControl property has been correctly reverted to value ledControlUserSet
-  assert_equal(ledControlUserSet,tonumber(ledControlProperty[1].value), "Value of ledControl property has not been correctly reverted to user setting when leaving LPM")
-  -- checking if Continues property has been reverted to user-saved value when leaving LPM
-  assert_equal(gpsReadInterval,tonumber(continuesProperty[1].value), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
-  -- checking if geofence Interval has been reverted to user-saved value when leaving LPM
-  assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty[1].value), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
-  -- checking if  wakeUpInterval property has been set to wakeUpIntervalOnExit when leaving LPM
-  assert_equal(wakeUpIntervalOnExitFromLpmEnum,tonumber(wakeUpIntervalProperty[1].value), "Value of WakeUpInterval property in IDP service has not been set to WakeUpIntervalOnExit when leaving LPM")
-  -- checking if powerMode property has been correctly reverted to user saved when leaving LPM
-  assert_equal(powerModeUserSet,tonumber(powerModeProperty[1].value), "Value of powerMode property property has not been correctly set")
+  assert_equal(ledControlUserSet,tonumber(ledControlProperty), "Value of ledControl property has not been correctly reverted to user setting when leaving LPM")
 
+  continuesProperty = propertyValuesMessage.Payload.Fields[1].Elements[2].Fields[2].Elements[1].Fields[2].Value
+  -- checking if Continues property has been reverted to user-saved value when leaving LPM
+  assert_equal(gpsReadInterval,tonumber(continuesProperty), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
+
+  geofenceIntervalProperty = propertyValuesMessage.Payload.Fields[1].Elements[3].Fields[2].Elements[1].Fields[2].Value
+  -- checking if geofence Interval has been reverted to user-saved value when leaving LPM
+  assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
+
+  wakeUpIntervalProperty =  propertyValuesMessage.Payload.Fields[1].Elements[4].Fields[2].Elements[2].Fields[2].Value
+  -- checking if  wakeUpInterval property has been set to wakeUpIntervalOnExit when leaving LPM
+  assert_equal(wakeUpIntervalOnExitFromLpmEnum,tonumber(wakeUpIntervalProperty), "Value of WakeUpInterval property in IDP service has not been set to WakeUpIntervalOnExit when leaving LPM")
+
+  powerModeProperty = propertyValuesMessage.Payload.Fields[1].Elements[4].Fields[2].Elements[1].Fields[2].Value
+  -- checking if powerMode property has been correctly reverted to user saved when leaving LPM
+  assert_equal(powerModeUserSet,tonumber(powerModeProperty), "Value of powerMode property property has not been correctly set when leaving LPM")
 
 
 end
@@ -1403,9 +1359,6 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 
 
 end
-
-
-
 
 
 

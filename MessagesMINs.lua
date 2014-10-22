@@ -57,6 +57,9 @@ messagesMINs = {
   digitalInp12Hi = 72,
   digitalInp12Lo = 73,
   saveProperties = 11,
+  serviceProperties = 201,
+  getProperties = 6,
+  propertyValues = 5,
 
 
 
