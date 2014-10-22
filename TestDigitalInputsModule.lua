@@ -479,57 +479,75 @@ end
 
 
 
---- TC checks if IgnitionOff message is correctly sent when port 1 changes to low state
-  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- set the high state of the port to be a trigger for line activation
-  -- then simulate port 1 value change to high state and check if
-  -- terminal enters IgnitionOn state; then simulate port 1 value change to low state and
-  -- wait for IgnitionOff message; check if message has been correctly sent, verify reported fields
-  -- and check if terminal is no longer in IgnitionOn state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal correctly put to IgnitionOn false state, IgnitionOff message sent and report fields
-  -- have correct values
+--- TC checks if IgnitionOff message is sent when digital input port changes to low state .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Configure port as a digital input and associate this port with IgnitionOn line
+  -- 2. Set the high state of the port to be a trigger for line activation
+  -- 3. Simulate terminals position in stationary state in Point#1
+  -- 4. Simulate port value change to high state and check terminals state
+  -- 5. Set fixType to 1 (no valid fix provided)
+  -- 6. Simulate port value change back to low state
+  -- 7. Receive IgnitionOff message and check terminals state
+  -- 8. Verify fields of message against expected values
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital input and assiociated with IgnitionOn line
+  -- 2. High state of the port set to be the trigger for IgnitionOn line activation
+  -- 3. Point#1 is terminals simulated position in stationary state
+  -- 4. Terminal goes to IgnitionOn state after setting port state to high level
+  -- 5. GPS signal loss is simulated
+  -- 6. Port changes value back to low level
+  -- 7. IgnitionOff (MIN 5) message received and terminal goes to IgnitionOn=false state
+  -- 8. Message fields contain Point#1 GPS and time information and GPS fix age field is included (fix older than 5 seconds)
 function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAgeReported()
 
-  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  -- Point#1 gps settings
   local gpsSettings={
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
-              fixType = 1,                    -- no valid fix provided, gps signal loss simulated
+              fixType = 3,                    -- fix provided
                      }
-
-  gps.set(gpsSettings)
-  framework.delay(5)          -- to make sure gpsFix age is above 5 seconds
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port as digital input
+                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]}, -- line number set for IgnitionOn function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
-  device.setIO(1, 1) -- that should trigger IgnitionOn
+  device.setIO(randomPortNumber, 1) -- that should trigger IgnitionOn
   framework.delay(2)
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
+  gps.set(gpsSettings)                        -- applying Point#1 gps settings
+  framework.delay(2)
+
+  gpsSettings.fixType = 1                     -- no valid fix provided, gps signal loss simulated
+  gps.set(gpsSettings)
+  framework.delay(6)                          -- to make sure gpsFix age is above 5 seconds
+
   gateway.setHighWaterMark()         -- to get the newest messages
-  device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
-  framework.delay(5)                 -- wait for report to be generated
+  device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
+  framework.delay(3)                 -- wait for report to be generated
 
   --IgnitionOff message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
@@ -539,15 +557,16 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
                   gps = gpsSettings,
                   messageName = "IgnitionOff",
                   currentTime = os.time(),
-                  GpsFixAge = 13
+                  GpsFixAge = 6
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- checking if terminal correctly goes to IgnitionOn false state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
 end
+
 
 --- TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
   -- for longer than maxIdlingTime
