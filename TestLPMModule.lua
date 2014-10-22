@@ -875,6 +875,74 @@ end
 
 
 
+--- TC checks if terminal is not put in LPM when external power source is not present for time shorter than lpmEntryDelay for trigger of LPM set to Built-in battery  .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Air communication not blocked
+  -- * Device powered by external power source (in eg. cigarette lighter)
+  -- * IDP 800 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Set LpmEntryDelay (PIN 32) in AVL service to value lpmEntryDelay
+  -- 2. Set LpmTrigger (PIN 31) in AVL service to 2 (that is Built-in battery)
+  -- 3. Simulate external power not present for time shorter than LpmEntryDelay
+  -- 4. Simulate external power present again
+  -- 5. Check terminals state
+  --
+  -- Results:
+  --
+  -- 1. LpmEntryDelay (PIN 32) set to lpmEntryDelay
+  -- 2. LpmTrigger (PIN 31) set to Built-in battery
+  -- 3. External Power not present for time shorter than LpmEntryDelay
+  -- 4. External power present
+  -- 6. Terminal does not enter LPM
+function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalNotPutInLpmWhenExternalPowerSourceNotPresentShorterThanLpmEntryDelayPeriod()
+
+  local lpmEntryDelay = 1    -- in minutes
+  local lpmTrigger = 2       -- 2 is for Built-in battery
+
+  -- setting AVL properties
+  lsf.setProperties(avlAgentCons.avlAgentSIN,{
+                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},            -- time of lpmEntryDelay, in minutes
+                                                {avlPropertiesPINs.lpmTrigger, lpmTrigger},                  -- setting lpmTrigger
+                                             }
+                   )
+
+  -- Important: there is bug reported for setPower function
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  device.setPower(8,0)             -- external power not present from now (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- checking ExtPowerPresent property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+
+  -- waiting for time shorter than lpmEntryDelay, terminal should not enter LPM
+  framework.delay(lpmEntryDelay*60-30)    -- multiplication by 60 because lpmEntryDelay is in minutes
+
+  device.setPower(8,1)             -- external power present again (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+  -- check external power property
+  externalPowerPresentProperty = lsf.getProperties(avlAgentCons.powerSIN,avlPropertiesPINs.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  -- checking if terminal has not entered LPM
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal unexpectedly in the Low Power Mode")
+
+
+
+end
+
+
+
 --- TC checks if terminal is put in and out of LPM if the trigger of LPM is set to both Built-in battery and IgnitionOff depening on the external power source presence .
   -- Initial Conditions:
   --
@@ -955,7 +1023,6 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInL
 
 
 end
-
 
 
 --- TC checks if terminal is put in and out of Low Power Mode according to IgnitionOn and IgnitionOff events if the trigger of LPM is set to both IgnitionOff and Built-in Battery .
@@ -1240,7 +1307,6 @@ end
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in the Low Power Mode state")
 
 end
-
 
 
 
