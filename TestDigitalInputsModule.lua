@@ -153,8 +153,6 @@ end
 
 --]]
 
-
-
 --- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high .
   -- Initial Conditions:
   --
@@ -568,46 +566,60 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
 end
 
 
---- TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
-  -- for longer than maxIdlingTime
-  -- *actions performed:
-  -- configure port 1 as a digital input and associate this port with IgnitionOn line
-  -- set the high state of the port to be a trigger for line activation
-  -- then simulate port 1 value change to high state and  wait until IgnitionOn is true;
-  -- then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
-  -- verify reported fields and check if terminal entered EngineIdling state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
-  -- *expected results:
-  -- terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
-  -- have correct values
+
+--- TC checks if IdlingStart message is sent when terminal is in stationary state and IgnitionON is true longer than maxIdlingTime .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Configure port as a digital input and associate this port with IgnitionOn line
+  -- 2. Set the high state of the port to be a trigger for line activation
+  -- 3. Set maxIdlingTime (PIN 23) to value above zero
+  -- 4. Simulate terminals position in stationary state in Point#1
+  -- 5. Simulate port value change to high state and wait longer than maxIdlingTime
+  -- 6. Receive IdlingStart (MIN 21) message
+  -- 7. Verify fields of message against expected values
+  -- 8. Read avlStates property and check EngineIdling state
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital input and assiociated with IgnitionOn line
+  -- 2. High state of the port set to be the trigger for IgnitionOn line activation
+  -- 3. MaxIdlingTime set to value greater than zero
+  -- 4. Point#1 is terminals simulated position in stationary state
+  -- 5. Terminal goes to IgnitionOn state
+  -- 6. IdlingStart (MIN 21) message received
+  -- 7. IdlingStart message fields contain Point#1 GPS and time information
+  -- 8. EngineIdling state is true
 function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTime_IdlingStartMessageSent()
 
   local maxIdlingTime = 1  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
-  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
+  -- Point#1 gps settings
   local gpsSettings={
               speed = 0,                      -- terminal in stationary state
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
               fixType = 3,                    -- valid fix provided, good quality of gps signal
                      }
-
-  gps.set(gpsSettings)
+  gps.set(gpsSettings)                        -- applying gps settings
 
   -- setting the EIO properties
   lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port 1 as digital input
+                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
 
-
   -- setting AVL properties
   lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
+                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
+                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                                          -- maximum idling time allowed without sending idling report
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -615,8 +627,8 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
-  device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime+8)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
+  device.setIO(randomPortNumber, 1)  -- port set to high level - that should trigger IgnitionOn
+  framework.delay(maxIdlingTime+8)   -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
@@ -624,13 +636,11 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
-  -- flitering received messages to find IdlingEnd message
+  -- flitering received messages to find IdlingStart message
   local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
 
-  --IdlingStart message not expected
-  assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingEnd message was received, if not that is not correct
-
-  idlingStartMessage = filteredMessages[1]
+  -- IdlingStart message not expected
+  assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingStart message was received, if not that is not correct
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -638,10 +648,10 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                   messageName = "IdlingStart",
                   currentTime = timeOfEventTC,
                         }
-  avlHelperFunctions.reportVerification(idlingStartMessage, expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(filteredMessages[1], expectedValues ) -- verification of the report fields
 
-  -- checking if terminal has not entered EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  -- checking if terminal has entered EngineIdling state
+  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 
@@ -3478,9 +3488,6 @@ end
 
 
 end
-
-
-
 
 
 
