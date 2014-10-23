@@ -55,7 +55,7 @@ end
 -- @tparam table - table containing the AvlStates property to be analysed
 -- @treturn table - table with the names of states and current status
 -- @usage
--- local avlStatesProperty = lsf.getProperties(avlAgentSIN,avlPropertiesPINs.avlStates)
+-- local avlStatesProperty = lsf.getProperties(avlAgentSIN,pins.avlStates)
 -- print(avlHelperFunctions.stateDetector(avlStatesProperty))
 -- -- this prints for example:
 -- {
@@ -83,8 +83,8 @@ function avlHelperFunctions.stateDetector(avlStatesArray)
 
   avlStates = {}
   local avlStatesPropertyBinary =  avlHelperFunctions.decimalToBinary(tonumber(avlStatesArray[1].value))
-  for stateIdx = 1, #avlAgentCons.avlStateNames do
-  stateNameString = avlAgentCons.avlStateNames[stateIdx]
+  for stateIdx = 1, #cons.avlStateNames do
+  stateNameString = cons.avlStateNames[stateIdx]
   avlStates[stateNameString] = (avlStatesPropertyBinary[stateIdx]==1)
   end
   return avlStates
@@ -110,7 +110,7 @@ end
 --                    messageName = "MovingEnd",    -- expected message name
 --                    currentTime = os.time()       -- current time to check against EventTime field
 --                      }
--- message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingEnd))
+-- message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.movingEnd))
 -- avlHelperFunctions.reportVerification(message, expectedValues)
 -- @within AvlhelperFunctions
 function avlHelperFunctions.reportVerification(message, expectedValues)
@@ -221,12 +221,12 @@ function avlHelperFunctions.setDigStatesDefBitmap(functionsToActivate)
 
   local digStatesDefBitmapToSave = 0x00000000   -- value of the property to be set
    for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
-    digStatesDefBitmapToSave = bit.bor(digStatesDefBitmapToSave, bit.lshift(1, avlAgentCons.digStatesDefBitmap[functionsToActivateValue]))
+    digStatesDefBitmapToSave = bit.bor(digStatesDefBitmapToSave, bit.lshift(1, cons.digStatesDefBitmap[functionsToActivateValue]))
   end
 
   -- applying AVL agent properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                 {avlPropertiesPINs.digStatesDefBitmap, digStatesDefBitmapToSave}
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                 {pins.digStatesDefBitmap, digStatesDefBitmapToSave}
                                               }
                    )
 
@@ -243,12 +243,12 @@ function avlHelperFunctions.setDigOutActiveBitmap(functionsToActivate)
 
   local digOutActiveBitmapToSave = 0x00000000   -- value of the property to be set
    for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
-    digOutActiveBitmapToSave = bit.bor(digOutActiveBitmapToSave, bit.lshift(1, avlAgentCons.digOutActiveBitmap[functionsToActivateValue]))
+    digOutActiveBitmapToSave = bit.bor(digOutActiveBitmapToSave, bit.lshift(1, cons.digOutActiveBitmap[functionsToActivateValue]))
   end
 
   -- applying AVL agent properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                 {avlPropertiesPINs.digOutActiveBitmap, digOutActiveBitmapToSave}
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                 {pins.digOutActiveBitmap, digOutActiveBitmapToSave}
                                               }
                    )
 
@@ -267,9 +267,9 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
 
 
   --setting properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime}
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.stationarySpeedThld, stationarySpeedThld},
+                                              {pins.stationaryDebounceTime, stationaryDebounceTime}
                                              }
                     )
 
@@ -285,7 +285,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(stationaryDebounceTime+gpsReadInterval+6) -- 6 seconds are added to make sure terminal changes state
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in stationary state as expected")
@@ -305,9 +305,9 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   local stationarySpeedThld = 5     -- kmh
 
   --setting properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.movingDebounceTime, movingDebounceTime}
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.stationarySpeedThld, stationarySpeedThld},
+                                              {pins.movingDebounceTime, movingDebounceTime}
                                              }
                     )
 
@@ -323,7 +323,7 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(movingDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
    framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to true
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
