@@ -6,10 +6,8 @@
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
-local avlMessagesMINs       = require("MessagesMINs")           -- the MINs of the messages are taken from the external file
-local avlPopertiesPINs      = require("PropertiesPINs")         -- the PINs of the properties are taken from the external file
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlAgentCons          = require("AvlAgentCons")
+local cons, mins, pins =  require "avlAgentCons"()
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
@@ -34,13 +32,13 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
 function suite_setup()
 
  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.lpmTrigger, 0},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.lpmTrigger, 0},
                                              }
                     )
   framework.delay(3)
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
   -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
@@ -94,18 +92,18 @@ function setup()
 
 
   -- setting properties of the AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
-                                              {avlPropertiesPINs.deleteData, 3},      -- delete Geo-speeding limits
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.stationarySpeedThld, stationarySpeedThld},
+                                              {pins.stationaryDebounceTime, stationaryDebounceTime},
+                                              {pins.deleteData, 3},      -- delete Geo-speeding limits
                                              }
 
                     )
  framework.delay(1)   -- wait until message is processed
 
  -- setting properties of the AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.deleteData, 2},      -- delete Geo-dwell limits
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.deleteData, 2},      -- delete Geo-dwell limits
                                             }
                    )
 
@@ -123,7 +121,7 @@ function setup()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
   framework.delay(6)                                        -- this delay is for reliability reasons
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
 
@@ -170,17 +168,17 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -201,7 +199,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.zoneEntry))
   assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
 
   local expectedValues={
@@ -243,17 +241,17 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -284,7 +282,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.zoneEntry))
   assert_false(next(matchingMessages), "ZoneEntry report not expected")   -- checking if any ZoneEntry message has been caught
 
 end
@@ -309,17 +307,17 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
   local geofenceHisteresis = 1       -- in seconds
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -351,7 +349,7 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneExit messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.zoneExit))
   assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
 
   local expectedValues={
@@ -401,25 +399,25 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
                      }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoSpeedLimits}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoSpeedLimits}
 	message.Fields = {{Name="ZoneSpeedLimits",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="SpeedLimit",Value=geofence0SpeedLimit}}}}},}
 	gateway.submitForwardMessage(message)
 
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
-                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
+                                                {pins.defaultSpeedLimit, defaultSpeedLimit},
+                                                {pins.speedingTimeOver, speedingTimeOver},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -443,7 +441,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.speedingStart))
   assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
   local expectedValues={
                   gps = gpsSettings,
@@ -493,25 +491,25 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
                      }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 128
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoSpeedLimits}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoSpeedLimits}
 	local message = {SIN = 126, MIN = 7}
 	message.Fields = {{Name="ZoneSpeedLimits",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="SpeedLimit",Value=geofence0SpeedLimit}}},{Index=1,Fields={{Name="ZoneId",Value=128},{Name="SpeedLimit",Value=geofence128SpeedLimit}}}}},}
 	gateway.submitForwardMessage(message)
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
-                                                {avlPropertiesPINs.speedingTimeUnder, speedingTimeUnder},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
+                                                {pins.speedingTimeOver, speedingTimeOver},
+                                                {pins.speedingTimeUnder, speedingTimeUnder},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -520,7 +518,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
 
 
   --checking the state of terminal, speeding state is ecpected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
   -- gps settings: terminal inside geofence 0 and speed above geofence128SpeedLimit
@@ -541,7 +539,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingEnd messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingEnd))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.speedingEnd))
   assert_not_nil(next(matchingMessages), "SpeedingEnd message not received") -- checking if any SpeedingEnd message has been received
   local expectedValues={
                   gps = gpsSettings,
@@ -552,7 +550,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   --checking the state of terminal, speeding state is not expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the speeding state")
 
 end
@@ -586,17 +584,17 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -619,7 +617,7 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for ZoneExit messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.zoneExit))
   assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
   local expectedValues={
                   gps = gpsSettings,
@@ -669,25 +667,25 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
                      }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 1
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoSpeedLimits}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoSpeedLimits}
 	local message = {SIN = 126, MIN = 7}
 	message.Fields = {{Name="ZoneSpeedLimits",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="SpeedLimit",Value=geofence0SpeedLimit}}},{Index=1,Fields={{Name="ZoneId",Value=1},{Name="SpeedLimit",Value=geofence1SpeedLimit}}}}},}
 	gateway.submitForwardMessage(message)
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
-                                                {avlPropertiesPINs.speedingTimeUnder, speedingTimeUnder},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
+                                                {pins.speedingTimeOver, speedingTimeOver},
+                                                {pins.speedingTimeUnder, speedingTimeUnder},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -698,7 +696,7 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for SpeedingStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.speedingStart))
   assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
   local expectedValues={
                   gps = gpsSettings,
@@ -709,7 +707,7 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   --checking the state of terminal, speeding state is expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
 end
@@ -743,17 +741,17 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -777,7 +775,7 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for ZoneEntry messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneEntry))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.zoneEntry))
   assert_not_nil(next(matchingMessages), "ZoneEntry message not received") -- checking if any ZoneEntry message has been received
   local expectedValues={
                   gps = gpsSettings,
@@ -820,17 +818,17 @@ function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_LowerGeofe
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -854,7 +852,7 @@ function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_LowerGeofe
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneExit messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.zoneExit))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.zoneExit))
   assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
   local expectedValues={
                   gps = gpsSettings,
@@ -890,7 +888,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   local allZonesDwellTime = 240      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -906,10 +904,10 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
                      }
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
   gateway.setHighWaterMark()                      -- to get the newest messages
@@ -919,7 +917,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -931,7 +929,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
@@ -959,7 +957,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   local allZonesDwellTime = 240      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -975,10 +973,10 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
                      }
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
   gateway.setHighWaterMark()                      -- to get the newest messages
@@ -991,7 +989,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1004,7 +1002,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
@@ -1032,7 +1030,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
   local allZonesDwellTime = 240      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -1047,10 +1045,10 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
               simulateLinearMotion = false,
                      }
  --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -1070,11 +1068,11 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_false(next(matchingMessages), "GeoDwellStart message not expected")  -- checking if any of GeoDwellStart messages has been received
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal incorrectly in the Geodwelling state")
 
 end
@@ -1101,7 +1099,7 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
   local allZonesDwellTime = 240      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -1117,10 +1115,10 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
                      }
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -1128,7 +1126,7 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
   framework.delay(geofence2DwellTime*60+10)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
   -- gps settings table to be sent to simulator
@@ -1148,7 +1146,7 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellEnd messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellEnd))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellEnd))
   assert_not_nil(next(matchingMessages), "GeoDwellEnd message not received")  -- checking if any of GeoDwellEnd messages has been received
 
   local expectedValues={
@@ -1159,7 +1157,7 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
@@ -1193,16 +1191,16 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
                      }
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                              }
 
                    )
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.defaultGeoDwellTime, defaultGeoDwellTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.defaultGeoDwellTime, defaultGeoDwellTime},
                                               }
 
                    )
@@ -1213,7 +1211,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1225,7 +1223,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
@@ -1254,7 +1252,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   local defaultGeoDwellTime = 2      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -1270,17 +1268,17 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.defaultGeoDwellTime, defaultGeoDwellTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.defaultGeoDwellTime, defaultGeoDwellTime},
                                               }
 
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
   gateway.setHighWaterMark()                     -- to get the newest messages
@@ -1290,7 +1288,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1302,7 +1300,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
@@ -1328,7 +1326,7 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
   local defaultGeoDwellTime = 2      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}},
                                                     }}}
 
@@ -1345,17 +1343,17 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.defaultGeoDwellTime, defaultGeoDwellTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.defaultGeoDwellTime, defaultGeoDwellTime},
                                               }
 
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -1378,7 +1376,7 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1390,7 +1388,7 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 
@@ -1418,7 +1416,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
   local defaultGeoDwellTime = 2      -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -1436,17 +1434,17 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.defaultGeoDwellTime, defaultGeoDwellTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.defaultGeoDwellTime, defaultGeoDwellTime},
                                               }
 
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -1458,7 +1456,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1470,7 +1468,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
 
 end
@@ -1497,7 +1495,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
   local defaultGeoDwellTime = 2     -- in minutes
 
   -- setting ZoneDwellTimes for geofences
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                                                     {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
                                                     {Name="AllZonesTime",Value=allZonesDwellTime}}
@@ -1515,17 +1513,17 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
                      }
 
   --applying properties of AVL service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.defaultGeoDwellTime, defaultGeoDwellTime},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.defaultGeoDwellTime, defaultGeoDwellTime},
                                               }
 
                    )
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -1537,11 +1535,11 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.geoDwellStart))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.geoDwellStart))
   assert_false(next(matchingMessages), "GeoDwellStart message not expected")  -- checking if any of GeoDwellStart messages has been received
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal incorrectly in the Geodwelling state")
 
 
