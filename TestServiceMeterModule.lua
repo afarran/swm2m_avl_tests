@@ -5,10 +5,7 @@
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
---local avlmins       = require("mins")           -- the MINs of the messages are taken from the external file
---local avlPopertiesPINs      = require("PropertiesPINs")         -- the PINs of the properties are taken from the external file
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
---local cons          = require("cons")
 local cons, mins, pins =  require "AvlAgentCons"()
 
 -- global variables used in the tests
