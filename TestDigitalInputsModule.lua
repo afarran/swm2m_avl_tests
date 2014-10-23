@@ -5,14 +5,13 @@
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
-local avlMessagesMINs       = require("MessagesMINs")           -- the MINs of the messages are taken from the external file
-local avlPopertiesPINs      = require("PropertiesPINs")         -- the PINs of the properties are taken from the external file
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlAgentCons          = require("AvlAgentCons")           -- all AVL Agent constants in avlAgentCons
+local cons, mins, pins =  require "avlAgentCons"()
 local math = require("math")
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
+terminalInUse = 700   -- 600, 700 and 800 available
 
 -------------------------
 -- Setup and Teardown
@@ -53,18 +52,23 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
  function suite_setup()
 
  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.lpmTrigger, 0},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.lpmTrigger, 0},
                                              }
                     )
   -- checking the state of terminal
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
   -- selecting random number of port to be used in TCs
   math.randomseed(os.time())                -- os.time used as randomseed
   math.random(1,4)
+
+  if terminalInUse == 8 then
+  randomPortNumber = math.random(1,3)
+  else
   randomPortNumber = math.random(1,4)
+  end
 
 
 end
@@ -116,24 +120,24 @@ end
   framework.delay(4)
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- setting the EIO properties - disabling all 4 I/O ports
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                            {avlPropertiesPINs.port1Config, 0},      -- port disabled
-                                            {avlPropertiesPINs.port2Config, 0},      -- port disabled
-                                            {avlPropertiesPINs.port3Config, 0},      -- port disabled
-                                            {avlPropertiesPINs.port4Config, 0},      -- port disabled
+  lsf.setProperties(cons.EioSIN,{
+                                            {pins.port1Config, 0},      -- port disabled
+                                            {pins.port2Config, 0},      -- port disabled
+                                            {pins.port3Config, 0},      -- port disabled
+                                            {pins.port4Config, 0},      -- port disabled
                                         }
                     )
 
   -- disabling all digital input lines in AVL
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[1], 0},   -- 0 is for line disabled
-                                                {avlPropertiesPINs.funcDigInp[2], 0},
-                                                {avlPropertiesPINs.funcDigInp[3], 0},
-                                                {avlPropertiesPINs.funcDigInp[4], 0},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[1], 0},   -- 0 is for line disabled
+                                                {pins.funcDigInp[2], 0},
+                                                {pins.funcDigInp[3], 0},
+                                                {pins.funcDigInp[4], 0},
                                              }
                    )
 
@@ -152,6 +156,7 @@ end
     Each test case is a global function whose name begins with "test"
 
 --]]
+
 
 --- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high .
   -- Initial Conditions:
@@ -193,14 +198,14 @@ end
   framework.delay(10)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port set as digital input
-                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.portConfig[randomPortNumber], 3},     -- port set as digital input
+                                                {pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[randomPortNumber], cons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -210,7 +215,7 @@ end
   device.setIO(randomPortNumber, 1)  -- port  to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionON))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -221,7 +226,7 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
 end
@@ -268,15 +273,15 @@ end
   framework.delay(2)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, digStatesDefBitmap}
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {pins.digStatesDefBitmap, digStatesDefBitmap}
                                              }
                    )
 
@@ -289,7 +294,7 @@ end
   framework.delay(2)
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionON))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -300,7 +305,7 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- following code is only not to make problems with setup function
@@ -352,20 +357,20 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
   framework.delay(gpsReadInterval+2)          -- wait until terminal reads the gps position
 
   -- gps signal loss is simulated at this moment
-  local gpsSettings.fixType = 1              -- no valid fix provided, gps signal loss
+  gpsSettings["fixType"] = 1              -- no valid fix provided, gps signal loss
 
   gps.set(gpsSettings)
   framework.delay(7)          -- to make sure gpsFix age is above 5 seconds
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -375,7 +380,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionON))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -387,7 +392,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
 
@@ -434,14 +439,14 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   gps.set(gpsSettings)    -- applying gps settings
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port set as digital input
-                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.portConfig[randomPortNumber], 3},     -- port set as digital input
+                                                {pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},  -- digital input line set for Ignition function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[randomPortNumber], cons.funcDigInp["IgnitionOn"]},  -- digital input line set for Ignition function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -450,7 +455,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   device.setIO(randomPortNumber, 1) -- that should trigger IgnitionOn
   framework.delay(2)
   -- checking if terminal correctly goes to IgnitionOn state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   gateway.setHighWaterMark()         -- to get the newest messages
@@ -458,7 +463,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   framework.delay(5)                 -- wait for report to be generated
 
   --IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionOFF))
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -470,7 +475,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
   -- checking if terminal correctly goes to IgnitionOn = false state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
 end
@@ -517,14 +522,14 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port as digital input
-                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.portConfig[randomPortNumber], 3},     -- port as digital input
+                                                {pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]}, -- line number set for IgnitionOn function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[randomPortNumber], cons.funcDigInp["IgnitionOn"]}, -- line number set for IgnitionOn function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -533,7 +538,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
   device.setIO(randomPortNumber, 1) -- that should trigger IgnitionOn
   framework.delay(2)
   -- checking if terminal correctly goes to IgnitionOn state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   gps.set(gpsSettings)                        -- applying Point#1 gps settings
@@ -548,7 +553,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
   framework.delay(3)                 -- wait for report to be generated
 
   --IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionOFF))
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -560,11 +565,10 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- checking if terminal correctly goes to IgnitionOn false state
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
 end
-
 
 
 --- TC checks if IdlingStart message is sent when terminal is in stationary state and IgnitionON is true longer than maxIdlingTime .
@@ -598,7 +602,7 @@ end
   -- 8. EngineIdling state is true
 function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTime_IdlingStartMessageSent()
 
-  local maxIdlingTime = 1  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local maxIdlingTime = 10  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
   -- Point#1 gps settings
   local gpsSettings={
@@ -608,18 +612,18 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
               fixType = 3,                    -- valid fix provided, good quality of gps signal
                      }
   gps.set(gpsSettings)                        -- applying gps settings
+  framework.delay(gpsReadInterval+2)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.portConfig[randomPortNumber], 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.portConfig[randomPortNumber], 3},     -- port 1 as digital input
+                                                {pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
-
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[randomPortNumber], avlAgentCons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                                          -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[randomPortNumber], cons.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
+                                                {pins.maxIdlingTime, maxIdlingTime}                                   -- maximum idling time allowed without sending idling report
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -627,17 +631,17 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
-  device.setIO(randomPortNumber, 1)  -- port set to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime+8)   -- wait longer than maxIdlingTime to trigger the IdlingStart event
+  device.setIO(randomPortNumber, 1)    -- port set to high level - that should trigger IgnitionOn
+  framework.delay(maxIdlingTime + 8)   -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- IgnitionOn state expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- flitering received messages to find IdlingStart message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingStart))
 
   -- IdlingStart message not expected
   assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingStart message was received, if not that is not correct
@@ -651,7 +655,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   avlHelperFunctions.reportVerification(filteredMessages[1], expectedValues ) -- verification of the report fields
 
   -- checking if terminal has entered EngineIdling state
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 
@@ -689,16 +693,16 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   framework.delay(6)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {pins.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -707,16 +711,16 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
   device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime+avlAgentCons.coldFixDelay+2)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
+  framework.delay(maxIdlingTime+cons.coldFixDelay+2)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
 
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- IgnitionOn state expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingStart))
 
   --IdlingStart message not expected
   assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingEnd message was received, if not that is not correct
@@ -733,7 +737,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   avlHelperFunctions.reportVerification(idlingStartMessage, expectedValues ) -- verification of the report fields
 
   -- checking if terminal has not entered EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 
@@ -769,16 +773,16 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   gps.set(gpsSettings)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {pins.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -787,7 +791,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+3)            -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
 
 
@@ -798,7 +802,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingEnd))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingEnd))
   local idlingEndMessage = filteredMessages[1]              -- that is performed because of the structure of the filteredMessages
   assert_true((next(idlingEndMessage)), "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
 
@@ -813,7 +817,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   end
 
   -- checking if terminal correctly goes out of EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 end
@@ -846,18 +850,19 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                      }
 
   gps.set(gpsSettings)
+  framework.delay(gpsReadInterval+2)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {pins.maxIdlingTime, maxIdlingTime}                  -- maximum idling time allowed without sending idling report
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -866,7 +871,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   device.setIO(1, 1)                                         -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+8) -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
 
   --simulating gps signal loss,
@@ -880,14 +885,14 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   gps.set(gpsSettings)
 
   local timeOfEvent = os.time()
-  device.setIO(1, 0)                                      -- port 1 to LOW level - that should trigger IgnitionOff
-  framework.delay(avlAgentCons.coldFixDelay+3)            -- coldFixDelay taken into consideration
+  device.setIO(1, 0)                              -- port 1 to LOW level - that should trigger IgnitionOff
+  framework.delay(cons.coldFixDelay+3)            -- coldFixDelay taken into consideration
 
   -- IgnitionOff and IdlingEnd messages expected
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingEnd))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingEnd))
   local idlingEndMessage = filteredMessages[1]              -- that is performed because of the structure of the filteredMessages
   assert_true((next(idlingEndMessage)), "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
 
@@ -903,7 +908,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   end
 
   -- checking if terminal correctly goes out of EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 end
@@ -939,18 +944,18 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
   gps.set(gpsSettings)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},                          -- maximum idling time allowed without sending idling report
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},                -- moving debounce time
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {pins.maxIdlingTime, maxIdlingTime},                          -- maximum idling time allowed without sending idling report
+                                                {pins.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
+                                                {pins.movingDebounceTime, movingDebounceTime},                -- moving debounce time
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -959,7 +964,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
   device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+3)         -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
 
   -- now moving start should be simulated, gps settings are changed
@@ -978,7 +983,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
   receivedMessages = gateway.getReturnMessages()            -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingEnd))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingEnd))
   local idlingEndMessage = filteredMessages[1]                            -- that is performed because of the structure of the filteredMessages
   -- TODO: this need to be done in different way
   assert_true((next(idlingEndMessage)), "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
@@ -993,7 +998,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
 
   end
   -- checking if terminal correctly goes out of EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 end
@@ -1017,16 +1022,16 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxI
   local maxIdlingTime = 15  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {pins.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -1041,13 +1046,13 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxI
   receivedMessages = gateway.getReturnMessages()            -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingStart))
 
   --IdlingStart message not expected
   assert_false(next(filteredMessages), "IdlingStart message not expected")  -- checking if IdlingEnd message was received, if not that is not correct
 
   -- checking if terminal has not entered EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 end
@@ -1083,18 +1088,18 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_Moving
                      }
 
   --applying properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},
-                                                {avlPropertiesPINs.funcDigInp1, 2},              -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.stationarySpeedThld, stationarySpeedThld},
+                                                {pins.movingDebounceTime, movingDebounceTime},
+                                                {pins.funcDigInp1, 2},              -- line number 1 set for Ignition function
+                                                {pins.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
                                              }
                    )
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                   )
 
@@ -1103,14 +1108,14 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_Moving
   gps.set(gpsSettings)                                    -- gps settings applied
   framework.delay(movingDebounceTime+gpsReadInterval+1)   -- one second is added to make sure the gps is read and processed by agent
   --checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   -- then terminal is put into IgnitionOn state
   device.setIO(1, 1)                          -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(3)                          -- delay to let the event to be generated
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
 
@@ -1122,8 +1127,8 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_Moving
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
 
   -- looking for MovingEnd and SpeedingEnd messages
-  local movingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingEnd))
-  local ignitionOffMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  local movingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingEnd))
+  local ignitionOffMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.ignitionOFF))
 
   -- checking if expected messages has been received
   assert_not_nil(next(movingEndMessage), "MovingEnd message not received")              -- if MovingEnd message not received assertion fails
@@ -1137,7 +1142,7 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_Moving
   -- before Moving End, in eg.: MovingEnd ReceiveUTC = "2014-09-03 07:56:37" and IgnitionOff MessageUTC = "2014-09-03 07:56:42" - that is correct
 
   -- checking the state of terminal, speeding state is not ecpected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
   -- checking the state of terminal, moving state is not ecpected
    assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
@@ -1179,21 +1184,21 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_Movi
                      }
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},                -- moving debounce time
-                                                {avlPropertiesPINs.speedingTimeOver, speedingTimeOver},
-                                                {avlPropertiesPINs.defaultSpeedLimit, defaultSpeedLimit},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
+                                                {pins.movingDebounceTime, movingDebounceTime},                -- moving debounce time
+                                                {pins.speedingTimeOver, speedingTimeOver},
+                                                {pins.defaultSpeedLimit, defaultSpeedLimit},
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                   )
 
@@ -1203,14 +1208,14 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_Movi
   framework.delay(movingDebounceTime+speedingTimeOver+gpsReadInterval+6)     -- 5 seconds are added as prior to SpeedingStart there will be movingStart message sent
 
   --checking if terminal is in the speeding state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the Speeding state")
 
   -- then terminal is put into IgnitionOn state
   device.setIO(1, 1)                          -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(3)                          -- delay to let the event to be generated
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
 
@@ -1222,9 +1227,9 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_Movi
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
 
   -- looking for MovingEnd and SpeedingEnd messages
-  local movingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.movingEnd))
-  local ignitionOffMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
-  local speedingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.speedingEnd))
+  local movingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingEnd))
+  local ignitionOffMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.ignitionOFF))
+  local speedingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.speedingEnd))
 
   -- checking if expected messages has been received
   assert_not_nil(next(movingEndMessage), "MovingEnd message not received")              -- if MovingEnd message not received assertion fails
@@ -1240,7 +1245,7 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_Movi
   -- before Moving End, in eg.: SpeedingEnd ReceiveUTC = "2014-09-03 07:56:37" and IgnitionOff MessageUTC = "2014-09-03 07:56:42" - that is correct
 
   -- checking the state of terminal, speeding state is not ecpected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
   -- checking the state of terminal, moving state is not ecpected
    assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the moving state")
@@ -1278,20 +1283,20 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
   gps.set(gpsSettings)
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},      -- port 1 as digital input
-                                                {avlPropertiesPINs.port2Config, 3},      -- port 2 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3},  -- detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},      -- port 1 as digital input
+                                                {pins.port2Config, 3},      -- port 2 as digital input
+                                                {pins.port1EdgeDetect, 3},  -- detection for both rising and falling edge
+                                                {pins.port2EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SM1"]},          -- line number 2 set for ServiceMeter1 function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},                         -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SM1"]},          -- line number 2 set for ServiceMeter1 function
+                                                {pins.maxIdlingTime, maxIdlingTime},                         -- maximum idling time allowed without sending idling report
 
                                              }
                    )
@@ -1303,7 +1308,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
   device.setIO(1, 1)                        -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+10)         -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
 
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
 
@@ -1313,7 +1318,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
 
 
   --IdlingEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingEnd))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.idlingEnd))
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -1324,7 +1329,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- checking if terminal correctly goes out from EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 end
@@ -1350,32 +1355,32 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   local maxIdlingTime = 1  -- in seconds, time in which terminal can be in IgnitionOn state without sending IdlingStart message
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},      -- port 1 as digital input
-                                                {avlPropertiesPINs.port2Config, 3},      -- port 2 as digital input
-                                                {avlPropertiesPINs.port1EdgeSampleCount,0},
-                                                {avlPropertiesPINs.port1EdgeDetect, 3},  -- detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},      -- port 1 as digital input
+                                                {pins.port2Config, 3},      -- port 2 as digital input
+                                                {pins.port1EdgeSampleCount,0},
+                                                {pins.port1EdgeDetect, 3},  -- detection for both rising and falling edge
+                                                {pins.port2EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
 
                    )
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},      -- port 1 as digital input
-                                                {avlPropertiesPINs.port2Config, 3},      -- port 2 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3},  -- detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},      -- port 1 as digital input
+                                                {pins.port2Config, 3},      -- port 2 as digital input
+                                                {pins.port1EdgeDetect, 3},  -- detection for both rising and falling edge
+                                                {pins.port2EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SM1"]},   -- line number 2 set for ServiceMeter1 function
-                                                {avlPropertiesPINs.maxIdlingTime, maxIdlingTime},                         -- maximum idling time allowed without sending idling report
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SM1"]},   -- line number 2 set for ServiceMeter1 function
+                                                {pins.maxIdlingTime, maxIdlingTime},                         -- maximum idling time allowed without sending idling report
 
                                              }
                    )
@@ -1392,13 +1397,13 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.idlingStart))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.idlingStart))
 
   --IdlingStart message not expected
   assert_false(next(filteredMessages), "IdlingStart message not expected")  -- checking if IdlingEnd message was received, if not that is not correct
 
   -- checking if terminal has not entered EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
 end
@@ -1430,20 +1435,20 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   local seatbeltDebounceTime = 10       -- seconds
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1463,14 +1468,14 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(movingDebounceTime+3)
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
   gateway.setHighWaterMark()                -- to get the newest messages
   device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
   framework.delay(seatbeltDebounceTime+3)   -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationStart))
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1480,7 +1485,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
 
 
@@ -1511,20 +1516,20 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   local seatbeltDebounceTime = 10       -- seconds
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1547,13 +1552,13 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   framework.delay(movingDebounceTime+3)
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
   gateway.setHighWaterMark()         -- to get the newest messages
   framework.delay(seatbeltDebounceTime) -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationStart))
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1563,7 +1568,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
 
 
@@ -1595,20 +1600,20 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1631,7 +1636,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(movingDebounceTime+3)
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
   local timeOfEvent = os.time()
   gpsSettings.fixType = 1                    -- no valid fix provided from now
@@ -1641,7 +1646,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(seatbeltDebounceTime)      -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationStart))
 
 
   local expectedValues={
@@ -1653,7 +1658,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
 
 
@@ -1684,20 +1689,20 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1718,7 +1723,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(movingDebounceTime+4)
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
 
   gateway.setHighWaterMark()               -- to get the newest messages
@@ -1730,13 +1735,13 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationStart))
 
   --SeatbeltViolationStart message not expected
   assert_false(next(filteredMessages), "SeatbeltViolationStart message not expected")  -- checking if SeatbeltViolationStart message was received, if not that is not correct
 
   -- checking if terminal has not entered SeatbeltViolation state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolationf state")
 
 end
@@ -1767,20 +1772,20 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1803,7 +1808,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   framework.delay(movingDebounceTime+5)
 
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
 
   gateway.setHighWaterMark()           -- to get the newest messages
@@ -1811,7 +1816,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
    framework.delay(3)                  -- wait for the message to be processed
 
   -- SeatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationEnd))
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1821,7 +1826,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolationStart state")
 
 
@@ -1854,20 +1859,20 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1889,7 +1894,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   framework.delay(movingDebounceTime+5)
 
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolationStart state")
 
   gateway.setHighWaterMark()           -- to get the newest messages
@@ -1900,7 +1905,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationEnd))
   assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
 
   seatbeltViolationEndMessage = filteredMessages[1]   -- that is due to structure of the filteredMessages
@@ -1913,7 +1918,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
 
   avlHelperFunctions.reportVerification(seatbeltViolationEndMessage, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
 
 
@@ -1947,20 +1952,20 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -1983,7 +1988,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   framework.delay(movingDebounceTime+17)     -- movingDebounceTime plus time for messages to be processed
 
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolationStart state")
 
   gateway.setHighWaterMark()                              -- to get the newest messages
@@ -1994,7 +1999,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationEnd))
   assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
 
   seatbeltViolationEndMessage = filteredMessages[1]   -- that is due to structure of the filteredMessages
@@ -2009,7 +2014,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 
   avlHelperFunctions.reportVerification(seatbeltViolationEndMessage, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
 
 
@@ -2043,20 +2048,20 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
+                                                {pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
+                                                {pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
                                              }
                    )
 
@@ -2080,7 +2085,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   framework.delay(movingDebounceTime+17)     -- movingDebounceTime plus time for messages to be processed
 
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolationStart state")
   gpsSettings.fixType = 1                                 -- no valid fix provided from now
   gps.set(gpsSettings)                                    -- applying gps settings
@@ -2093,7 +2098,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationEnd))
   assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
 
   seatbeltViolationEndMessage = filteredMessages[1]   -- that is due to structure of the filteredMessages
@@ -2109,7 +2114,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 
   avlHelperFunctions.reportVerification(seatbeltViolationEndMessage, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
 
 end
@@ -2143,16 +2148,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2164,7 +2169,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp1Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp1Hi))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp1Hi))
   assert_true(next(filteredMessages), "DigInp1Hi report not received")   -- checking if digitalInp1Hi message has been caught, if not assertion fails
   digitalInp1HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2206,16 +2211,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 3},     -- port 1 as digital input
-                                                {avlPropertiesPINs.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 3},     -- port 1 as digital input
+                                                {pins.port1EdgeDetect, 3}, -- port 1 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp1, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp1, cons.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2230,7 +2235,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp1Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp1Lo))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp1Lo))
   assert_true(next(filteredMessages), "DigInp1Lo report not received")   -- checking if digitalInp1Lo message has been caught, if not assertion fails
   digitalInp1LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2272,16 +2277,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}, -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}, -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 2 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp2, cons.funcDigInp.GeneralPurpose}, -- line number 2 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2293,7 +2298,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp2Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp2Hi))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp2Hi))
   assert_true(next(filteredMessages), "DigInp2Hi report not received")   -- checking if digitalInp2Hi message has been caught, if not assertion fails
   digitalInp2HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2336,16 +2341,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port2Config, 3},     -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3}, -- port 2 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port2Config, 3},     -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3}, -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 2 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp2, cons.funcDigInp.GeneralPurpose}, -- line number 2 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2360,7 +2365,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp2Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp2Lo))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp2Lo))
   assert_true(next(filteredMessages), "DigInp2Lo report not received")   -- checking if digitalInp2Lo message has been caught, if not assertion fails
   digitalInp2LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2403,16 +2408,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port3Config, 3},    -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3}, -- port 3 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port3Config, 3},    -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3}, -- port 3 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp3, cons.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2424,7 +2429,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp3Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp3Hi))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp3Hi))
   assert_true(next(filteredMessages), "DigInp3Hi report not received")   -- checking if digitalInp3Hi message has been caught, if not assertion fails
   digitalInp3HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2467,16 +2472,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port3Config, 3},     -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3}, -- port 3 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port3Config, 3},     -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3}, -- port 3 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp3, cons.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2491,7 +2496,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp3Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp3Lo))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp3Lo))
   assert_true(next(filteredMessages), "DigInp3Lo report not received")   -- checking if digitalInp3Lo message has been caught, if not assertion fails
   digitalInp3LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2534,16 +2539,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port4Config, 3},     -- port 4 as digital input
-                                                {avlPropertiesPINs.port4EdgeDetect, 3}, -- port 4 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port4Config, 3},     -- port 4 as digital input
+                                                {pins.port4EdgeDetect, 3}, -- port 4 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp4, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp4, cons.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2555,7 +2560,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp4Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp4Hi))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp4Hi))
   assert_true(next(filteredMessages), "DigInp4Hi report not received")   -- checking if digitalInp4Hi message has been caught, if not assertion fails
   digitalInp4HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2598,16 +2603,16 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port4Config, 3},     -- port 4 as digital input
-                                                {avlPropertiesPINs.port4EdgeDetect, 3}, -- port 4 detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port4Config, 3},     -- port 4 as digital input
+                                                {pins.port4EdgeDetect, 3}, -- port 4 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp4, avlAgentCons.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
-                                                {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlPropertiesPINs.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp4, cons.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
+                                                {pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
+                                                {pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
                                              }
                    )
@@ -2622,7 +2627,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
   -- flitering received messages to find DigInp4Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.digitalInp4Lo))
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.digitalInp4Lo))
   assert_true(next(filteredMessages), "DigInp4Lo report not received")   -- checking if digitalInp4Lo message has been caught, if not assertion fails
   digitalInp4LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
   local expectedValues={
@@ -2643,6 +2648,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * GPS is good
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -2665,6 +2671,9 @@ end
   -- 7. PowerMain is true
   --
  function test_PowerMain_WhenVirtualLine13ChangesStateTo1_PowerMainMessageSentAndPowerMainStateBecomesTrue()
+
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
 
   local inputVoltageTC = 240      -- tenths of volts, external power voltage value
 
@@ -2693,7 +2702,7 @@ end
   framework.delay(2)               -- wait until setting is applied
 
   -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.powerMain))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.powerMain))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2705,7 +2714,7 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - onMainPower true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not in onMainPower state")
 
 end
@@ -2719,6 +2728,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * GPS is good
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -2741,6 +2751,9 @@ end
   -- 7. PowerMain is true
   --
  function test_PowerBackup_WhenVirtualLine13ChangesStateTo0_PowerBackupMessageSentAndPowerMainStateBecomesFalse()
+
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
 
   local inputVoltageTC = 240      -- tenths of volts, external power voltage value
 
@@ -2768,7 +2781,7 @@ end
   framework.delay(2)               -- wait until setting is applied
 
   -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.powerBackup))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.powerBackup))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2780,7 +2793,7 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - onMainPower false expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "onMainPower state is incorrectly true")
 
 end
@@ -2793,6 +2806,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * GPS is good
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -2815,10 +2829,12 @@ end
   -- 7. IgnitionOn is true
  function test_Line13_WhenVirtualLine13ChangesStateTo1_IgnitionOnMessageSent()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.IgnitionOn}, -- digital input line 13 associated with IgnitionOn function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.IgnitionOn}, -- digital input line 13 associated with IgnitionOn function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -2846,7 +2862,7 @@ end
   framework.delay(2)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionON))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2857,7 +2873,7 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
 
 end
@@ -2870,6 +2886,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * GPS is good
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -2892,10 +2909,12 @@ end
   -- 7. IgnitionOn is false
  function test_Line13_WhenVirtualLine13ChangesStateTo0_IgnitionOffMessageSent()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.IgnitionOn}, -- digital input line 13 associated with IgnitionOn function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.IgnitionOn}, -- digital input line 13 associated with IgnitionOn function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -2923,7 +2942,7 @@ end
   framework.delay(2)
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionOFF))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2934,7 +2953,7 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is incorrectly true")
 
 end
@@ -2946,6 +2965,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * GPS is good
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -2978,12 +2998,14 @@ end
   -- 12. Message fields contain Point#2 GPS and time information
   function test_Line13_WhenVirtualLine13IsAssociatedWithSeatbeltOffFunction_SeatbeltViolationStartAndSeatbeltViolationEndMessageSentAccordingToStateOfLine13()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
   local seatbeltDebounceTime = 10       -- seconds
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SeatbeltOff}, -- digital input line 13 associated with SeatbeltOff function
-                                                {avlPropertiesPINs.seatbeltDebounceTime, seatbeltDebounceTime},          -- setting seatbeltDebounceTime
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.SeatbeltOff}, -- digital input line 13 associated with SeatbeltOff function
+                                                {pins.seatbeltDebounceTime, seatbeltDebounceTime},          -- setting seatbeltDebounceTime
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -3014,7 +3036,7 @@ end
   framework.delay(seatbeltDebounceTime+2)  -- wait longer than seatbeltDebounceTime to get seatbeltViolationStart message
 
   -- seatbeltViolationStart message expected
-  local message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationStart))
+  local message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationStart))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationStart",
@@ -3024,7 +3046,7 @@ end
   avlHelperFunctions.reportVerification(message, expectedValues)
 
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is not true")
 
   -- Point#2 GPS Settings
@@ -3044,7 +3066,7 @@ end
   framework.delay(2)
 
   -- seatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.seatbeltViolationEnd))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.seatbeltViolationEnd))
   expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationEnd",
@@ -3054,7 +3076,7 @@ end
   avlHelperFunctions.reportVerification(message, expectedValues)
 
   -- verification of the state of terminal - SeatbeltViolation false expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is incorrectly true")
 
 
@@ -3068,6 +3090,7 @@ end
   -- * Terminal not in LPM
   -- * Air communication not blocked
   -- * GPS is good
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -3112,9 +3135,12 @@ end
   -- 18. SM0Distance is 111 km and SM0Time is 0 (SM0 has been deactivated after reaching Point#2)
  function test_Line13_WhenVirtualLine13IsAssociatedWithIgnitionAndSM0_IgnitionAndSM0AreActivatedAndDeactivatedAccordingToStateOfLine13()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.IgnitionAndSM0}, -- digital input line 13 associated with IgnitionOn and SM0 functions
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.IgnitionAndSM0}, -- digital input line 13 associated with IgnitionOn and SM0 functions
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -3136,7 +3162,7 @@ end
   framework.delay(2)
 
   -- setting SM0Time and SM0Distance to 0
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setServiceMeter}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
 	message.Fields = {{Name="SM0Time",Value=0},{Name="SM0Distance",Value=0},}
 	gateway.submitForwardMessage(message)
 
@@ -3147,7 +3173,7 @@ end
   framework.delay(2)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionON))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -3158,22 +3184,22 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
 
   -- Point#2 -- 111,12 kilometers away from Point#1
-  local gpsSettings.latitude = 2
+  gpsSettings.latitude = 2
   gps.set(gpsSettings)                    -- applying gps settings
   framework.delay(3)
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.serviceMeter))
-  local expectedValues={
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
                   currentTime = os.time(),
@@ -3189,7 +3215,7 @@ end
   framework.delay(2)
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.ignitionOFF))
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -3200,22 +3226,22 @@ end
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not false as expected")
 
   -- Point#3 -- 111,12 kilometers away from Point#2
-  local gpsSettings.latitude = 3
+  gpsSettings.latitude = 3
   gps.set(gpsSettings)                    -- applying gps settings
   framework.delay(3)
 
   gateway.setHighWaterMark()              -- to get the newest messages
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlAgentCons.avlAgentSIN, messagesMINs.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -3235,6 +3261,7 @@ end
   --
   -- * Terminal not in LPM
   -- * Air communication not blocked
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -3259,9 +3286,12 @@ end
   -- 8. SM1Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM1_ServiceMeter1BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SM1}, -- digital input line 13 associated with SM1 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.SM1}, -- digital input line 13 associated with SM1 function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -3272,7 +3302,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM1Active false is expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM1Active, "SM1Active state is incorrectly true")
 
   -- setting external power source
@@ -3280,7 +3310,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM1Active true is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SM1Active, "SM1Active state is incorrectly not true")
 
   -- setting external power source
@@ -3288,7 +3318,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM1Active false is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM1Active, "SM1Active state is incorrectly true")
 
 
@@ -3300,6 +3330,7 @@ end
   --
   -- * Terminal not in LPM
   -- * Air communication not blocked
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -3324,9 +3355,12 @@ end
   -- 8. SM2Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM2_ServiceMeter2BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SM2}, -- digital input line 13 associated with SM2 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.SM2}, -- digital input line 13 associated with SM2 function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -3337,7 +3371,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM2Active false is expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM2Active, "SM2Active state is incorrectly true")
 
   -- setting external power source
@@ -3345,7 +3379,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM2Active true is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SM2Active, "SM2Active state is incorrectly not true")
 
   -- setting external power source
@@ -3353,7 +3387,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM2Active false is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM2Active, "SM2Active state is incorrectly true")
 
 
@@ -3365,6 +3399,7 @@ end
   --
   -- * Terminal not in LPM
   -- * Air communication not blocked
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -3389,9 +3424,12 @@ end
   -- 8. SM3Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM3_ServiceMeter3BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SM3}, -- digital input line 13 associated with SM3 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.SM3}, -- digital input line 13 associated with SM3 function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -3402,7 +3440,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM3Active false is expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM3Active, "SM3Active state is incorrectly true")
 
   -- setting external power source
@@ -3410,7 +3448,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM3Active true is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SM3Active, "SM3Active state is incorrectly not true")
 
   -- setting external power source
@@ -3418,7 +3456,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM3Active false is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM3Active, "SM3Active state is incorrectly true")
 
 
@@ -3430,6 +3468,7 @@ end
   --
   -- * Terminal not in LPM
   -- * Air communication not blocked
+  -- * IDP 800 simulated
   --
   -- Steps:
   --
@@ -3454,9 +3493,12 @@ end
   -- 8. SM4Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM4_ServiceMeter4BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- line 13 is specific only in IDP 800s
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigInp[13], avlAgentCons.funcDigInp.SM4}, -- digital input line 13 associated with SM4 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigInp[13], cons.funcDigInp.SM4}, -- digital input line 13 associated with SM4 function
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -3467,7 +3509,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM4Active false is expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly true")
 
   -- setting external power source
@@ -3475,7 +3517,7 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM4Active true is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly not true")
 
   -- setting external power source
@@ -3483,11 +3525,12 @@ end
   framework.delay(2)
 
   -- verification of the state of terminal - SM4Active false is expected
-  avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly true")
 
 
 end
+
 
 
 
