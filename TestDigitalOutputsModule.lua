@@ -5,10 +5,8 @@
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
-local avlMessagesMINs       = require("MessagesMINs")           -- the MINs of the messages are taken from the external file
-local avlPopertiesPINs      = require("PropertiesPINs")         -- the PINs of the properties are taken from the external file
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlAgentCons          = require("AvlAgentCons")
+local cons, mins, pins =  require "avlAgentCons"()
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
@@ -30,12 +28,12 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
 function suite_setup()
 
  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.lpmTrigger, 0},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.lpmTrigger, 0},
                                              }
                     )
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
 
@@ -101,10 +99,10 @@ function setup()
                      }
 
   --setting properties of the service
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                              {avlPropertiesPINs.stationarySpeedThld, stationarySpeedThld},
-                                              {avlPropertiesPINs.stationaryDebounceTime, stationaryDebounceTime},
-                                              {avlPropertiesPINs.digOutActiveBitmap, digOutActiveBitmap}
+  lsf.setProperties(cons.avlAgentSIN,{
+                                              {pins.stationarySpeedThld, stationarySpeedThld},
+                                              {pins.stationaryDebounceTime, stationaryDebounceTime},
+                                              {pins.digOutActiveBitmap, digOutActiveBitmap}
 
                                              }
                     )
@@ -113,7 +111,7 @@ function setup()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
 
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
 
@@ -124,15 +122,15 @@ function setup()
   framework.delay(4)
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- setting the EIO properties - disabling all 4 I/O ports
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                            {avlPropertiesPINs.port1Config, 0},      -- port disabled
-                                            {avlPropertiesPINs.port2Config, 0},      -- port disabled
-                                            {avlPropertiesPINs.port3Config, 0},      -- port disabled
-                                            {avlPropertiesPINs.port4Config, 0},      -- port disabled
+  lsf.setProperties(cons.EioSIN,{
+                                            {pins.port1Config, 0},      -- port disabled
+                                            {pins.port2Config, 0},      -- port disabled
+                                            {pins.port3Config, 0},      -- port disabled
+                                            {pins.port4Config, 0},      -- port disabled
 
                                         }
                     )
@@ -171,18 +169,18 @@ end
 function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssociatedWithIgnitionOnInHighState()
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["IgnitionOn"]},    -- digital output line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["IgnitionOn"]},    -- digital output line number 1 set for Ignition function
+                                                {pins.funcDigInp3, cons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
                                              }
                    )
   -- activating special input and output functions
@@ -197,7 +195,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssoc
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected
@@ -207,7 +205,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssoc
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
 
   -- verification of the state of terminal - IgnitionOn false expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected
@@ -241,16 +239,16 @@ function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutput
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
-                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},            -- moving related
-                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},          -- moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
+                                                {pins.movingDebounceTime,movingDebounceTime},            -- moving related
+                                                {pins.stationarySpeedThld,stationarySpeedThld},          -- moving related
                                              }
                    )
   -- activating special output function
@@ -308,19 +306,19 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   framework.delay(movingDebounceTime+gpsReadInterval+2) -- wait until terminal goes to moving state
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Speeding"]}, -- digital output line number 1 set for Moving function
-                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},            -- moving related
-                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},          -- moving related
-                                                {avlPropertiesPINs.stationaryDebounceTime,stationaryDebounceTime},    -- moving related
-                                                {avlPropertiesPINs.speedingTimeOver,speedingTimeOver},                -- speeding related
-                                                {avlPropertiesPINs.defaultSpeedLimit,defaultSpeedLimit},              -- speeding related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["Speeding"]}, -- digital output line number 1 set for Moving function
+                                                {pins.movingDebounceTime,movingDebounceTime},            -- moving related
+                                                {pins.stationarySpeedThld,stationarySpeedThld},          -- moving related
+                                                {pins.stationaryDebounceTime,stationaryDebounceTime},    -- moving related
+                                                {pins.speedingTimeOver,speedingTimeOver},                -- speeding related
+                                                {pins.defaultSpeedLimit,defaultSpeedLimit},              -- speeding related
 
                                              }
                    )
@@ -379,18 +377,18 @@ function test_DigitalOutput_WhenTerminalStationaryAndIgnitionIsOn_DigitalOutputP
 
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                               {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},  -- digital input line number 3 set for Ignition function
-                                               {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Idling"]},      -- digital output line number 1 set for Idling function
-                                               {avlPropertiesPINs.maxIdlingTime,maxIdlingTime},                         -- Idling related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                               {pins.funcDigInp3, cons.funcDigInp["IgnitionOn"]},  -- digital input line number 3 set for Ignition function
+                                               {pins.funcDigOut1, cons.funcDigOut["Idling"]},      -- digital output line number 1 set for Idling function
+                                               {pins.maxIdlingTime,maxIdlingTime},                         -- Idling related
 
                                              }
                    )
@@ -446,17 +444,17 @@ end
 function test_DigitalOutput_WhenServiceMeter1IsON_DigitalOutputPortAssociatedWithSM1InHighState()
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SM1ON"]}, -- digital output line number 1 set for SM1 function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM1"]},   -- digital input line number 3 set for Service Meter 1 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["SM1ON"]}, -- digital output line number 1 set for SM1 function
+                                                {pins.funcDigInp3, cons.funcDigInp["SM1"]},   -- digital input line number 3 set for Service Meter 1 function
 
                                               }
                    )
@@ -498,17 +496,17 @@ end
 function test_DigitalOutput_WhenServiceMeter2IsON_DigitalOutputPortAssociatedWithSM2InHighState()
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SM2ON"]}, -- digital output line number 1 set for SM2 function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM2"]},   -- digital input line number 3 set for Service Meter 2 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["SM2ON"]}, -- digital output line number 1 set for SM2 function
+                                                {pins.funcDigInp3, cons.funcDigInp["SM2"]},   -- digital input line number 3 set for Service Meter 2 function
 
                                               }
                    )
@@ -551,17 +549,17 @@ end
 function test_DigitalOutput_WhenServiceMeter3IsON_DigitalOutputPortAssociatedWithSM3InHighState()
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SM3ON"]}, -- digital output line number 1 set for SM3 function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM3"]},   -- digital input line number 3 set for Service Meter 3 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["SM3ON"]}, -- digital output line number 1 set for SM3 function
+                                                {pins.funcDigInp3, cons.funcDigInp["SM3"]},   -- digital input line number 3 set for Service Meter 3 function
 
                                               }
                    )
@@ -604,17 +602,17 @@ end
 function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInHighState()
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SM4ON"]}, -- digital output line number 1 set for SM4 function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM4"]},   -- digital input line number 3 set for Service Meter 4 function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["SM4ON"]}, -- digital output line number 1 set for SM4 function
+                                                {pins.funcDigInp3, cons.funcDigInp["SM4"]},   -- digital input line number 3 set for Service Meter 4 function
 
                                               }
                    )
@@ -669,21 +667,21 @@ function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_Associ
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port2Config, 6},      -- port 2 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port2Config, 6},      -- port 2 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
-                                                {avlPropertiesPINs.funcDigOut2, avlAgentCons.funcDigOut["SM1ON"]},    -- digital output line number 2 set for SM1 function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["SM1"]},      -- digital input line number 3 set for Service Meter 1 function
-                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},            -- moving related
-                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},          -- moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
+                                                {pins.funcDigOut2, cons.funcDigOut["SM1ON"]},    -- digital output line number 2 set for SM1 function
+                                                {pins.funcDigInp3, cons.funcDigInp["SM1"]},      -- digital input line number 3 set for Service Meter 1 function
+                                                {pins.movingDebounceTime,movingDebounceTime},            -- moving related
+                                                {pins.stationarySpeedThld,stationarySpeedThld},          -- moving related
                                              }
                    )
   -- activating special output function
@@ -754,19 +752,19 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port2Config, 3},      -- port 2 as digital input
-                                                {avlPropertiesPINs.port2EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port2Config, 3},      -- port 2 as digital input
+                                                {pins.port2EdgeDetect, 3},  -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["SeatbeltViol"]},   -- digital output line number 1 set for SeatbeltViolation function
-                                                {avlPropertiesPINs.funcDigInp2, avlAgentCons.funcDigInp["SeatbeltOff"]},    -- digital input line number 2 set for SeatbeltOff function
-                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},                  -- moving related
-                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},                -- moving related
-                                                {avlPropertiesPINs.seatbeltDebounceTime,seatbeltDebounceTime},              -- moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["SeatbeltViol"]},   -- digital output line number 1 set for SeatbeltViolation function
+                                                {pins.funcDigInp2, cons.funcDigInp["SeatbeltOff"]},    -- digital input line number 2 set for SeatbeltOff function
+                                                {pins.movingDebounceTime,movingDebounceTime},                  -- moving related
+                                                {pins.stationarySpeedThld,stationarySpeedThld},                -- moving related
+                                                {pins.seatbeltDebounceTime,seatbeltDebounceTime},              -- moving related
                                              }
                    )
   -- activating special input and output functions
@@ -848,7 +846,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   local geofence128DwellTime = 0    -- in minutes, 0  is for feature disabled
 
   -- setting ZoneDwellTimes for geofence 2
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
   message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                     {Index=1,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}}}},}
 
@@ -864,24 +862,24 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
                      }
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                            {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+  lsf.setProperties(cons.EioSIN,{
+                                            {pins.port1Config, 6},      -- port 1 as digital output
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
-                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},                 -- moving related
-                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},               -- moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
+                                                {pins.movingDebounceTime,movingDebounceTime},                 -- moving related
+                                                {pins.stationarySpeedThld,stationarySpeedThld},               -- moving related
                                              }
                    )
   -- activating special output function
@@ -951,7 +949,7 @@ end
   local geofence128DwellTime = 0    -- in minutes, for 0 GeoDwelling feature is disabled
 
   -- setting ZoneDwellTimes for geofence 2
-  local message = {SIN = avlAgentCons.avlAgentSIN, MIN = messagesMINs.setGeoDwellTimes}
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                      {Index=1,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}}}},}
 	gateway.submitForwardMessage(message)
@@ -966,24 +964,24 @@ end
                      }
 
   --applying properties of geofence service
-  lsf.setProperties(avlAgentCons.geofenceSIN,{
-                                                {avlPropertiesPINs.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlPropertiesPINs.geofenceInterval, geofenceInterval},
-                                                {avlPropertiesPINs.geofenceHisteresis, geofenceHisteresis},
+  lsf.setProperties(cons.geofenceSIN,{
+                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {pins.geofenceInterval, geofenceInterval},
+                                                {pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                            {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
+  lsf.setProperties(cons.EioSIN,{
+                                            {pins.port1Config, 6},      -- port 1 as digital output
                                         }
                    )
 
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
-                                                {avlPropertiesPINs.movingDebounceTime,movingDebounceTime},                 -- moving related
-                                                {avlPropertiesPINs.stationarySpeedThld,stationarySpeedThld},               -- moving related
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
+                                                {pins.movingDebounceTime,movingDebounceTime},                 -- moving related
+                                                {pins.stationarySpeedThld,stationarySpeedThld},               -- moving related
                                              }
                    )
   -- activating special output function
@@ -1031,20 +1029,20 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   local lpmTrigger = 1       -- 1 is for IgnitionOff
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["LowPower"]},    -- digital output line number 1 set for LowPower function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},  -- digital input line number 3 set for Ignition function
-                                                {avlPropertiesPINs.lpmEntryDelay, lpmEntryDelay},                        -- time of lpmEntryDelay, in minutes
-                                                {avlPropertiesPINs.lpmTrigger, lpmTrigger},
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["LowPower"]},    -- digital output line number 1 set for LowPower function
+                                                {pins.funcDigInp3, cons.funcDigInp["IgnitionOn"]},  -- digital input line number 3 set for Ignition function
+                                                {pins.lpmEntryDelay, lpmEntryDelay},                        -- time of lpmEntryDelay, in minutes
+                                                {pins.lpmTrigger, lpmTrigger},
                                              }
                    )
   -- activating special input and output functions
@@ -1056,7 +1054,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
@@ -1066,7 +1064,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
 
   -- verification of the state of terminal - IgnitionOn false expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected - Ignition is off
@@ -1077,7 +1075,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
@@ -1103,18 +1101,18 @@ end
 function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIsSetToZero_DigitalOutputPortAssociatedWithIgnitionOnInLowState()
 
   -- setting the EIO properties
-  lsf.setProperties(avlAgentCons.EioSIN,{
-                                                {avlPropertiesPINs.port1Config, 6},      -- port 1 as digital output
-                                                {avlPropertiesPINs.port3Config, 3},      -- port 3 as digital input
-                                                {avlPropertiesPINs.port3EdgeDetect, 3},  -- detection for both rising and falling edge
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.port1Config, 6},      -- port 1 as digital output
+                                                {pins.port3Config, 3},      -- port 3 as digital input
+                                                {pins.port3EdgeDetect, 3},  -- detection for both rising and falling edge
 
 
                                         }
                    )
   -- setting AVL properties
-  lsf.setProperties(avlAgentCons.avlAgentSIN,{
-                                                {avlPropertiesPINs.funcDigOut1, avlAgentCons.funcDigOut["IgnitionOn"]},    -- digital output line number 1 set for Ignition function
-                                                {avlPropertiesPINs.funcDigInp3, avlAgentCons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut1, cons.funcDigOut["IgnitionOn"]},    -- digital output line number 1 set for Ignition function
+                                                {pins.funcDigInp3, cons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
                                              }
                    )
   -- activating special input and output functions
@@ -1125,7 +1123,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIs
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected (Ignition is on )
@@ -1135,7 +1133,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIs
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
 
   -- verification of the state of terminal - IgnitionOn false expected
-  local avlStatesProperty = lsf.getProperties(avlAgentCons.avlAgentSIN,avlPropertiesPINs.avlStates)
+  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected (Ignition is off)
