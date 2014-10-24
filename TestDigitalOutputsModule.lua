@@ -10,7 +10,7 @@ local cons, mins, pins =  require "avlAgentCons"()
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = 600   -- 600, 700 and 800 available
+terminalInUse = 800   -- 600, 700 and 800 available
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -1415,7 +1415,7 @@ end
 function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFunction_DigitalOutputPortChangesAccordingToOnMainPowerState()
 
   -- Dual power source feature is specific to IDP 800
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(terminalInUse~=800) then skip("TC related only to IDP 600") end
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
@@ -1594,6 +1594,95 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
 end
 
+
+
+
+--- TC checks if setDigitalOutputs message sets digital output ports for IDP 800 series terminal  .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  -- * IDP 800 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Configure all 3 ports as digital outputs
+  -- 2. Send setDigitalOutputs to-mobile message setting all 3 ports to high level
+  -- 3. Read states of the ports
+  -- 4. Send setDigitalOutputs to-mobile message setting all 3 ports to low level
+  -- 5. Read states of the ports
+  -- 6. Send setDigitalOutputs to-mobile message setting all 3 ports back to high level
+  -- 7. Read states of the ports
+  --
+  -- Results:
+  --
+  -- 1. All 3 ports set as digital outputs
+  -- 2. SetDigitalOutputs message sent
+  -- 3. 3 digital outputs in high state
+  -- 4. SetDigitalOutputs message sent
+  -- 5. 3 digital outputs in low state
+  -- 6. SetDigitalOutputs message sent
+  -- 7. 3 digital outputs in high state
+function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
+
+  -- This TC only applies to IDP 800 series terminal
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
+  -- setting the IO properties
+  lsf.setProperties(cons.EioSIN,{
+                                  {pins.portConfig[1], 6},      -- port 1 as digital output
+                                  {pins.portConfig[2], 6},      -- port 2 as digital output
+                                  {pins.portConfig[3], 6},      -- port 3 as digital output
+                                }
+                   )
+
+  -- Sending setDigitalOutputs message setting all 3 port to high state
+  local message = {SIN = cons.avlAgentSIN, MIN = mins.setDigitalOutputs}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- checking if all 3 ports has been correctly set to high level
+  for counter = 1, 3, 1 do
+  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  end
+
+  -- Sending setDigitalOutputs message setting all 3 port to low state
+  message = {SIN = cons.avlAgentSIN, MIN = mins.setDigitalOutputs}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- checking if all 3 ports has been correctly set to low level
+  for counter = 1, 3, 1 do
+  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message")
+  end
+
+  -- Sending setDigitalOutputs message setting all 3 port back to high state
+  local message = {SIN = 126, MIN = 2}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- checking if all 3 ports has been correctly set to high level
+  for counter = 1, 3, 1 do
+  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  end
+
+
+
+end
 
 
 
