@@ -1372,8 +1372,118 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
   assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
 
 
+end
+
+
+--- TC checks if digital output line associated with MainPower is changing according to onMainPower state of terminal .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  -- * IDP 800 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Configure port as a digital output and associate this port with MainPower function
+  -- 2. Set the high state of the output be the indicator of active line
+  -- 3. Simulate external power source not present
+  -- 4. Read the avlStates (PIN 41) and check onMainPower state
+  -- 5. Check the state of digital output port
+  -- 6. Simulate external power source  present
+  -- 7. Read the avlStates (PIN 41) and check onMainPower state
+  -- 8. Check the state of digital output port
+  -- 9. Simulate external power source present again
+  -- 10. Read the avlStates (PIN 41) and check onMainPower state
+  -- 11. Check the state of digital output port
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital output and assiociated with MainPower function
+  -- 2. High state of the output set to be the indicator of active line
+  -- 3. External power source  is not present
+  -- 4. OnMainPower state is false
+  -- 5. Digital output port is in low state
+  -- 6. External power source is present
+  -- 7. OnMainPower state is true
+  -- 8. Digital output port is in high state
+  -- 9. External power source present
+  -- 10. OnMainPower state is false
+  -- 11. Digital output port is in low state
+function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFunction_DigitalOutputPortChangesAccordingToOnMainPowerState()
+
+  -- Dual power source feature is specific to IDP 800
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
+  -- setting the EIO properties
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.portConfig[1], 6},      -- port 1 as digital output
+                                }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut[1], cons.funcDigOut["MainPower"]},    -- digital output line number 1 set for LowPower function
+                                      }
+                   )
+  -- setting digital input bitmap describing when special function outputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(10002)               -- wait until settings are applied
+
+  ---------------------------------------------------------------------------------------------------------------
+  -- External power source not present - terminal not in the onMainPower state
+  ---------------------------------------------------------------------------------------------------------------
+  device.setPower(8,0)             -- external not power present (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  externalPowerPresentProperty = lsf.getProperties(cons.powerSIN,pins.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+
+  -- verification of the state of terminal - onMainPower false is expected
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not incorrectly in the onMainPower state")
+
+  -- asserting state of port 1 - low state is expected - onMainPower is false
+  assert_equal(0, device.getIO(1), "Digital output port associated with MainPower trigger is not in low state as expected")
+
+  ---------------------------------------------------------------------------------------------------------------
+  -- External power source present - terminal in the onMainPower state
+  ---------------------------------------------------------------------------------------------------------------
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(cons.powerSIN,pins.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  -- verification of the state of terminal - onMainPower true expected
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not in the onMainPower state")
+
+  -- asserting state of port 1 - high state is expected - terminal is in onMainPower state
+  assert_equal(1, device.getIO(1), "Port1 associated with MainPower is not in high state as expected")
+
+  ---------------------------------------------------------------------------------------------------------------
+  -- External power source not present - terminal not in the onMainPower state
+  ---------------------------------------------------------------------------------------------------------------
+  device.setPower(8,0)             -- external not power present (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  externalPowerPresentProperty = lsf.getProperties(cons.powerSIN,pins.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+
+  -- verification of the state of terminal - onMainPower false is expected
+  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not incorrectly in the onMainPower state")
+
+  -- asserting state of port 1 - low state is expected - onMainPower is false
+  assert_equal(0, device.getIO(1), "Digital output port associated with MainPower function is not in low state as expected")
+
 
 end
+
 
 
 
@@ -1382,7 +1492,6 @@ end
 TODO:
 TCs for digital outputs associated with following functions:
 
-- MainPower
 - Towing
 - GpsJammed
 - CellJammed
