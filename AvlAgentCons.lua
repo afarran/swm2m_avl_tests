@@ -34,6 +34,7 @@ cons = {
 --
 mins = {
                   positionRequest = 1,
+                  setDigitalOutputs = 2,
                   powerMain = 2,
                   powerBackup = 3,
                   ignitionON = 4,
