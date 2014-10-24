@@ -154,6 +154,8 @@ end
 --]]
 
 
+
+
 --- TC checks if digital output line associated with IgnitionOn state is changing according to IgnitionOn state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with IgnitionOn function;
@@ -183,7 +185,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssoc
                                                 {pins.funcDigInp3, cons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
                                              }
                    )
-  -- activating special input and output functions
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -392,7 +394,7 @@ function test_DigitalOutput_WhenTerminalStationaryAndIgnitionIsOn_DigitalOutputP
 
                                              }
                    )
-   -- activating special input and output functions
+   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -458,7 +460,7 @@ function test_DigitalOutput_WhenServiceMeter1IsON_DigitalOutputPortAssociatedWit
 
                                               }
                    )
-   -- activating special input and output functions
+   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -510,7 +512,7 @@ function test_DigitalOutput_WhenServiceMeter2IsON_DigitalOutputPortAssociatedWit
 
                                               }
                    )
-   -- activating special input and output functions
+   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SM2Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -563,7 +565,7 @@ function test_DigitalOutput_WhenServiceMeter3IsON_DigitalOutputPortAssociatedWit
 
                                               }
                    )
-   -- activating special input and output functions
+   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SM3Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -616,7 +618,7 @@ function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInH
 
                                               }
                    )
-   -- activating special input and output functions
+   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SM4Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -767,7 +769,7 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
                                                 {pins.seatbeltDebounceTime,seatbeltDebounceTime},              -- moving related
                                              }
                    )
-  -- activating special input and output functions
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
 
@@ -1045,7 +1047,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
                                                 {pins.lpmTrigger, lpmTrigger},
                                              }
                    )
-  -- activating special input and output functions
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
@@ -1115,7 +1117,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIs
                                                 {pins.funcDigInp3, cons.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
                                              }
                    )
-  -- activating special input and output functions
+  -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)                 -- wait until settings are applied
 
@@ -1143,24 +1145,120 @@ end
 
 
 
+--- TC checks if digital output line associated with LowPower is changing when lpmTrigger is true for Built-in Battery set as trigger .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  -- * IDP 800 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Configure port 1 as a digital output and associate this port with LowPower function
+  -- 2. Set the high state of the output be the indicator of active line
+  -- 3. Set lpmEntryDelay (PIN 32) to high value (terminal is not supposed to enter low power mode)
+  -- 4. Set lpmTrigger (PIN 31) to Built-on battery
+  -- 5. Simulate external power source present
+  -- 6. Check the state of digital output port
+  -- 7. Simulate external power source not present
+  -- 8. Ckeck the state of digital output port
+  -- 9. Simulate external power source not present
+  -- 10. Check the state of digital output port
+  --
+  -- Results:
+  --
+  -- 1. Port configured as digital output and assiociated with LowPower function
+  -- 2. High state of the output set to be the indicator of active line
+  -- 3. LpmEntryDelay (PIN 32) set to high value (i.e. 10 minutes)
+  -- 4. LpmTrigger (PIN 31) set to Built-in Battery
+  -- 5. External power source  is present
+  -- 6. Digital output port is in low state (lpm trigger is false)
+  -- 7. External power source not present
+  -- 8. Digital output port is in high stare (lpm trigger is true)
+  -- 9. External power source present again
+  -- 10. Digital output port is in low state (lpm trigger is false again)
+function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerSourceIsNotPresent_DigitalOutputPortAssociatedWithLowPowerInHighState()
+
+  -- Dual power source feature is specific to IDP 800
+  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+
+  local lpmEntryDelay = 10   -- time of lpmEntryDelay, in minutes
+  local lpmTrigger = 2       -- 2 is for Built-in battery
+
+  -- setting the EIO properties
+  lsf.setProperties(cons.EioSIN,{
+                                                {pins.portConfig[1], 6},      -- port 1 as digital output
+                                }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(cons.avlAgentSIN,{
+                                                {pins.funcDigOut[1], cons.funcDigOut["LowPower"]},    -- digital output line number 1 set for LowPower function
+                                                {pins.lpmEntryDelay, lpmEntryDelay},                  -- time of lpmEntryDelay, in minutes
+                                                {pins.lpmTrigger, lpmTrigger},
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function outputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)               -- wait until settings are applied
+
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  local externalPowerPresentProperty = lsf.getProperties(cons.powerSIN,pins.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  -- asserting state of port 1 - low state is expected - lpmTrigger is false (external power is present)
+  assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
+
+  device.setPower(8,0)             -- external not power present (terminal unplugged from external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  externalPowerPresentProperty = lsf.getProperties(cons.powerSIN,pins.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source expectedly present")
+
+  -- asserting state of port 1 - high state is expected - terminal is on Backup power source
+  assert_equal(1, device.getIO(1), "Port1 associated with LowPower is not in high state as expected")
+
+  -- back to external power present again
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+
+  -- check external power property
+  externalPowerPresentProperty = lsf.getProperties(cons.powerSIN,pins.extPowerPresent)
+  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+
+  -- asserting state of port 1 - low state is expected - lpmTrigger is false (external power is present)
+  assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
+
+
+
+end
+
 
 
 
 --[[
-
 TODO:
 TCs for digital outputs associated with following functions:
 
 - LowPower -- onBattery as the LpmTrigger
 - MainPower
-- Towing"
+- Towing
 - GpsJammed
 - CellJammed
 - Tamper
 - AirBlocked
 - LoggedIn
 - AntCut
+FuncDigOut5 - outputSink18 for
 --]]
+
+
+
 
 
 --[[Start the tests]]
