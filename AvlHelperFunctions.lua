@@ -83,8 +83,8 @@ function avlHelperFunctions.stateDetector(avlStatesArray)
 
   avlStates = {}
   local avlStatesPropertyBinary =  avlHelperFunctions.decimalToBinary(tonumber(avlStatesArray[1].value))
-  for stateIdx = 1, #cons.avlStateNames do
-  stateNameString = cons.avlStateNames[stateIdx]
+  for stateIdx = 1, #avlConstants.cons.avlStateNames do
+  stateNameString = avlConstants.cons.avlStateNames[stateIdx]
   avlStates[stateNameString] = (avlStatesPropertyBinary[stateIdx]==1)
   end
   return avlStates
@@ -110,7 +110,7 @@ end
 --                    messageName = "MovingEnd",    -- expected message name
 --                    currentTime = os.time()       -- current time to check against EventTime field
 --                      }
--- message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.movingEnd))
+-- message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.cons.avlAgentSIN, avlConstants.mins.movingEnd))
 -- avlHelperFunctions.reportVerification(message, expectedValues)
 -- @within AvlhelperFunctions
 function avlHelperFunctions.reportVerification(message, expectedValues)
@@ -221,12 +221,12 @@ function avlHelperFunctions.setDigStatesDefBitmap(functionsToActivate)
 
   local digStatesDefBitmapToSave = 0x00000000   -- value of the property to be set
    for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
-    digStatesDefBitmapToSave = bit.bor(digStatesDefBitmapToSave, bit.lshift(1, cons.digStatesDefBitmap[functionsToActivateValue]))
+    digStatesDefBitmapToSave = bit.bor(digStatesDefBitmapToSave, bit.lshift(1, avlConstants.cons.digStatesDefBitmap[functionsToActivateValue]))
   end
 
   -- applying AVL agent properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                 {pins.digStatesDefBitmap, digStatesDefBitmapToSave}
+  lsf.setProperties(avlConstants.cons.avlAgentSIN,{
+                                                    {avlConstants.pins.digStatesDefBitmap, digStatesDefBitmapToSave}
                                               }
                    )
 
@@ -243,12 +243,12 @@ function avlHelperFunctions.setDigOutActiveBitmap(functionsToActivate)
 
   local digOutActiveBitmapToSave = 0x00000000   -- value of the property to be set
    for functionsToActivateIndex, functionsToActivateValue in pairs(functionsToActivate) do
-    digOutActiveBitmapToSave = bit.bor(digOutActiveBitmapToSave, bit.lshift(1, cons.digOutActiveBitmap[functionsToActivateValue]))
+    digOutActiveBitmapToSave = bit.bor(digOutActiveBitmapToSave, bit.lshift(1, avlConstants.cons.digOutActiveBitmap[functionsToActivateValue]))
   end
 
   -- applying AVL agent properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                 {pins.digOutActiveBitmap, digOutActiveBitmapToSave}
+  lsf.setProperties(avlConstants.cons.avlAgentSIN,{
+                                                   {avlConstants.pins.digOutActiveBitmap, digOutActiveBitmapToSave}
                                               }
                    )
 
@@ -267,9 +267,9 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
 
 
   --setting properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                              {pins.stationarySpeedThld, stationarySpeedThld},
-                                              {pins.stationaryDebounceTime, stationaryDebounceTime}
+  lsf.setProperties(avlConstants.cons.avlAgentSIN,{
+                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                    {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
                                              }
                     )
 
@@ -285,7 +285,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(stationaryDebounceTime+gpsReadInterval+6) -- 6 seconds are added to make sure terminal changes state
 
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.cons.avlAgentSIN, avlConstants.pins.avlStates)
   framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in stationary state as expected")
@@ -305,10 +305,10 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   local stationarySpeedThld = 5     -- kmh
 
   --setting properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                              {pins.stationarySpeedThld, stationarySpeedThld},
-                                              {pins.movingDebounceTime, movingDebounceTime}
-                                             }
+  lsf.setProperties(avlConstants.cons.avlAgentSIN,{
+                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                    {avlConstants.pins.movingDebounceTime, movingDebounceTime}
+                                                  }
                     )
 
   -- gps settings table
@@ -323,7 +323,7 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(movingDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
 
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.cons.avlAgentSIN, avlConstants.pins.avlStates)
    framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to true
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
