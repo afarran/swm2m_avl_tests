@@ -1,17 +1,12 @@
 --- LSF Services consants definitions
-lsfConstants =
-              {
+lsfConstants = {
                   -- Services SINs and other
-                  cons = {
-                            systemSIN = 16,
-                            powerSIN = 17,
-                            EioSIN = 25,
-                            geofenceSIN = 21,
-                            positionSIN = 20,
-                            idpSIN = 27,
-                            coldFixDelay = 40,
-                            modemWakeUpIntervalValues = { ["5_seconds"] = 0, ["30_seconds"] = 1, ["1_minute"] = 2, ["3_minutes"] = 3, ["10_minutes"] = 4, ["30_minutes"] = 5, ["60_minutes"] = 6,
-                                                          ["2_minutes"] = 7, ["5_minutes"] = 8, ["15_minutes"] = 9, ["20_minutes"] = 10}
+                  sins = {
+                            system = 16,
+                            power = 17,
+                            geofence = 21,
+                            position = 20,
+                            idp = 27,
                           },
                   -- Messages MINs
                   mins = {
@@ -20,22 +15,10 @@ lsfConstants =
                          },
                   -- Properties PINs
                   pins = {
-                            -- IO service
-                            port1Config = 1,
-                            port1EdgeDetect = 4,
-                            port2Config = 12,
-                            port2EdgeDetect = 15,
-                            port3Config = 23,
-                            port3EdgeDetect = 26,
-                            port4Config = 34,
-                            port4EdgeDetect = 37,
-                            portEdgeDetect = { [1] = 4, [2] = 15, [3] = 26, [4] = 37},
-                            portConfig = { [1] = 1, [2] = 12, [3] = 23, [4] = 34},
-                            temperatureValue = 51,
                             -- Power Service
                             extPowerPresentStateDetect = 5,
                             extPowerPresent = 8,
-                            -- Geofence Serrvice
+                            -- Geofence Service
                             geofenceEnabled = 1,
                             geofenceInterval = 2,
                             geofenceHisteresis = 3,
@@ -45,7 +28,32 @@ lsfConstants =
                             wakeUpInterval = 11,    -- wake up interval
                             ledControl = 6,         -- system service
                             powerMode = 10,
+                            portEdgeDetect = {},
+                            portConfig = {},
+
                          },
-            }
+                  modemWakeUpIntervalValues = { ["5_seconds"] = 0, ["30_seconds"] = 1, ["1_minute"] = 2, ["3_minutes"] = 3, ["10_minutes"] = 4, ["30_minutes"] = 5, ["60_minutes"] = 6,
+                                                ["2_minutes"] = 7, ["5_minutes"] = 8, ["15_minutes"] = 9, ["20_minutes"] = 10 },
+
+                  coldFixDelay = 40,
+
+              }
+
+-- IO service requires special treatment - there is EIO in 600's and 800's and EEIO in 700' - different SIN and PINs are applied
+if terminalInUse == (800 or 600) then
+
+  lsfConstants.sins.io = 25                                                      -- sin of EIO Service in 600's and 800's
+  lsfConstants.pins.portEdgeDetect = { [1] = 4, [2] = 15, [3] = 26, [4] = 37}
+  lsfConstants.pins.portConfig = { [1] = 1, [2] = 12, [3] = 23, [4] = 34}
+  lsfConstants.pins.temperatureValue = 51
+
+else
+
+  -- TODO:
+  -- add 700's IO service SIN and PINs
+
+end
+
+
 
 return lsfConstants

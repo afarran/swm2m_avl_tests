@@ -3,15 +3,16 @@
 -- - contains test cases related to periodic and distance based reports
 -- @module TestPeriodicReportsModule
 
+-- global variables used in the tests
+gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
+terminalInUse = 800   -- 600, 700 and 800 available
+
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local cons, mins, pins =  require "cons"()
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-
+local avlConstants =  require("AvlAgentConstants")
+local lsfConstants = require("LsfConstants")
 
 -- Setup and Teardown
 
@@ -28,15 +29,15 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
  function suite_setup()
 
- -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
-  lsf.setProperties(cons.avlAgentSIN,{
-                                              {pins.lpmTrigger, 0},
+  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.lpmTrigger, 0},
                                              }
                     )
 
   framework.delay(3)
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
 
@@ -63,46 +64,19 @@ end
   -- terminal correctly put in the stationary state
 function setup()
 
-  lsf.setProperties(20,{
-                        {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
-                                                 -- gps will be read every gpsReadInterval (in seconds)
-                      }
-                    )
-
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local geofenceEnabled = false       -- to enable geofence feature
-
-  --setting properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                              {pins.stationarySpeedThld, stationarySpeedThld},
-                                              {pins.stationaryDebounceTime, stationaryDebounceTime},
-                                             }
-                    )
- --applying properties of geofence service
-  lsf.setProperties(cons.geofenceSIN,{
-                                                {pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                             }
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                               }
                    )
 
+  local geofenceEnabled = false       -- to disable geofence feature
 
-  -- gps settings table
-  local gpsSettings={
-              latitude = 1,
-              longitude = 1,
-              heading = 90,                 -- degrees
-              speed = 0,                    -- to get stationary state
-              fixType=3,                    -- valid 3D gps fix
-              simulateLinearMotion = false, -- terminal not moving
-                     }
-
-  -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
-  framework.delay(3)                                        -- this delay is for reliability reasons
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
+ --applying properties of geofence service
+  lsf.setProperties(lsfConstants.sins.geofence,{
+                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                               }
+                   )
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
 
 end
@@ -143,12 +117,12 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   local numberOfReports = 2              -- number of expected reports received during the TC
 
   -- check if terminal is in the stationary state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
@@ -159,7 +133,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.stationaryIntervalSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
 
   gpsSettings.heading = 361 -- for stationary state
   local expectedValues={
@@ -173,8 +147,8 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
 
   -- back to stationaryIntervalSat = 0 to get no more reports
   local stationaryIntervalSat = 0       -- seconds
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
@@ -208,13 +182,13 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   local numberOfReports = 5              -- number of expected reports received during the TC
 
   -- check if terminal is in the stationary state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
 
                          --  to get fix older than 5 seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
@@ -230,7 +204,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.stationaryIntervalSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
 
   gpsSettings.heading = 361 -- for stationary state
   local expectedValues={
@@ -245,8 +219,8 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
 
   -- back to stationaryIntervalSat = 0 to get no more reports
   local stationaryIntervalSat = 0       -- seconds
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
@@ -280,10 +254,10 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPosi
                      }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
@@ -297,8 +271,8 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPosi
 
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for stationaryIntervalSatMessage and Position messages
-  local stationaryIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.stationaryIntervalSat))
-  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local stationaryIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
+  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
   -- checking if expected messages has been received
   assert_not_nil(next(stationaryIntervalSatMessage), "stationaryIntervalSat message message not received")   -- if StationaryIntervalSat message not received assertion fails
@@ -312,8 +286,8 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPosi
   -- back to stationaryIntervalSat = 0 to get no more reports
   stationaryIntervalSat = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
 
                                              }
                    )
@@ -348,10 +322,10 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
                      }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                              }
                    )
 
@@ -361,7 +335,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- checking if terminal is moving state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   framework.delay(movingIntervalSat*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
@@ -369,7 +343,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingIntervalSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
 
   local expectedValues={
                   gps = gpsSettings,
@@ -383,8 +357,8 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   -- back to movingIntervalSat = 0 to get no more reports
   movingIntervalSat = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                              }
                    )
 
@@ -420,10 +394,10 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
                      }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                              }
                    )
 
@@ -433,7 +407,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- checking if terminal is moving state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   gps.set({fixType = 1})    -- no fix displayed
@@ -445,7 +419,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingIntervalSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
 
   local expectedValues={
                   gps = gpsSettings,
@@ -460,8 +434,8 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   -- back to movingIntervalSat = 0 to get no more reports
   movingIntervalSat = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                              }
                    )
 
@@ -495,10 +469,10 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
                      }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                              }
                    )
 
@@ -511,8 +485,8 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
   framework.delay(movingIntervalSat+5)                   -- wait longer than movingIntervalSat to receive report
   local receivedMessages = gateway.getReturnMessages()  -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for movingIntervalSatMessage and Position messages
-  local movingIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingIntervalSat))
-  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local movingIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
+  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
   -- checking if expected messages has been received
   assert_not_nil(next(movingIntervalSatMessage), "MovingIntervalSat message message not received")     -- if MovingIntervalSat message not received assertion fails
@@ -526,8 +500,8 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
   -- back to movingIntervalSat = 0 to get no more reports
   movingIntervalSat = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
 
                                              }
                    )
@@ -560,8 +534,8 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   gps.set(gpsSettings)
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
@@ -572,7 +546,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
   assert_equal(numberOfReports, table.getn(matchingMessages) , 2, "The number of received Position reports is incorrect")
 
@@ -587,8 +561,8 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   -- back to positionMsgInterval = 0 to get no more reports
   positionMsgInterval = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
@@ -617,14 +591,14 @@ function test_Position_WhenTerminalInStationaryStateAndRequestedPositionMessageB
   gps.set(gpsSettings)
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
   gateway.setHighWaterMark() -- to get the newest messages
 
-  local requestPositionMessage = {SIN = cons.avlAgentSIN, MIN = mins.positionRequest}      -- to trigger Position event
+  local requestPositionMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}      -- to trigger Position event
 	gateway.submitForwardMessage(requestPositionMessage)
 
   local timeOfEventTc = os.time()
@@ -633,7 +607,7 @@ function test_Position_WhenTerminalInStationaryStateAndRequestedPositionMessageB
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
   gpsSettings.heading = 361                 -- that is for stationary state
   local expectedValues={
@@ -663,8 +637,8 @@ function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN
 
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
@@ -680,7 +654,7 @@ function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN
 
   gateway.setHighWaterMark() -- to get the newest messages
 
-  local requestPositionMessage = {SIN = cons.avlAgentSIN, MIN = mins.positionRequest}      -- to trigger Position event
+  local requestPositionMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}      -- to trigger Position event
 	gateway.submitForwardMessage(requestPositionMessage)
 
   local timeOfEventTc = os.time()
@@ -689,7 +663,7 @@ function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
   local expectedValues={
                   gps = gpsSettings,
@@ -728,10 +702,10 @@ function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndMoving
                      }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
@@ -742,8 +716,8 @@ function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndMoving
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for positionMsgInterval and MovingStart messages
-  local positionMsgIntervalMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
-  local movingStartMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingStart))
+  local positionMsgIntervalMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
+  local movingStartMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart))
 
   print(framework.dump(receivedMessages))
 
@@ -760,8 +734,8 @@ function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndMoving
   -- back to positionMsgInterval = 0 to get no more reports
   positionMsgInterval = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
@@ -794,8 +768,8 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   gps.set(gpsSettings)
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
   gps.set({fixType=1})            -- simulating no fix
@@ -807,7 +781,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
   gpsSettings.heading = 361                 -- that is for stationary state
   local expectedValues={
@@ -823,8 +797,8 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   -- back to positionMsgInterval = 0 to get no more reports
   positionMsgInterval = 0       -- seconds
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
@@ -867,11 +841,11 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
   gps.set(gpsSettings)  -- applying gps settings for initial position
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.distanceSatThld, distanceSatThld},
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                              }
                    )
 
@@ -889,7 +863,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
     -- receiving all from mobile messages sent after setHighWaterMark()
     local receivedMessages = gateway.getReturnMessages()
     -- look for DistanceSat messages
-    local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.distanceSat))
+    local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
     assert_true(next(matchingMessages), "DistanceSat report not received")  -- DistanceSat report is expected
 
     local expectedValues={
@@ -903,8 +877,8 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
 
   -- back to distanceSatThld = 0 to get no more reports
   local distanceSatThld = 0       -- seconds
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.distanceSatThld, distanceSatThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
                                              }
                    )
 
@@ -953,11 +927,11 @@ function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceS
   framework.delay(3)       -- wait until report is generated
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.distanceSatThld, distanceSatThld},
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                              }
                    )
 
@@ -968,13 +942,13 @@ function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceS
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for DistanceSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.distanceSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
   assert_false(next(matchingMessages), "DistanceSat report not expected") -- distanceSat message is not expected
 
   -- back to distanceSatThld = 0 to get no more reports
   local distanceSatThld = 0       -- seconds
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.distanceSatThld, distanceSatThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
                                              }
                    )
 
@@ -1039,11 +1013,11 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
   framework.delay(3)       -- wait until settings are applied
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.distanceSatThld, distanceSatThld},
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                              }
                    )
 
@@ -1051,7 +1025,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
   framework.delay(3)       -- wait until report is generated
 
   -- generate Position message to deffer distanceSat report
-  local positionRequestMessage = {SIN = cons.avlAgentSIN, MIN = mins.positionRequest}     -- to trigger Position event
+  local positionRequestMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}     -- to trigger Position event
 	gateway.submitForwardMessage(positionRequestMessage)
   framework.delay(3)                        -- wait until Position message is processed
   gateway.setHighWaterMark()                -- to get the newest messages
@@ -1062,7 +1036,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for DistanceSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.distanceSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
   assert_false(next(matchingMessages), "DistanceSat report not expected") -- distanceSat message is not expected (deffered by Position message)
 
   gateway.setHighWaterMark()  -- to get the newest messages
@@ -1073,7 +1047,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for DistanceSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.distanceSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
   assert_true(next(matchingMessages), "DistanceSat report not received") -- distanceSat message is expected
 
   local expectedValues={
@@ -1086,8 +1060,8 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffer
 
   -- back to distanceSatThld = 0 to get no more reports
   local distanceSatThld = 0       -- seconds
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.distanceSatThld, distanceSatThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
                                              }
                    )
 
@@ -1137,20 +1111,20 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                      }
 
   -- setting the EIO properties (for IgnitionON)
-  lsf.setProperties(cons.EioSIN,{
-                                                {pins.port1Config, 3},     -- port 1 as digital input
-                                                {pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.port1Config, 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
                                         }
                    )
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.movingDebounceTime, movingDebounceTime},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
-                                                {pins.defaultSpeedLimit, defaultSpeedLimit},
-                                                {pins.speedingTimeOver, speedingTimeOver},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
+                                                {avlConstants.pins.defaultSpeedLimit, defaultSpeedLimit},
+                                                {avlConstants.pins.speedingTimeOver, speedingTimeOver},
                                              }
                    )
   -- activating special input function
@@ -1165,10 +1139,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   timeOfLogEntry[1] = os.time()                  -- save timestamp for first log entry
 
   -- saving AvlStates and DigPorts properties for analysis
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   avlStateVerification[1] = tonumber(avlStatesProperty[1].value)
   -- saving digPortsProperty and DigPorts properties for analysis
-  local digPortsProperty = lsf.getProperties(cons.avlAgentSIN,pins.digPorts)
+  local digPortsProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.digPorts)
   digPortsVerification[1] = tonumber(digPortsProperty[1].value)
 
   device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
@@ -1178,16 +1152,16 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   timeOfLogEntry[2] = os.time()                  -- save timestamp for second log entry
 
   -- saving AvlStates and DigPorts properties for analysis
-  avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   avlStateVerification[2] = tonumber(avlStatesProperty[1].value)
   -- saving digPortsProperty and DigPorts properties for analysis
-  digPortsProperty = lsf.getProperties(cons.avlAgentSIN,pins.digPorts)
+  digPortsProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.digPorts)
   digPortsVerification[2] = tonumber(digPortsProperty[1].value)
 
   loggingPositionsInterval = 0     -- not to get any more messages saved
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
                                              }
                    )
   local loggingEndTime = os.time()     -- time of end of logging - to be used in log filter message
@@ -1256,10 +1230,10 @@ end
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.positionMsgInterval, positionMsgInterval},
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
@@ -1269,16 +1243,16 @@ end
   loggingPositionsInterval = 0     -- seconds, not to get any more messages saved in log
   positionMsgInterval = 0          -- seconds, not to get any more position messages
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.positionMsgInterval, positionMsgInterval},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for Position messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.position))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
   -- checking the number of received Position messages
   assert_equal(numberOfPositionReports, table.getn(matchingMessages) , "The number of received Position reports is incorrect")
 
@@ -1313,9 +1287,9 @@ end
                        }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
@@ -1324,9 +1298,9 @@ end
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                             }
                    )
 
@@ -1335,16 +1309,16 @@ end
   loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
   stationaryIntervalSat = 0          -- seconds, not to get any more StationaryIntervalSat messages
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.stationaryIntervalSat, stationaryIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for stationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.stationaryIntervalSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
   -- checking the number of received stationaryIntervalSat messages
   assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received StationaryIntervalSat reports is incorrect")
 
@@ -1379,9 +1353,9 @@ end
                        }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
@@ -1390,9 +1364,9 @@ end
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                             }
                    )
 
@@ -1401,16 +1375,16 @@ end
   loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
   movingIntervalSat = 0          -- seconds, not to get any more MovingIntervalSatmessages
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.movingIntervalSat, movingIntervalSat},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
                                              }
                    )
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for movingIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.movingIntervalSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
   -- checking the number of received movingIntervalSat messages
   assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received MovingIntervalSat reports is incorrect")
 
@@ -1448,9 +1422,9 @@ end
                        }
 
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
 
@@ -1459,9 +1433,9 @@ end
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.distanceSatThld, distanceSatThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
                                             }
                    )
 
@@ -1470,16 +1444,16 @@ end
   loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
   distanceSatThld = 0                    -- seconds, not to get any more distanceSat messages
   --applying properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {pins.distanceSatThld, distanceSatThld},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
                                              }
                    )
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
   -- look for distanceSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(cons.avlAgentSIN, mins.distanceSat))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
   -- checking the number of received distanceSat messages
   assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received DistanceSat reports is incorrect")
 

@@ -3,13 +3,18 @@
 -- - contains Service Meter related test cases
 -- @module Service Meter
 
+-- global variables used in the tests
+gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
+terminalInUse = 800   -- 600, 700 and 800 available
+
+
+
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local cons, mins, pins =  require "AvlAgentCons"()
+local avlConstants =  require("AvlAgentConstants")
+local lsfConstants = require("LsfConstants")
 
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 
 -------------------------
 -- Setup and Teardown
@@ -30,12 +35,12 @@ function suite_setup()
   terminalInUse = 800    -- 600, 700 and 800 available
 
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
-  lsf.setProperties(cons.avlAgentSIN,{
-                                              {pins.lpmTrigger, 0},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.lpmTrigger, 0},
                                              }
                     )
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
 end
@@ -80,9 +85,9 @@ function setup()
                      }
 
   --setting properties of the service
-  lsf.setProperties(cons.avlAgentSIN,{
-                                              {pins.stationarySpeedThld, stationarySpeedThld},
-                                              {pins.stationaryDebounceTime, stationaryDebounceTime}
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                              {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
                                              }
                     )
 
@@ -90,7 +95,7 @@ function setup()
   gps.set(gpsSettings) -- applying settings of gps simulator
   framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
 
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   -- assertion gives the negative result if terminal does not change the moving state to false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
 
@@ -101,24 +106,24 @@ function setup()
   framework.delay(3)
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
-  local avlStatesProperty = lsf.getProperties(cons.avlAgentSIN,pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- setting the EIO properties - disabling all 4 I/O ports
   lsf.setProperties(cons.EioSIN,{
-                                            {pins.portConfig[1], 0},      -- port disabled
-                                            {pins.portConfig[2], 0},      -- port disabled
-                                            {pins.portConfig[3], 0},      -- port disabled
-                                            {pins.portConfig[4], 0},      -- port disabled
+                                            {avlConstants.pins.portConfig[1], 0},      -- port disabled
+                                            {avlConstants.pins.portConfig[2], 0},      -- port disabled
+                                            {avlConstants.pins.portConfig[3], 0},      -- port disabled
+                                            {avlConstants.pins.portConfig[4], 0},      -- port disabled
                                         }
                     )
 
   -- disabling all digital input lines in AVL
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp[1], 0},   -- 0 is for line disabled
-                                                {pins.funcDigInp[2], 0},
-                                                {pins.funcDigInp[3], 0},
-                                                {pins.funcDigInp[4], 0},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[1], 0},   -- 0 is for line disabled
+                                                {avlConstants.pins.funcDigInp[2], 0},
+                                                {avlConstants.pins.funcDigInp[3], 0},
+                                                {avlConstants.pins.funcDigInp[4], 0},
                                              }
                    )
 
@@ -175,16 +180,16 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
-                                                {pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -194,7 +199,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM0Time",Value=0},{Name="SM0Distance",Value=0},}
 	gateway.submitForwardMessage(message)
 
@@ -212,12 +217,12 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -264,10 +269,10 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0Tim
                      }
 
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -277,7 +282,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0Tim
 
   framework.delay(2)  -- wait until settings are applied
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM0Time",Value=SMTimeTC},{Name="SM0Distance",Value=SMDistanceTC},}
 	gateway.submitForwardMessage(message)
 
@@ -286,13 +291,13 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0Tim
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -342,16 +347,16 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
-                                                {pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -361,7 +366,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM1Time",Value=0},{Name="SM1Distance",Value=0},}
 	gateway.submitForwardMessage(message)
 
@@ -379,12 +384,12 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -431,10 +436,10 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1Tim
                      }
 
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -444,7 +449,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1Tim
 
   framework.delay(2)  -- wait until settings are applied
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM1Time",Value=SMTimeTC},{Name="SM1Distance",Value=SMDistanceTC},}
 	gateway.submitForwardMessage(message)
 
@@ -453,13 +458,13 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1Tim
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -509,16 +514,16 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
-                                                {pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -528,7 +533,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM2Time",Value=0},{Name="SM2Distance",Value=0},}
 	gateway.submitForwardMessage(message)
 
@@ -546,12 +551,12 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -599,10 +604,10 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2Tim
                      }
 
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -612,7 +617,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2Tim
 
   framework.delay(2)  -- wait until settings are applied
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM2Time",Value=SMTimeTC},{Name="SM2Distance",Value=SMDistanceTC},}
 	gateway.submitForwardMessage(message)
 
@@ -621,13 +626,13 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2Tim
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -676,16 +681,16 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
-                                                {pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -695,7 +700,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM3Time",Value=0},{Name="SM3Distance",Value=0},}
 	gateway.submitForwardMessage(message)
 
@@ -713,12 +718,12 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -764,10 +769,10 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3Tim
                      }
 
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -777,7 +782,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3Tim
 
   framework.delay(2)  -- wait until settings are applied
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM3Time",Value=SMTimeTC},{Name="SM3Distance",Value=SMDistanceTC},}
 	gateway.submitForwardMessage(message)
 
@@ -786,13 +791,13 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3Tim
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -841,16 +846,16 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
-                                                {pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM4},    -- line number 1 set for SM4
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -860,7 +865,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM4Time",Value=0},{Name="SM4Distance",Value=0},}
 	gateway.submitForwardMessage(message)
 
@@ -878,12 +883,12 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message in response is received
 
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -930,10 +935,10 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
                      }
 
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM4},    -- line number 1 set for SM4
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -943,7 +948,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
 
   framework.delay(2)  -- wait until settings are applied
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM4Time",Value=SMTimeTC},{Name="SM4Distance",Value=SMDistanceTC},}
 	gateway.submitForwardMessage(message)
 
@@ -952,13 +957,13 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -1016,25 +1021,25 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 
   -- setting the EIO properties
   lsf.setProperties(cons.EioSIN,{
-                                                {pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                                {pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {pins.portEdgeDetect[2], 3}, -- detection for both rising and falling edge
-                                                {pins.portConfig[3], 3},     -- port 3 as digital input
-                                                {pins.portEdgeDetect[3], 3}, -- detection for both rising and falling edge
-                                                {pins.portConfig[4], 3},     -- port 4 as digital input
-                                                {pins.portEdgeDetect[4], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[2], 3},     -- port 2 as digital input
+                                                {avlConstants.pins.portEdgeDetect[2], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[3], 3},     -- port 3 as digital input
+                                                {avlConstants.pins.portEdgeDetect[3], 3}, -- detection for both rising and falling edge
+                                                {avlConstants.pins.portConfig[4], 3},     -- port 4 as digital input
+                                                {avlConstants.pins.portEdgeDetect[4], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
-  lsf.setProperties(cons.avlAgentSIN,{
-                                                {pins.funcDigInp1, cons.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {pins.funcDigInp2, cons.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {pins.funcDigInp3, cons.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {pins.funcDigInp4, cons.funcDigInp.SM4},    -- line number 1 set for SM4
-                                                {pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {pins.stationarySpeedThld, stationarySpeedThld},
-                                                {pins.movingDebounceTime, movingDebounceTime},
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlConstants.pins.funcDigInp2, avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
+                                                {avlConstants.pins.funcDigInp3, avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlConstants.pins.funcDigInp4, avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                  )
   -- activating special input function
@@ -1044,7 +1049,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
 
-  local message = {SIN = cons.avlAgentSIN, MIN = mins.setServiceMeter}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM1Time",Value=SM1TimeInitial},{Name="SM1Distance",Value=SM1DistanceInitial},{Name="SM2Time",Value=SM2TimeInitial},{Name="SM2Distance",Value=SM2DistanceInitial},
                     {Name="SM3Time",Value=SM3TimeInitial},{Name="SM3Distance",Value=SM3DistanceInitial},{Name="SM4Time",Value=SM4TimeInitial},{Name="SM4Distance",Value=SM4DistanceInitial}}
 	gateway.submitForwardMessage(message)
@@ -1067,12 +1072,12 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
   gateway.setHighWaterMark()         -- to get the newest messages
 
   -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = cons.avlAgentSIN, MIN = mins.getServiceMeter}    -- to trigger ServiceMeter event
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(cons.avlAgentSIN, mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
