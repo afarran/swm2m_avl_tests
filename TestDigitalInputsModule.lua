@@ -111,9 +111,9 @@ end
   -- 4. Digital input lines 1-4 disabled
  function setup()
 
-
+  -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}
                                                }
                     )
 

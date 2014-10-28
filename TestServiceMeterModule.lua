@@ -69,52 +69,45 @@ end
   -- terminal correctly put in the stationary state and IgnitionOn false state
 function setup()
 
-  lsf.setProperties(20,{
-                        {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
-                                                 -- gps will be read every gpsReadInterval (in seconds)
-                      }
+  -- setting the continues mode of position service (SIN 20, PIN 15)
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}
+                                               }
                     )
 
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  -- gps settings table
-  local gpsSettings={
-              speed = 0,
-              fixType=3,
-              heading = 90,
-                     }
+  -- put terminal into stationary state
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
-  --setting properties of the service
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{      {lsfConstants.pins.portConfig[1], 3},      -- port set as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3},  -- detection for both rising and falling edge
+                                         }
+                   )
+  -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                              {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},    -- digital input line number 1 set for Ignition function
+                                                {avlConstants.pins.funcDigInp[2], 0 },    -- disabled
+                                                {avlConstants.pins.funcDigInp[3], 0 },    -- disabled
+                                                {avlConstants.pins.funcDigInp[4], 0 },    -- disabled
                                              }
-                    )
-
-  -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
-
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
-
-  -- setting all 4 ports to low stare
-  for i = 1, 4, 1 do
-  device.setIO(i, 0)
-  end
-  framework.delay(3)
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  framework.delay(2)                 -- wait until settings are applied
+  device.setIO(1, 0)                 -- that should trigger IgnitionOff
+  framework.delay(2)                 -- wait until settings are applied
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- setting the EIO properties - disabling all 4 I/O ports
-  lsf.setProperties(cons.EioSIN,{
-                                            {avlConstants.pins.portConfig[1], 0},      -- port disabled
-                                            {avlConstants.pins.portConfig[2], 0},      -- port disabled
-                                            {avlConstants.pins.portConfig[3], 0},      -- port disabled
-                                            {avlConstants.pins.portConfig[4], 0},      -- port disabled
+  lsf.setProperties(lsfConstants.sins.io,{
+                                            {lsfConstants.pins.portConfig[1], 0},      -- port disabled
+                                            {lsfConstants.pins.portConfig[2], 0},      -- port disabled
+                                            {lsfConstants.pins.portConfig[3], 0},      -- port disabled
+                                            {lsfConstants.pins.portConfig[4], 0},      -- port disabled
                                         }
                     )
 
@@ -126,6 +119,7 @@ function setup()
                                                 {avlConstants.pins.funcDigInp[4], 0},
                                              }
                    )
+
 
 
 end
@@ -179,14 +173,14 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(cons.EioSIN,{
-                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
                                                 {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
@@ -270,7 +264,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0Tim
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
@@ -346,14 +340,14 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(cons.EioSIN,{
-                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
                                                 {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
@@ -437,7 +431,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1Tim
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
@@ -513,14 +507,14 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(cons.EioSIN,{
-                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
                                                 {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
@@ -605,7 +599,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2Tim
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
@@ -680,14 +674,14 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(cons.EioSIN,{
-                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
                                                 {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
@@ -770,7 +764,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3Tim
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
@@ -845,14 +839,14 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(cons.EioSIN,{
-                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
                                                 {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
@@ -936,7 +930,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
@@ -976,7 +970,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
 
 end
 
---]]
+
 
 --- TC checks if ServiceMeter message reports correct values of all active ServiceMeters (SM1 to SM4)
   -- are populated
@@ -1020,23 +1014,23 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                      }
 
   -- setting the EIO properties
-  lsf.setProperties(cons.EioSIN,{
-                                                {avlConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {avlConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                                {avlConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {avlConstants.pins.portEdgeDetect[2], 3}, -- detection for both rising and falling edge
-                                                {avlConstants.pins.portConfig[3], 3},     -- port 3 as digital input
-                                                {avlConstants.pins.portEdgeDetect[3], 3}, -- detection for both rising and falling edge
-                                                {avlConstants.pins.portConfig[4], 3},     -- port 4 as digital input
-                                                {avlConstants.pins.portEdgeDetect[4], 3}, -- detection for both rising and falling edge
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[2], 3}, -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[3], 3},     -- port 3 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[3], 3}, -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[4], 3},     -- port 4 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[4], 3}, -- detection for both rising and falling edge
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp1, avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {avlConstants.pins.funcDigInp2, avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {avlConstants.pins.funcDigInp3, avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {avlConstants.pins.funcDigInp4, avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
+                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp.SM2},    -- line number 2 set for SM2
+                                                {avlConstants.pins.funcDigInp[3], avlConstants.funcDigInp.SM3},    -- line number 3 set for SM3
+                                                {avlConstants.pins.funcDigInp[4], avlConstants.funcDigInp.SM4},    -- line number 4 set for SM4
                                                 {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
@@ -1103,7 +1097,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 
 end
 
-
+--]]
 
 
 --[[Start the tests]]
