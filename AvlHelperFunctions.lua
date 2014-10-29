@@ -10,6 +10,8 @@
 
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local bit = require("bit")
+local avlConstants =  require("AvlAgentConstants")
+local lsfConstants = require("LsfConstants")
 
 local avlHelperFunctions = {}
 
@@ -308,7 +310,7 @@ function avlHelperFunctions.putTerminalIntoMovingState()
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                     {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                     {avlConstants.pins.movingDebounceTime, movingDebounceTime}
-                                                  }
+                                             }
                     )
 
   -- gps settings table
@@ -327,6 +329,33 @@ function avlHelperFunctions.putTerminalIntoMovingState()
    framework.delay(2) -- wait until property is read
   -- assertion gives the negative result if terminal does not change the moving state to true
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
+
+
+end
+
+
+
+
+--- Function reads terminal hardware version
+-- @usage
+-- avlHelperFunctions.getTerminalHardwareVersion()
+-- @treturn string - "600", "700" or "800" indicating version of hardware in use
+-- @within AvlhelperFunctions
+function avlHelperFunctions.getTerminalHardwareVersion()
+
+  gateway.setHighWaterMark() -- to get the newest messages
+  -- sending getTerminalInfo to mobile message (MIN 1) from system service
+  local getTerminalInfoMessage = {SIN = 16, MIN = 1}
+ 	-- local getTerminalInfoMessage = {SIN = lsfConstants.sins.system, MIN = lsfConstans.mins.getTerminalInfo}  -- TODO: change function to use this line
+  gateway.submitForwardMessage(getTerminalInfoMessage)
+  framework.delay(2)
+  -- receiving terminalInfo messge (MIN 1) as the response to the request
+  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16, 1))
+  -- local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstans.mins.getTerminalInfo)) -- TODO: change function to use this line
+  if(terminalInfoMessage.Payload.Fields[1].Value == "IDP-6XX") then return 600
+  elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-7XX") then  return 700
+  elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-8XX") then return 800
+  end
 
 
 end

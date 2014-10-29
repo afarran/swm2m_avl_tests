@@ -3,20 +3,17 @@
 -- - contains gps related test cases
 -- @module TestGPSModule
 
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = 800   -- 600, 700 and 800 available
-
-
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstants = require("LsfConstants")
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
+terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
 
+
+local avlConstants =  require("AvlAgentConstants")
+local lsfConstants = require("LsfConstants")
 
 -- Setup and Teardown
 
@@ -33,7 +30,7 @@ gpsReadInterval   = 1 -- used to configure the time interval of updating the pos
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
  function suite_setup()
 
- -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
+  -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.lpmTrigger, 0},
                                              }

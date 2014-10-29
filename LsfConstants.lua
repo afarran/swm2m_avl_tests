@@ -12,6 +12,8 @@ lsfConstants = {
                   mins = {
                             saveProperties = 11,    -- to mobile, system service
                             propertyValues = 5,     -- from mobile, system service
+                            getTerminalInfo = 1,    -- to mobile, system service
+                            terminalInfo = 1,       -- from mobile , system service
                          },
                   -- Properties PINs
                   pins = {

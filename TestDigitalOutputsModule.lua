@@ -3,16 +3,17 @@
 -- - contains digital output related test cases
 -- @module TestDigitalOutputsModule
 
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = 800   -- 600, 700 and 800 available
-
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
+
+-- global variables used in the tests
+gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
+terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
+
+
 local avlConstants =  require("AvlAgentConstants")
 local lsfConstants = require("LsfConstants")
-
 
 -------------------------
 -- Setup and Teardown
@@ -55,6 +56,10 @@ function suite_setup()
 	gateway.submitForwardMessage(message)
 
   framework.delay(5) -- wait until geofences service is up again
+
+
+
+
 
 end
 
@@ -848,7 +853,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   local geofence128DwellTime = 0    -- in minutes, 0  is for feature disabled
 
   -- setting ZoneDwellTimes for geofence 2
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setGeoDwellTimes}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.avlConstants.mins.setGeoDwellTimes}
   message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                     {Index=1,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}}}},}
 
@@ -951,7 +956,7 @@ end
   local geofence128DwellTime = 0    -- in minutes, for 0 GeoDwelling feature is disabled
 
   -- setting ZoneDwellTimes for geofence 2
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setGeoDwellTimes}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoDwellTimes}
 	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                      {Index=1,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}}}},}
 	gateway.submitForwardMessage(message)
