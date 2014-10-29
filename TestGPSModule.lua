@@ -11,7 +11,6 @@ local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
 
-
 local avlConstants =  require("AvlAgentConstants")
 local lsfConstants = require("LsfConstants")
 
@@ -40,7 +39,6 @@ local lsfConstants = require("LsfConstants")
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
-
 
 end
 
@@ -171,7 +169,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
 end
-
+--[[
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
@@ -2043,7 +2041,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 end
 
 
-
+--]]
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed

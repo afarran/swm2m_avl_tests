@@ -3,6 +3,7 @@
 -- - contains digital output related test cases
 -- @module TestDigitalOutputsModule
 
+
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
@@ -10,7 +11,6 @@ local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-
 
 local avlConstants =  require("AvlAgentConstants")
 local lsfConstants = require("LsfConstants")
@@ -96,11 +96,15 @@ function setup()
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
+  print(terminalInUse)
+  print(framework.dump(lsfConstants.sins.io))
+
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{      {lsfConstants.pins.portConfig[1], 3},      -- port set as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3},  -- detection for both rising and falling edge
                                          }
                    )
+
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},    -- digital input line number 1 set for Ignition function
@@ -1491,7 +1495,7 @@ function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFuncti
 end
 
 
-
+--]]
 
 --[[
 TODO:
@@ -1507,7 +1511,7 @@ TCs for digital outputs associated with following functions:
  add FuncDigOut5 - outputSink18 for 780
 --]]
 
-
+--[[
 --- TC checks if setDigitalOutputs message sets digital output ports for IDP 600 series terminal  .
   -- Initial Conditions:
   --
@@ -1777,6 +1781,99 @@ function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutput
   -- checking if all 3 ports has been correctly set to high level
   for counter = 1, 3, 1 do
   assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  end
+
+end
+
+
+
+
+--- TC checks if setDigitalOutputs message sets digital output ports for IDP 600 series terminal and inverts it after set time .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  -- * IDP 600 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Configure all 4 ports as digital outputs
+  -- 2. Send setDigitalOutputs to-mobile message setting all 4 ports to high level and invertTime different than zero
+  -- 3. Read states of the ports
+  -- 4. wait longer than set invertTime and read states of the ports
+  -- 5. Send setDigitalOutputs to-mobile message setting all 4 ports back to low level and invertTime different than zero
+  -- 6. Read states of the ports
+  -- 7. wait longer than set invertTime and read states of the ports
+  --
+  -- Results:
+  --
+  -- 1. All 4 ports set as digital outputs
+  -- 2. SetDigitalOutputs message sent
+  -- 3. 4 digital outputs in high state
+  -- 4. 4 digital outputs inverted automatically to low state
+  -- 5. SetDigitalOutputs message sent
+  -- 6. 4 digital outputs in high state
+  -- 7. 4 digital outputs inverted automatically to low state
+function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
+
+  -- This TC only applies to IDP 600 series terminal
+  if(terminalInUse~=600) then skip("TC related only to IDP 600s") end
+
+  local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
+
+  -- setting the IO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                          {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
+                                          {lsfConstants.pins.portConfig[2], 6},      -- port 2 as digital output
+                                          {lsfConstants.pins.portConfig[3], 6},      -- port 3 as digital output
+                                          {lsfConstants.pins.portConfig[4], 6},      -- port 4 as digital output
+                                         }
+                   )
+
+  -- Sending setDigitalOutputs message setting all 4 port to high state
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setDigitalOutputs}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- checking if all 4 ports has been correctly set to high level
+  for counter = 1, 4, 1 do
+  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  end
+
+  framework.delay(invertTime*60+2) -- wait longer than invertTime to let the outputs change its states
+
+  -- checking if all 4 ports has been correctly automatically inverted to low level
+  for counter = 1, 4, 1 do
+  assert_equal(0, device.getIO(counter), "Digital output port has not been automatically inverted to low level after invertTime period")
+  end
+
+  -- Sending setDigitalOutputs message setting all 4 port to high state
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setDigitalOutputs}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- checking if all 4 ports has been correctly set to low level
+  for counter = 1, 4, 1 do
+  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message")
+  end
+
+  framework.delay(invertTime*60+2) -- wait longer than invertTime to let the outputs change its states
+
+  -- checking if all 4 ports has been correctly automatically inverted to high level
+  for counter = 1, 4, 1 do
+  assert_equal(1, device.getIO(counter), "Digital output port has not been automatically inverted to high level after invertTime period")
   end
 
 
