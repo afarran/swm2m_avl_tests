@@ -6,13 +6,13 @@
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
+local avlConstants =  require("AvlAgentConstants")
+local lsfConstants = require("LsfConstants")
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstants = require("LsfConstants")
+lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
 
 
 -------------------------

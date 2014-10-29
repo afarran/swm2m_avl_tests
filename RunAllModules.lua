@@ -1,5 +1,5 @@
 
-local lunatest      = require "lunatest"
+lunatest      = require "lunatest"
 local TestGPSModule = require "TestGPSModule"
 local TestLPMModule = require "TestLPMModule"
 local TestDigitalInputsModule  = require "TestDigitalInputsModule"

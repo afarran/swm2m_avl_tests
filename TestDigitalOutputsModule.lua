@@ -7,13 +7,13 @@
 local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 local lunatest              = require "lunatest"
 local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
+local avlConstants =  require("AvlAgentConstants")
+local lsfConstantsAllTerminals = require("LsfConstants")
 
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstants = require("LsfConstants")
+lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
 
 -------------------------
 -- Setup and Teardown
@@ -95,9 +95,6 @@ function setup()
                     )
 
   avlHelperFunctions.putTerminalIntoStationaryState()
-
-  print(terminalInUse)
-  print(framework.dump(lsfConstants.sins.io))
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{      {lsfConstants.pins.portConfig[1], 3},      -- port set as digital input
@@ -1511,7 +1508,7 @@ TCs for digital outputs associated with following functions:
  add FuncDigOut5 - outputSink18 for 780
 --]]
 
---[[
+
 --- TC checks if setDigitalOutputs message sets digital output ports for IDP 600 series terminal  .
   -- Initial Conditions:
   --
