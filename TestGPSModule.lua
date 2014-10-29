@@ -169,7 +169,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
 end
---[[
+
 
 --- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
@@ -1179,6 +1179,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                    )
 
 
+  timeOfEventTc = os.time()   -- to get exact timestamp
   gps.set(gpsSettings[1])                               -- applying gps settings for Point#1
   framework.delay(movingDebounceTime+gpsReadInterval+1) -- waiting until terminal goes to moving state
 
@@ -1200,7 +1201,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   local expectedValues={
                   gps = gpsSettings[1],
                   messageName = "Turn",
-                  currentTime = os.time()
+                  currentTime = timeOfEventTc
                   }
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
