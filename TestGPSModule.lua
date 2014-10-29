@@ -1126,62 +1126,84 @@ function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrue_SpeedingEndMessag
 end
 
 
---- TC checks if Turn message is correctly sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime
-  -- *actions performed:
-  -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh, turnThreshold to 10 degrees and turnDebounceTime to 1 second
-  -- set heading to 90 degrees and speed one kmh above threshold and wait for time longer than movingDebounceTime;
-  -- check if terminal is the moving state; then change heading to 102 (2 degrees above threshold) and wait longer than turnDebounceTime
-  -- check if Turn message has been correctly sent and verify field of the report; after that set heading of the terminal back to 90
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- *expected results:
-  -- Turn message sent and report fields have correct values
+
+--- TC checks if Turn message is sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set TurnThreshold (PIN 16) to value above 0 to enable sending Turn messages
+  -- 2. Put terminal in moving state in Point#1
+  -- 3. Change position to Point#2 and ensure change in heading is above TurnThreshold (PIN 16)
+  -- 4. Wait longer than TurnDebounceTime (PIN 17) and receive Turn message (MIN 14)
+  -- 5. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. TurnThreshold set above 0
+  -- 2. Terminal in moving state in Point#1 with initial heading
+  -- 3. Terminal in Point#2 and heading changed above TurnThreshold (PIN 16)
+  -- 4. Turn message sent from terminal after TurnDebounceTime (PIN 17)
+  -- 5. Report fields contain Point#1 GPS and time information
 function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
-  local turnThreshold = 10           -- in degrees
-  local turnDebounceTime = 1         -- in seconds, feature disabled
+  local turnThreshold = 10           -- degrees
+  local turnDebounceTime = 1         -- seconds
+  local gpsSettings = {}
+
+  -- Point#1 gps settings
+  gpsSettings[1]={
+                  speed = stationarySpeedThld+1,  -- kmh
+                  heading = 90,                   -- degrees
+                  latitude = 1,                   -- degrees
+                  longitude = 1                   -- degrees
+                 }
+
+  -- Point#2 gps settings
+  gpsSettings[2]={
+                  speed = stationarySpeedThld+10,                         -- kmh
+                  heading = gpsSettings[1].heading + turnThreshold + 1,   -- degrees, 1 degree above turnThreshold
+                  latitude = 7,                                           -- degrees
+                  longitude = 7,                                          -- degrees
+                 }
 
 
-  --applying properties of the service
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                                 {avlConstants.pins.turnThreshold, turnThreshold},
                                                 {avlConstants.pins.turnDebounceTime, turnDebounceTime},
-
                                              }
                    )
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
 
+  gps.set(gpsSettings[1])                               -- applying gps settings for Point#1
+  framework.delay(movingDebounceTime+gpsReadInterval+1) -- waiting until terminal goes to moving state
 
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
-
+  -- checking if terminal is in moving state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   gateway.setHighWaterMark() -- to get the newest messages
 
-  gpsSettings.heading = 102     -- change in heading above turnThreshold
-  gps.set(gpsSettings)          -- applying gps settings
+  gps.set(gpsSettings[2])    -- applying gps settings of Point#2
 
   -- waiting longer than turnDebounceTime
   framework.delay(turnDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
 
-  -- Turn Message expected
+  -- Turn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.turn))
 
+  -- content of the report should contain Point#1 gps and time information
   local expectedValues={
-                  gps = gpsSettings,
+                  gps = gpsSettings[1],
                   messageName = "Turn",
                   currentTime = os.time()
                   }
@@ -1220,7 +1242,6 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTime
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                                 {avlConstants.pins.turnThreshold, turnThreshold},
                                                 {avlConstants.pins.turnDebounceTime, turnDebounceTime},
-
                                              }
                    )
 
@@ -2024,7 +2045,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 
 end
 
---]]
+
 
 
 --[[Start the tests]]
