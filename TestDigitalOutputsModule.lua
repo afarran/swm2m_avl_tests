@@ -1539,7 +1539,7 @@ TCs for digital outputs associated with following functions:
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- This TC only applies to IDP 600 series terminal
-  if(terminalInUse~=600) then skip("TC related only to IDP 800s") end
+  if(terminalInUse~=600) then skip("TC related only to IDP 600s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1677,6 +1677,103 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
   gateway.submitForwardMessage(message)
   framework.delay(2)
 
+  -- checking if all 3 ports has been correctly set to high level
+  for counter = 1, 3, 1 do
+  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  end
+
+
+
+end
+
+
+--- TC checks if setDigitalOutputs message sets digital output ports for IDP 700 series terminal  .
+  -- Initial Conditions:
+  --
+  -- * Terminal not in LPM
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  -- * IDP 700 terminal simulated
+  --
+  -- Steps:
+  --
+  -- 1. Configure all 3 ports as digital outputs
+  -- 2. Send setDigitalOutputs to-mobile message setting all 5 ports to high level
+  -- 3. Read states of the ports
+  -- 4. Send setDigitalOutputs to-mobile message setting all 5 ports to low level
+  -- 5. Read states of the ports
+  -- 6. Send setDigitalOutputs to-mobile message setting all 5 ports back to high level
+  -- 7. Read states of the ports
+  --
+  -- Results:
+  --
+  -- 1. All 5 ports set as digital outputs
+  -- 2. SetDigitalOutputs message sent
+  -- 3. 5 digital outputs in high state
+  -- 4. SetDigitalOutputs message sent
+  -- 5. 5 digital outputs in low state
+  -- 6. SetDigitalOutputs message sent
+  -- 7. 5 digital outputs in high state
+function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
+
+  -- This TC only applies to IDP 800 series terminal
+  if(terminalInUse~=700) then skip("TC related only to IDP 700s") end
+
+  -- setting the IO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                  {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
+                                  {lsfConstants.pins.portConfig[2], 6},      -- port 2 as digital output
+                                  {lsfConstants.pins.portConfig[3], 6},      -- port 3 as digital output
+                                }
+                   )
+
+  -- Sending setDigitalOutputs message setting all 5 ports to high state
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setDigitalOutputs}
+  message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP7xxLine14"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP7xxLine15"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP7xxLine16"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value="IDP7xxLine17"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=4,Fields={{Name="LineNum",Value="IDP7xxLine18"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- TODO: modify following section to work on 700's IDP
+  -- checking if all 3 ports has been correctly set to high level
+  for counter = 1, 3, 1 do
+  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  end
+
+  -- Sending setDigitalOutputs message setting all 5 ports to low state
+  message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setDigitalOutputs}
+  message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP7xxLine14"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP7xxLine15"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP7xxLine16"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value="IDP7xxLine17"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=4,Fields={{Name="LineNum",Value="IDP7xxLine18"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- TODO: modify following section to work on 700's IDP
+  -- checking if all 3 ports has been correctly set to low level
+  for counter = 1, 3, 1 do
+  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message")
+  end
+
+  -- Sending setDigitalOutputs message setting all 5 ports back to high state
+  message = {SIN = avlConstants.avlAgentSIN, MIN = mins.setDigitalOutputs}
+  message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP7xxLine14"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP7xxLine15"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP7xxLine16"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value="IDP7xxLine17"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=4,Fields={{Name="LineNum",Value="IDP7xxLine18"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+
+  -- TODO: modify following section to work on 700's IDP
   -- checking if all 3 ports has been correctly set to high level
   for counter = 1, 3, 1 do
   assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
