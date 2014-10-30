@@ -119,26 +119,58 @@ end
 -- Test Cases
 -------------------------
 
---- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
-  -- *actions performed:
-  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh; increase speed one kmh above threshold
-  -- then wait for time longer than movingDebounceTime; then check if the MovingStart message has been sent and verify
-  -- if the fields in the report have correct values and terminal is correctly in the moving state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- *expected results:
-  -- terminal correctly put in the moving state, MovingStart message sent and report fields
-  -- have correct values
-function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent()
+--- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
+  -- Initial Conditions:
+  --
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
+  -- 2. Simulate terminal in Point#1 with speed equal to 0 (stationary)
+  -- 3. Change terminals to Point#2 with speed above stationarySpeedThld (PIN 1)
+  -- 4. Wait shorter than stationarySpeedThld (PIN 1) and change terminals position to Point#3
+  -- 5. Wait until stationarySpeedThld (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 6. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. Properties movingDebounceTime and stationarySpeedThld correctly set
+  -- 2. Terminal in stationary state in Point#1
+  -- 3. Terminal in Point#2 and speed above stationarySpeedThld (PIN 1)
+  -- 4. Terminal in Point#3 and speed still above stationarySpeedThld (PIN 1)
+  -- 5. MovingStart message sent from terminal after movingDebounceTime (PIN 3)
+  -- 6. Report fields contain Point#2 GPS and time information
+function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDebounceTime_MovingStartMessageSent()
 
-  local movingDebounceTime = 1       -- seconds
+  local movingDebounceTime = 10      -- seconds
   local stationarySpeedThld = 5      -- kmh
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
+  local gpsSettings = {}             -- table containing gpsSettings used in TC
+
+  -- Point#1 settings
+  gpsSettings[1]={
+              speed = 0,                      -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 0,                   -- degrees
+              longitude = 0                   -- degrees
+                     }
+
+  -- Point#2 settings
+  gpsSettings[2]={
               speed = stationarySpeedThld+1,  -- one kmh above threshold
               heading = 90,                   -- degrees
               latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+              longitude = 1,                   -- degrees
+                     }
+
+  -- Point#2 settings
+  gpsSettings[3]={
+              speed = stationarySpeedThld+10,  -- one kmh above threshold
+              heading = 95,                    -- degrees
+              latitude = 2,                    -- degrees
+              longitude = 2,                   -- degrees
                      }
 
   --applying properties of the service
@@ -150,16 +182,29 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
 
   gateway.setHighWaterMark() -- to get the newest messages
 
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  -- terminal in Point#1 - not moving
+  gps.set(gpsSettings[1])
+  framework.delay(gpsReadInterval+1)
+
+  timeOfEventTc = os.time()  -- to get the exact timestamp of the moment when the condition was met
+  -- terminal in Point#2 - started to move
+  gps.set(gpsSettings[2])
+  -- wait shorter than movingDebounceTime
+  framework.delay(gpsReadInterval+1)
+
+  -- terminal in Point#3 - moved to another position (before MovingStart message was sent)
+  gps.set(gpsSettings[3])
+
+  -- wait longer than movingDebounceTime
+  framework.delay(movingDebounceTime+gpsReadInterval+1)
 
   -- MovingStart Message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart))
 
   local expectedValues={
-                  gps = gpsSettings,
+                  gps = gpsSettings[2],         -- Point#2 gps information is expected in the report -  that was the moment when the condition was met
                   messageName = "MovingStart",
-                  currentTime = os.time()
+                  currentTime = timeOfEventTc,
                   }
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
@@ -1143,8 +1188,8 @@ end
   -- 2. Terminal in moving state in Point#1 with initial heading
   -- 3. Terminal in Point#2 and heading changed above TurnThreshold (PIN 16)
   -- 4. Terminal in Point#3 and heading changed still above TurnThreshold (PIN 16)
-  -- 4. Turn message sent from terminal after TurnDebounceTime (PIN 17)
-  -- 5. Report fields contain Point#2 GPS and time information
+  -- 5. Turn message sent from terminal after TurnDebounceTime (PIN 17)
+  -- 6. Report fields contain Point#2 GPS and time information
 function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageSent()
 
   local movingDebounceTime = 1       -- seconds
