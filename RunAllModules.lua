@@ -1,20 +1,16 @@
 
 lunatest      = require "lunatest"
-local TestGPSModule = require "TestGPSModule"
-local TestLPMModule = require "TestLPMModule"
-local TestDigitalInputsModule  = require "TestDigitalInputsModule"
-local TestDigitalOutputsModule  = require "TestDigitalOutputsModule"
-local TestGeofencesModule = require "TestGeofencesModule"
-local TestPeriodicReportsModule = require "TestPeriodicReportsModule"
-local TestServiceMeterModule = require "TestServiceMeterModule"
+lunatest.suite("TestGPSModule")
+lunatest.suite("TestLPMModule")
+lunatest.suite("TestDigitalInputsModule")
+lunatest.suite("TestDigitalOutputsModule")
+lunatest.suite("TestGeofencesModule")
+lunatest.suite("TestPeriodicReportsModule")
+lunatest.suite("TestServiceMeterModule")
 
 
 
-for i=1, 1, 1 do
-  lunatest.run()
-end
-
-
+lunatest.run()
 framework.printResults()
 
 
