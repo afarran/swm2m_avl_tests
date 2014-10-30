@@ -1,0 +1,28 @@
+Starting...
+Attaching shell
+[12:25:07 AVL] Service started v3.2.2 r1625
+[12:25:07 Utility] Service started v1.1.0 r1569
+shell> [12:25:08 AVL] Evnt="PowerMain" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[12:25:08 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[12:25:08 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[12:25:08 AVL] TxQ Msg#1 Evnt="PowerMain" MIN=2 Cell=false
+[12:25:08 AVL] Starting event LowPower debounce timer (0.1 sec)
+[12:25:08 AVL] Starting event Moving debounce timer (30.0 sec)
+[12:25:08 AVL] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[12:25:08 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[12:25:08 AVL] TxQ Msg#2 Evnt="Reset" MIN=1 Cell=false
+[12:25:08 AVL] Entering LPM 0x2
+[12:25:21 AVL] Starting event LowPower debounce timer (0.1 sec)
+[12:25:21 AVL] Exiting LPM 0x0
+[12:25:23 AVL] Starting event Moving debounce timer (30.0 sec)
+[12:25:33 AVL] Debounce timer stopped - Moving
+[12:25:47 AVL] Starting event Moving debounce timer (1.0 sec)
+[12:25:48 AVL] Evnt="MovingStart" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[12:25:48 Utility] Creating /data/svc/Utility/Msgs-0.dat
+[12:25:48 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[12:25:48 AVL] TxQ Msg#3 Evnt="MovingStart" MIN=6 Cell=false
+[12:26:09 AVL] Turn timer (10 sec) has started. Turn=11.0/10 deg
+[12:26:12 AVL] Parameters Saved
+[12:26:19 AVL] Evnt="Turn" Cell=false CellIntvl=120sec SatIntvl=900sec
+[12:26:19 AVL] Starting event AirBlocked debounce timer (1200.0 sec)
+[12:26:19 AVL] TxQ Msg#4 Evnt="Turn" MIN=14 Cell=false

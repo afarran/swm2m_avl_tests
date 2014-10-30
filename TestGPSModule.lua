@@ -113,7 +113,7 @@ function teardown()
 
 end
 
-
+--[[
 
 -------------------------
 -- Test Cases
@@ -1164,7 +1164,7 @@ function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrue_SpeedingEndMessag
 
 end
 
-
+--]]
 
 --- TC checks if Turn message is sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime .
   -- Initial Conditions:
@@ -1175,7 +1175,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set TurnThreshold (PIN 16) to value above 0 to enable sending Turn messages
+  -- 1. Set TurnThreshold (PIN 16) to value above 0 to enable sending Turn messages and TurnDebounceTime (PIN 17) to value in range 1 to 63
   -- 2. Put terminal in moving state in Point#1
   -- 3. Change position to Point#2 and ensure change in heading is above TurnThreshold (PIN 16)
   -- 4. Wait shorter than TurnDebounceTime (PIN 17) and change terminals position to Point#3
@@ -1184,7 +1184,7 @@ end
   --
   -- Results:
   --
-  -- 1. TurnThreshold set above 0
+  -- 1. TurnThreshold set above 0 and TurnDebounceTime set in range 1 to 63
   -- 2. Terminal in moving state in Point#1 with initial heading
   -- 3. Terminal in Point#2 and heading changed above TurnThreshold (PIN 16)
   -- 4. Terminal in Point#3 and heading changed still above TurnThreshold (PIN 16)
@@ -1236,15 +1236,14 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
 
 
   gps.set(gpsSettings[1])                               -- applying gps settings for Point#1
-  framework.delay(movingDebounceTime+gpsReadInterval+1) -- waiting until terminal goes to moving state
   -- waiting until turnDebounceTime passes - that is terminal had some different heading before
-  framework.delay(turnDebounceTime+gpsReadInterval+3)
+  framework.delay(turnDebounceTime+gpsReadInterval+5)
 
   -- checking if terminal is in moving state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
-  timeOfEventTc = os.time()   -- to get exact timestamp
+  timeOfEventTc = os.time()  -- to get exact timestamp
   gateway.setHighWaterMark() -- to get the newest messages
   gps.set(gpsSettings[2])    -- applying gps settings of Point#2
 
@@ -1275,7 +1274,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
 
 end
 
-
+--[[
 
 --- TC checks if Turn message is not sent when heading difference is above TurnThreshold and is maintained below TurnDebounceTimes
   -- *actions performed:
@@ -2104,7 +2103,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 
 end
 
-
+--]]
 
 
 --[[Start the tests]]
