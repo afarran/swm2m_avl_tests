@@ -113,11 +113,12 @@ function teardown()
 
 end
 
---[[
+
 
 -------------------------
 -- Test Cases
 -------------------------
+
 
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
   -- Initial Conditions:
@@ -130,7 +131,7 @@ end
   --
   -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
   -- 2. Simulate terminal in Point#1 with speed equal to 0 (stationary)
-  -- 3. Change terminals to Point#2 with speed above stationarySpeedThld (PIN 1)
+  -- 3. Change terminals position to Point#2 with speed above stationarySpeedThld (PIN 1)
   -- 4. Wait shorter than stationarySpeedThld (PIN 1) and change terminals position to Point#3
   -- 5. Wait until stationarySpeedThld (PIN 1) passes and receive MovingStart message (MIN 6)
   -- 6. Check the content of the received message
@@ -215,29 +216,61 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
 end
 
 
---- TC checks if MovingStart message is correctly sent when speed is above threshold for time above threshold
-  -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
-  -- *actions performed:
-  -- set movingDebounceTime to 7 seconds and stationarySpeedThld to 5 kmh, increase simulated speed tp 15 kmh
-  -- and  wait for time longer than movingDebounceTime; then check if the MovingStart message has been sent and
-  -- verify if fields in the report have correct values and terminal is correctly in the moving state
-  -- GpsFixAge should be verified in this TC as it should be included in the report
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode
-  -- *expected results:
-  -- terminal correctly put in the moving state, MovingStart message sent and report fields
-  -- have correct values
+
+--- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time and GPS fix age is included .
+  -- Initial Conditions:
+  --
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS signal is lost
+  --
+  -- Steps:
+  --
+  -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
+  -- 2. Simulate terminal in Point#1 with speed equal to 0 (stationary)
+  -- 3. Change terminals position to Point#2 with speed above stationarySpeedThld (PIN 1)
+  -- 4. Wait shorter than stationarySpeedThld (PIN 1) and change terminals position to Point#3
+  -- 5. Simulate GPS signal loss
+  -- 6. Wait until stationarySpeedThld (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 7. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. Properties movingDebounceTime and stationarySpeedThld correctly set
+  -- 2. Terminal in stationary state in Point#1
+  -- 3. Terminal in Point#2 and speed above stationarySpeedThld (PIN 1)
+  -- 4. Terminal in Point#3 and speed still above stationarySpeedThld (PIN 1)
+  -- 5. GPS signal is lost
+  -- 6. MovingStart message sent from terminal after movingDebounceTime (PIN 3)
+  -- 7. Report fields contain Point#2 GPS and time information and GPS fix age is included
 function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSentGpsFixAgeReported()
 
   local movingDebounceTime = 7       -- seconds
   local stationarySpeedThld = 5      -- kmh
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+10,  -- 10 kmh above threshold
-              heading = 90,                    -- degrees
-              latitude = 1,                    -- degrees
+  gpsSettings = {} -- gps settings table to be sent to simulator
+
+  -- Point#1 settings
+  gpsSettings[1]={
+              speed = 0,                      -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 0,                   -- degrees
+              longitude = 0                   -- degrees
+                     }
+
+  -- Point#2 settings
+  gpsSettings[2]={
+              speed = stationarySpeedThld+1,  -- one kmh above threshold
+              heading = 90,                   -- degrees
+              latitude = 1,                   -- degrees
               longitude = 1,                   -- degrees
-              fixType=3                        -- 3D fix
+                     }
+
+  -- Point#2 settings
+  gpsSettings[3]={
+              speed = stationarySpeedThld+10,  -- one kmh above threshold
+              heading = 95,                    -- degrees
+              latitude = 2,                    -- degrees
+              longitude = 2,                   -- degrees
                      }
 
   --applying properties of the service
@@ -246,11 +279,25 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
                                                 {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
-  gateway.setHighWaterMark()                        -- to receive newest messages
-  gps.set(gpsSettings)                              -- applying gps settings
-  framework.delay(2)                                -- delay added to make sure gps is read (gpsReadInterval = 1)
-  gps.set({fixType=1})                              -- simulated no fix (gps signal loss)
-  framework.delay(lsfConstants.coldFixDelay)        -- delay connected with obtaining cold fix time
+  gateway.setHighWaterMark()
+
+  -- terminal in Point#1 - not moving
+  gps.set(gpsSettings[1])
+  framework.delay(gpsReadInterval+1)
+
+  timeOfEventTc = os.time()  -- to get the exact timestamp of the moment when the condition was met
+  -- terminal in Point#2 - started to move
+  gps.set(gpsSettings[2])
+  -- wait shorter than movingDebounceTime
+  framework.delay(gpsReadInterval+1)
+
+  gps.set({fixType=1})                        -- simulated no fix (gps signal loss)
+
+  -- terminal in Point#3 - moved to another position (before MovingStart message was sent)
+  gps.set(gpsSettings[3])
+
+  -- wait longer than movingDebounceTime,
+  framework.delay(lsfConstants.coldFixDelay + movingDebounceTime)
 
 
   -- MovingStart Message expected
@@ -259,7 +306,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "MovingStart",
-                  currentTime = os.time() - 40, -- 40 second are added to reduce discrepancy between event and reports
+                  currentTime = timeOfEventTc,  --
                   GpsFixAge = 47                --  GpsFixAge is ecpected to be 47 seconds (movingDebounceTime + coldFixDelay)
                         }
 
@@ -1164,7 +1211,7 @@ function test_Speeding_WhenTerminalStopsWhileSpeedingStateTrue_SpeedingEndMessag
 
 end
 
---]]
+
 
 --- TC checks if Turn message is sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime .
   -- Initial Conditions:
@@ -1274,7 +1321,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
 
 end
 
---[[
+
 
 --- TC checks if Turn message is not sent when heading difference is above TurnThreshold and is maintained below TurnDebounceTimes
   -- *actions performed:
@@ -2103,7 +2150,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 
 end
 
---]]
+
 
 
 --[[Start the tests]]
