@@ -133,7 +133,7 @@ end
   -- 2. Simulate terminal in Point#1 with speed equal to 0 (stationary)
   -- 3. Change terminals position to Point#2 with speed above stationarySpeedThld (PIN 1)
   -- 4. Wait shorter than stationarySpeedThld (PIN 1) and change terminals position to Point#3
-  -- 5. Wait until stationarySpeedThld (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 5. Wait until movingDebounceTime (PIN 1) passes and receive MovingStart message (MIN 6)
   -- 6. Check the content of the received message
   --
   -- Results:
@@ -166,7 +166,7 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
               longitude = 1,                   -- degrees
                      }
 
-  -- Point#2 settings
+  -- Point#3 settings
   gpsSettings[3]={
               speed = stationarySpeedThld+10,  -- one kmh above threshold
               heading = 95,                    -- degrees
@@ -231,7 +231,7 @@ end
   -- 3. Change terminals position to Point#2 with speed above stationarySpeedThld (PIN 1)
   -- 4. Wait shorter than stationarySpeedThld (PIN 1) and change terminals position to Point#3
   -- 5. Simulate GPS signal loss
-  -- 6. Wait until stationarySpeedThld (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 6. Wait until movingDebounceTime (PIN 1) passes and receive MovingStart message (MIN 6)
   -- 7. Check the content of the received message
   --
   -- Results:
@@ -265,7 +265,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
               longitude = 1,                   -- degrees
                      }
 
-  -- Point#2 settings
+  -- Point#3 settings
   gpsSettings[3]={
               speed = stationarySpeedThld+10,  -- one kmh above threshold
               heading = 95,                    -- degrees
@@ -319,67 +319,102 @@ end
 
 
 
---- TC checks if MovingEnd message is correctly sent when speed is below threshold for time above threshold
-  -- *actions performed:
-  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh then wait for time longer than
-  -- movingDebounceTime and check if the  moving state has been obtained; after that
-  -- reduce speed to one kmh below threshold for time longer than  stationaryDebounceTime and
-  -- check if MovingEnd message is sent, report fields have correct values and terminal is put
-  -- into the stationary state
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- *expected results:
-  -- terminal correctly put in the stationary state, MovingEnd message sent and report fields
-  -- have correct values
+
+--- TC checks if MovingEnd message is sent when speed is below stationary threshold for period above stationary debounce time .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS signal is lost
+  --
+  -- Steps:
+  --
+  -- 1. Set stationaryDebounceTime (PIN 2) and stationarySpeedThld (PIN 1)
+  -- 2. Simulate terminal in moving state in Point#1
+  -- 3. Change terminals position to Point#2 with speed below stationarySpeedThld (PIN 1)
+  -- 4. Wait shorter than stationaryDebounceTime (PIN 2) and change terminals position to Point#3
+  -- 5. Wait until stationaryDebounceTime (PIN 1) passes and receive MovingEnd message (MIN 7)
+  -- 6. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. Properties stationaryDebounceTime and stationarySpeedThld correctly set
+  -- 2. Terminal in moving state state in Point#1
+  -- 3. Terminal in Point#2 and speed below stationarySpeedThld (PIN 1)
+  -- 4. Terminal in Point#3 and speed still below stationarySpeedThld (PIN 1)
+  -- 5. MovingEnd (MIN 7) message sent from terminal after stationaryDebounceTime (PIN 1)
+  -- 6. Report fields contain Point#2 GPS and time information
 function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationaryDebounceTime = 1   -- seconds
+  local stationaryDebounceTime = 10  -- seconds
   local stationarySpeedThld = 5      -- kmh
+  local gpsSettings = {}
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
+                                                {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime},
                                              }
                    )
-    -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+
+  -- Point#1 settings
+  gpsSettings[1]={
+              speed = stationarySpeedThld + 1, -- kmh, above threshold
+              heading = 91,                    -- degrees
+              latitude = 1,                    -- degrees
+              longitude = 1,                   -- degrees
                      }
 
-  -- first terminal is put into moving state
-  gateway.setHighWaterMark()                              -- to get the newest messages
-  gps.set(gpsSettings)                                    -- gps settings applied
-  framework.delay(movingDebounceTime+gpsReadInterval+1)   -- one second is added to make sure the gps is read and processed by agent
-  --checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  -- Point#2 settings
+  gpsSettings[2]={
+              speed = stationarySpeedThld - 1,  -- kmh, below threshold
+              heading = 92,                     -- degrees
+              latitude = 2,                     -- degrees
+              longitude = 2,                    -- degrees
+                     }
 
-  -- when the terminal is in the moving state the speed is reduced and moving state should change to false after that
-  gateway.setHighWaterMark()                            -- to get the newest messages
-  gpsSettings.speed = stationarySpeedThld-1             -- one kmh below threshold
-  gps.set(gpsSettings)                                  -- gps settings applied
-  framework.delay(stationaryDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  -- Point#3 settings
+  gpsSettings[3]={
+              speed = stationarySpeedThld - 3 , -- kmh, below threshold
+              heading = 93,                     -- degrees
+              latitude = 3,                     -- degrees
+              longitude = 3,                    -- degrees
+                     }
+
+  -- put terminal into moving state
+  avlHelperFunctions.putTerminalIntoMovingState()
+
+  gateway.setHighWaterMark()                               -- to get the newest messages
+
+  -- apply Poin#2 settings
+  gps.set(gpsSettings[1])                                  -- gps settings of Point#1 are applied
+  framework.delay(gpsReadInterval+1)                       -- one second is added to make sure the gps is read and processed by agent
+
+  timeOfEventTc = os.time()
+  -- apply Point#2 settings and wait shorter than stationaryDebounceTime
+  gps.set(gpsSettings[2])                                                   -- gps settings of Point#2 are applied
+  framework.delay(gpsReadInterval+1)
+
+  -- apply Point#3 settings and wait shorter longer than stationaryDebounceTime
+  gps.set(gpsSettings[3])                                                   -- gps settings of Point#3 are applied
+  framework.delay(stationaryDebounceTime+gpsReadInterval)
 
   -- MovingEnd message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingEnd))
   -- gps settings table to be sent to simulator
   local expectedValues={
-                    gps = gpsSettings,
+                    gps = gpsSettings[2],       -- in Point#2 speed below started to be below stationarySpeedThld
                     messageName = "MovingEnd",
-                    currentTime = os.time()
+                    currentTime = timeOfEventTc
                         }
   avlHelperFunctions.reportVerification(message,expectedValues)  -- verification of the report fields
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal incorrectly in the moving state")
 
 end
+
+
 
 --- TC checks if MovingStart message is not sent when speed is above threshold for time below threshold
   -- *actions performed:
