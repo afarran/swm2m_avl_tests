@@ -85,14 +85,13 @@ function setup()
                                              }
                    )
 
-
   -- gps settings table
   local gpsSettings={
               latitude = 1,
               longitude = 1,
               heading = 90,                 -- degrees
               speed = 0,                    -- to get stationary state
-              fixType=3,                    -- valid 3D gps fix
+              fixType = 3,                    -- valid 3D gps fix
               simulateLinearMotion = false, -- terminal not moving
                      }
 
@@ -1134,22 +1133,24 @@ end
   -- 1. Set TurnThreshold (PIN 16) to value above 0 to enable sending Turn messages
   -- 2. Put terminal in moving state in Point#1
   -- 3. Change position to Point#2 and ensure change in heading is above TurnThreshold (PIN 16)
-  -- 4. Wait longer than TurnDebounceTime (PIN 17) and receive Turn message (MIN 14)
-  -- 5. Check the content of the received message
+  -- 4. Wait shorter than TurnDebounceTime (PIN 17) and change terminals position to Point#3
+  -- 5. Wait until TurnDebounceTime (PIN 17) passes and receive Turn message (MIN 14)
+  -- 6. Check the content of the received message
   --
   -- Results:
   --
   -- 1. TurnThreshold set above 0
   -- 2. Terminal in moving state in Point#1 with initial heading
   -- 3. Terminal in Point#2 and heading changed above TurnThreshold (PIN 16)
+  -- 4. Terminal in Point#3 and heading changed still above TurnThreshold (PIN 16)
   -- 4. Turn message sent from terminal after TurnDebounceTime (PIN 17)
-  -- 5. Report fields contain Point#1 GPS and time information
+  -- 5. Report fields contain Point#2 GPS and time information
 function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
   local turnThreshold = 10           -- degrees
-  local turnDebounceTime = 1         -- seconds
+  local turnDebounceTime = 10         -- seconds
   local gpsSettings = {}
 
   -- Point#1 gps settings
@@ -1164,8 +1165,16 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   gpsSettings[2]={
                   speed = stationarySpeedThld+10,                         -- kmh
                   heading = gpsSettings[1].heading + turnThreshold + 1,   -- degrees, 1 degree above turnThreshold
-                  latitude = 7,                                           -- degrees
-                  longitude = 7,                                          -- degrees
+                  latitude = 2,                                           -- degrees
+                  longitude = 2,                                          -- degrees
+                 }
+
+  -- Point#3 gps settings
+  gpsSettings[3]={
+                  speed = stationarySpeedThld+14,                  -- kmh
+                  heading = gpsSettings[2].heading,                -- degrees
+                  latitude = 3,                                    -- degrees
+                  longitude = 3,                                   -- degrees
                  }
 
 
@@ -1179,35 +1188,44 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                    )
 
 
-  timeOfEventTc = os.time()   -- to get exact timestamp
+
+
   gps.set(gpsSettings[1])                               -- applying gps settings for Point#1
   framework.delay(movingDebounceTime+gpsReadInterval+1) -- waiting until terminal goes to moving state
+  -- waiting until turnDebounceTime passes - that is terminal had some different heading before
+  framework.delay(turnDebounceTime+gpsReadInterval+3)
 
   -- checking if terminal is in moving state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
+  timeOfEventTc = os.time()   -- to get exact timestamp
   gateway.setHighWaterMark() -- to get the newest messages
-
   gps.set(gpsSettings[2])    -- applying gps settings of Point#2
 
-  -- waiting longer than turnDebounceTime
-  framework.delay(turnDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  -- waiting shorter than turnDebounceTime and changing position to another point (terminal is moving)
+  framework.delay(gpsReadInterval+2)
+
+  gps.set(gpsSettings[3])    -- applying gps settings of Point#3
+
+  -- waiting until turnDebounceTime passes
+  framework.delay(turnDebounceTime+gpsReadInterval+3)
 
   -- Turn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.turn))
 
-  -- content of the report should contain Point#1 gps and time information
+  -- content of the report should contain Point#2 gps and time information
   local expectedValues={
-                  gps = gpsSettings[1],
+                  gps = gpsSettings[2],
                   messageName = "Turn",
                   currentTime = timeOfEventTc
                   }
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
   -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
-  gpsSettings.heading = 90     -- terminal put back to initial heading
-  gps.set(gpsSettings)         -- applying gps settings
+  gpsSettings[1].heading = 90     -- terminal put back to initial heading
+  gps.set(gpsSettings[1])         -- applying gps settings
+
 
 
 end
@@ -2042,7 +2060,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 end
 
 
---]]
+
 
 --[[Start the tests]]
 for i=1, 1, 1 do     -- to check the reliability, will be removed
