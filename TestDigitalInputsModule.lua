@@ -3,23 +3,7 @@
 -- - contains digital input related test cases
 -- @module TestDigitalInputsModule
 
-local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
-local lunatest              = require "lunatest"
-local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local math = require("math")
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstantsAllTerminals = require("LsfConstants")
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
-
-
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = 800   -- 600, 700 and 800 available
+module("TestDigitalInputsModule", package.seeall)
 
 -------------------------
 -- Setup and Teardown
@@ -72,7 +56,7 @@ terminalInUse = 800   -- 600, 700 and 800 available
   math.randomseed(os.time())                -- os.time used as randomseed
   math.random(1,4)
 
-  if terminalInUse == 8 then
+  if terminalInUse == 800 then
   randomPortNumber = math.random(1,3)
   else
   randomPortNumber = math.random(1,4)
@@ -122,15 +106,44 @@ end
   -- put terminal into stationary state
   avlHelperFunctions.putTerminalIntoStationaryState()
 
-  -- set all 4 ports to low state
+  ----------------------------------------------------------------------
+  -- Putting terminal in IgnitionOn = false state
+  ----------------------------------------------------------------------
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                         }
+                   )
+
+
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlConstants.pins.funcDigInp[2], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[3], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[4], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[13], 0},  -- disabled
+                                             }
+                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  framework.delay(2)
+
+  -- setting all 4 ports to low stare
+  for counter = 1, 4, 1 do
+    device.setIO(counter, 1)
+  end
+  framework.delay(3)
+  -- setting all 4 ports to low stare
   for counter = 1, 4, 1 do
     device.setIO(counter, 0)
   end
-  framework.delay(4)
+  framework.delay(3)
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
+  framework.delay(4)
 
   -- setting the IO properties - disabling all 4 I/O ports
   lsf.setProperties(lsfConstants.sins.io,{
@@ -141,14 +154,13 @@ end
                                         }
                     )
 
+
   -- disabling all digital input lines in AVL
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], 0},   -- 0 is for line disabled
-                                                {avlConstants.pins.funcDigInp[2], 0},
-                                                {avlConstants.pins.funcDigInp[3], 0},
-                                                {avlConstants.pins.funcDigInp[4], 0},
                                              }
                    )
+
 
 end
 -----------------------------------------------------------------------------------------------
@@ -163,8 +175,8 @@ end
     START OF TEST CASES
 
     Each test case is a global function whose name begins with "test"
-
 --]]
+
 
 
 --- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high .
@@ -670,6 +682,8 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
 end
 
+
+
 --- TC checks if IdlingStart message is correctly sent when terminal is in stationary state and IgnitionON state is true
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
   -- for longer than maxIdlingTime
@@ -922,7 +936,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                   gps = gpsSettings,
                   messageName = "IdlingEnd",
                   currentTime = timeOfEvent,
-                  GpsFixAge = 13
+                  GpsFixAge = 15
                         }
   avlHelperFunctions.reportVerification(idlingEndMessage, expectedValues ) -- verification of the all report fields
   end
@@ -1290,7 +1304,7 @@ end
   -- have correct values
 function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndServiceMeterLineBecomesActive_IdlingEndMessageSent()
 
-  local maxIdlingTime = 1 -- in seconds, time in which terminal can be in IgnitionOn state without sending IdlingStart message
+  local maxIdlingTime = 5 -- in seconds, time in which terminal can be in IgnitionOn state without sending IdlingStart message
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -1351,7 +1365,10 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
+  device.setIO(2, 0)                        -- port 2 to high level - that should trigger SM1=OFF
+
 end
+
 
 
 --- TC checks if IdlingStart message is not sent when terminal is in stationary state and IgnitionON state is true
@@ -1423,6 +1440,8 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   -- checking if terminal has not entered EngineIdling state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
+
+  device.setIO(2, 0)                        -- that triggers SM = Off (Service Meter line not active)
 
 end
 
@@ -1849,6 +1868,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
 
 end
+
 
 
 
@@ -2542,6 +2562,9 @@ end
   -- DigInp4Hi message sent when port changes state from low to high
 function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
 
+  -- Dual power source feature is specific to IDP 800
+  if(terminalInUse==800) then skip("TC related only to IDP 600 and 700s") end
+
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
   local stationarySpeedThld = 5         -- kmh
@@ -2606,7 +2629,10 @@ end
   -- DigInp4Lo message sent when port changes state from high to low
 function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
 
+  -- Dual power source feature is specific to IDP 800
+  if(terminalInUse==800) then skip("TC related only to IDP 600s and 700s") end
   -- properties values to be used in TC
+
   local movingDebounceTime = 1          -- seconds
   local stationarySpeedThld = 5         -- kmh
 
@@ -2828,7 +2854,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with IgnitionOn function
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with IgnitionOn function
   -- 2. Simulate terminals position in stationary state in Point#1
   -- 3. Simulate external power source not present
   -- 4. Simulate external power source present
@@ -2908,7 +2934,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with IgnitionOn function
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with IgnitionOn function
   -- 2. Simulate terminals position in stationary state in Point#1
   -- 3. Simulate external power source present
   -- 4. Simulate external power source not present
@@ -2987,7 +3013,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with SeatbeltOff function
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with SeatbeltOff function
   -- 2. Set SeatbeltDebounceTime (PIN 115) to value above zero to enable seatbelt violation feature
   -- 3. Set DigStatesDefBitmap (PIN 46) to make high state of the line be a trigger for SeatbeltOff
   -- 4. Simulate terminals position in moving state in Point#1
@@ -3112,7 +3138,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with IgnitionOn and SM0 functions
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with IgnitionOn and SM0 functions
   -- 2. Simulate terminals position in stationary state in Point#1
   -- 3. Simulate external power source not present
   -- 4. Send setServiceMeter (MIN 11) message to set SM0Time and SM0Distance to 0
@@ -3283,7 +3309,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with SM1 function
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with SM1 function
   -- 2. Set DigStatesDefBitmap (PIN 46) to make high state of the line be a trigger for SM1Active
   -- 3. Simulate external power source not present
   -- 4. Read avlStates property (PIN 41) and verify if SM1Active bit is not true
@@ -3352,7 +3378,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with SM2 function
+  -- 1. Set funcDigInp[13]3 (PIN 59) to associate digital input line 13 with SM2 function
   -- 2. Set DigStatesDefBitmap (PIN 46) to make high state of the line be a trigger for SM2Active
   -- 3. Simulate external power source not present
   -- 4. Read avlStates property (PIN 41) and verify if SM2Active bit is not true
@@ -3421,7 +3447,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with SM3 function
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with SM3 function
   -- 2. Set DigStatesDefBitmap (PIN 46) to make high state of the line be a trigger for SM3Active
   -- 3. Simulate external power source not present
   -- 4. Read avlStates property (PIN 41) and verify if SM3Active bit is not true
@@ -3490,7 +3516,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set funcDigInp[1]3 (PIN 59) to associate digital input line 13 with SM4 function
+  -- 1. Set funcDigInp[13] (PIN 59) to associate digital input line 13 with SM4 function
   -- 2. Set DigStatesDefBitmap (PIN 46) to make high state of the line be a trigger for SM4Active
   -- 3. Simulate external power source not present
   -- 4. Read avlStates property (PIN 41) and verify if SM4Active bit is not true
@@ -3547,18 +3573,8 @@ end
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SM4Active, "SM4Active state is incorrectly true")
 
 
-
-
 end
 
 
-
-
---[[Start the tests]]
-for i=1, 1, 1 do     -- to check the reliability, will be removed
-  lunatest.run()
-end
-
-framework.printResults()
 
 

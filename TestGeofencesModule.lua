@@ -1,22 +1,11 @@
 -----------
--- GPS test module
+-- Geofences test module
 -- - contains gps related test cases
--- @module TestGPSModule
+-- @module TestGeofencesModule
 
-
-local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
-local lunatest              = require "lunatest"
-local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstantsAllTerminals = require("LsfConstants")
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
+module("TestGeofencesModule", package.seeall)
 
 -- Setup and Teardown
-
 
 --- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
  -- it sends fences.dat file to the terminal
@@ -1538,13 +1527,4 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
 
 
 end
-
-
---[[Start the tests]]
-for i=1, 1, 1 do     -- to check the reliability, will be removed
-  lunatest.run()
-end
-
-framework.printResults()
-
 

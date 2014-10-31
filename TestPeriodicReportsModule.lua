@@ -3,24 +3,14 @@
 -- - contains test cases related to periodic and distance based reports
 -- @module TestPeriodicReportsModule
 
-local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
-local lunatest              = require "lunatest"
-local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstantsAllTerminals = require("LsfConstants")
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
+module("TestPeriodicReportsModule", package.seeall)
 
 -- Setup and Teardown
-
 
 --- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
  -- executed before each test suite
  -- * actions performed:
- -- lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
+ -- lpmTrigger is set to 0 so that nothing can put terminal into the low power modeFSM
  -- function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
  -- *initial conditions:
  -- running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
@@ -1459,15 +1449,6 @@ end
 
 end
 
-
-
-
---[[Start the tests]]
-for i=1, 1, 1 do     -- to check the reliability, will be removed
-  lunatest.run()
-end
-
-framework.printResults()
 
 
 

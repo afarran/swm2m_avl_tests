@@ -1,16 +1,42 @@
 
-lunatest      = require "lunatest"
-lunatest.suite("TestGPSModule")
-lunatest.suite("TestLPMModule")
-lunatest.suite("TestDigitalInputsModule")
-lunatest.suite("TestDigitalOutputsModule")
-lunatest.suite("TestGeofencesModule")
-lunatest.suite("TestPeriodicReportsModule")
-lunatest.suite("TestServiceMeterModule")
+cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
+avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
+avlConstants =  require("AvlAgentConstants")
+lsfConstantsAllTerminals = require("LsfConstants")
+lunatest = require "lunatest"
+
+-- global variables used in the tests
+gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
+terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
+lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
 
 
+--- Called before the start of any test suites
+local function setup()
+  print("*** AVL Feature Tests Started ***")
+  math.randomseed(os.time())
+  -- include the following test suites in the feature tests:
+  lunatest.suite("TestGPSModule")
+  lunatest.suite("TestLPMModule")
+  lunatest.suite("TestDigitalInputsModule")
+  lunatest.suite("TestDigitalOutputsModule")
+  lunatest.suite("TestGeofencesModule")
+  lunatest.suite("TestPeriodicReportsModule")
+  lunatest.suite("TestServiceMeterModule")
+end
 
-lunatest.run()
-framework.printResults()
+local function teardown()
+  print("*** AVL Feature Tests Completed ***")
+  framework.printResults()
+end
 
-
+--- Runs Feature Tests
+-- @tparam table args array of string arguments
+-- @usage
+-- [-v]                     Verbose option
+-- [-t] [<string pattern>]  Execute test cases that match string pattern
+-- [-s] [<string pattern>]  Execute test suites that match string pattern
+for idx, val in ipairs(arg) do print(idx, val) end
+setup()
+lunatest.run(nil, arg)
+teardown()

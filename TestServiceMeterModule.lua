@@ -1,19 +1,9 @@
 -----------
 -- ServiceMeter test module
 -- - contains Service Meter related test cases
--- @module Service Meter
+-- @module TestServiceMeterModule
 
-local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
-local lunatest              = require "lunatest"
-local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstants = require("LsfConstants")
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
-
+module("TestServiceMeterModule", package.seeall)
 
 -------------------------
 -- Setup and Teardown
@@ -30,8 +20,6 @@ lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants spec
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
 function suite_setup()
-
-  terminalInUse = 800    -- 600, 700 and 800 available
 
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -1096,14 +1084,6 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 
 end
 
---]]
 
-
---[[Start the tests]]
-for i=1, 1, 1 do     -- to check the reliability, will be removed
-  lunatest.run()
-end
-
-framework.printResults()
 
 

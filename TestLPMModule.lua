@@ -3,17 +3,7 @@
 -- - contains Low Power Mode related test cases
 -- @module TestLPMModule
 
-local cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
-local lunatest              = require "lunatest"
-local avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
-local avlConstants =  require("AvlAgentConstants")
-local lsfConstantsAllTerminals = require("LsfConstants")
-
--- global variables used in the tests
-gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
-terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
-lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants specific for the terminal under test
-
+module("TestLPMModule", package.seeall)
 
 -------------------------
 -- Setup and Teardown
@@ -108,11 +98,35 @@ end
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
+
+  ----------------------------------------------------------------------
+  -- Putting terminal in IgnitionOn = false state
+  ----------------------------------------------------------------------
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                         }
+                   )
+
+
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlConstants.pins.funcDigInp[2], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[3], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[4], 0},  -- disabled
+                                             }
+                    )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  framework.delay(2)
+
   -- setting all 4 ports to low stare
   for counter = 1, 4, 1 do
     device.setIO(counter, 0)
   end
   framework.delay(3)
+
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -125,9 +139,6 @@ end
   -- disabling all digital input lines in AVL
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], 0},   -- 0 is for line disabled
-                                                {avlConstants.pins.funcDigInp[2], 0},
-                                                {avlConstants.pins.funcDigInp[3], 0},
-                                                {avlConstants.pins.funcDigInp[4], 0},
                                              }
                    )
 
@@ -362,6 +373,7 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffTerminalInLpmAndIgnitionOnStateB
 end
 
 
+
 --- TC checks if ZoneEntry message is sent after LpmGeoInterval when terminal is in LPM .
   -- Initial Conditions:
   --
@@ -388,8 +400,8 @@ function test_LPM_WhenTerminalInLowPowerMode_ZoneEntryMessageSentAfterLpmGeoInte
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {avlConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {avlConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
 
@@ -575,7 +587,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
 
   -- reading movingDebounceTime property (it is needed as delay value in next step)
-  local movingDebounceTime = lsf.getProperties(avlConstants.avlAgentSIN,pins.movingDebounceTime)
+  local movingDebounceTime = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.movingDebounceTime)
   framework.delay(2)
 
   -- waiting until terminal goes into moving state again (speed is above threshold)
@@ -651,12 +663,12 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   local wakeUpInterval = "3_minutes"                  -- wakeUpInterval value
   local wakeUpIntervalOnExitFromLpm = "5_seconds"     -- value of wakeUpInterval which should be set when leaving LPM (this cannot be modified)
   -- helper variables for handling wakeUpInterval
-  local lpmModemWakeUpIntervalEnum = cons.modemWakeUpIntervalValues[lpmModemWakeUpInterval]           -- lpmModemWakeUpInterval enum representation (enum type property)
-  local wakeUpIntervalEnum = cons.modemWakeUpIntervalValues[wakeUpInterval]                           -- wakeUpInterval num representation
-  local wakeUpIntervalOnExitFromLpmEnum = cons.modemWakeUpIntervalValues[wakeUpIntervalOnExitFromLpm] -- wakeUpIntervalOnExitFromLpm enum representation
+  local lpmModemWakeUpIntervalEnum = lsfConstants.modemWakeUpIntervalValues[lpmModemWakeUpInterval]           -- lpmModemWakeUpInterval enum representation (enum type property)
+  local wakeUpIntervalEnum = lsfConstants.modemWakeUpIntervalValues[wakeUpInterval]                           -- wakeUpInterval num representation
+  local wakeUpIntervalOnExitFromLpmEnum = lsfConstants.modemWakeUpIntervalValues[wakeUpIntervalOnExitFromLpm] -- wakeUpIntervalOnExitFromLpm enum representation
   -- definition of getProperties message to read properties from 4 services at once
   local getPropertiesMessage = {SIN = 16, MIN = 8}
-	getPropertiesMessage.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=cons.systemSIN},{Name="pinList",Value="Bg=="}}},    -- PIN 6
+	getPropertiesMessage.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=lsfConstants.sins.system},{Name="pinList",Value="Bg=="}}},    -- PIN 6
                                                         {Index=1,Fields={{Name="sin",Value=lsfConstants.sins.position},{Name="pinList",Value="Dw=="}}},  -- PIN 15
                                                         {Index=2,Fields={{Name="sin",Value=lsfConstants.sins.geofence},{Name="pinList",Value="Ag=="}}},  -- PIN 2
                                                         {Index=3,Fields={{Name="sin",Value=lsfConstants.sins.idp},{Name="pinList",Value="Cgs="}}}}}}     -- PIN 10 and 11
@@ -673,15 +685,16 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
 
   -- sending setProperties to set properties in System, Position, Geofence, IDP and EIO services
 	local message = {SIN = 16, MIN = 9}
-	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=cons.systemSIN},  {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=pins.ledControl},      {Name="value",Type="enum",Value=ledControlUserSet}}}}}}},
-                                           {Index=1,Fields={{Name="sin",Value=lsfConstants.sins.position},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=pins.gpsReadInterval}, {Name="value",Type="unsignedint",Value=gpsReadInterval}}}}}}},
-                                           {Index=2,Fields={{Name="sin",Value=lsfConstants.sins.geofence},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=pins.geofenceInterval},{Name="value",Type="unsignedint",Value=geofenceInterval}}}}}}},
-                                           {Index=3,Fields={{Name="sin",Value=lsfConstants.sins.idp},     {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=pins.wakeUpInterval},  {Name="value",Type="enum",Value=wakeUpIntervalEnum}}},
-                                                                                                                                  { Index=1,Fields={{Name="pin",Value=pins.powerMode},       {Name="value",Type="enum",Value=powerModeUserSet}}}}}}},
-                                           {Index=4,Fields={{Name="sin",Value=lsfConstants.sins.io},     {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=pins.port1Config},     {Name="value",Type="unsignedint",Value=3}}},
-                                                                                                                                  { Index=1,Fields={{Name="pin",Value=pins.port1EdgeDetect}, {Name="value",Type="unsignedint",Value=3}}}}}}}}},
+	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=lsfConstants.sins.system},  {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.ledControl},      {Name="value",Type="enum",Value=ledControlUserSet}}}}}}},
+                                           {Index=1,Fields={{Name="sin",Value=lsfConstants.sins.position},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.gpsReadInterval}, {Name="value",Type="unsignedint",Value=gpsReadInterval}}}}}}},
+                                           {Index=2,Fields={{Name="sin",Value=lsfConstants.sins.geofence},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.geofenceInterval},{Name="value",Type="unsignedint",Value=geofenceInterval}}}}}}},
+                                           {Index=3,Fields={{Name="sin",Value=lsfConstants.sins.idp},     {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.wakeUpInterval},  {Name="value",Type="enum",Value=wakeUpIntervalEnum}}},
+                                                                                                                                    { Index=1,Fields={{Name="pin",Value=lsfConstants.pins.powerMode},       {Name="value",Type="enum",Value=powerModeUserSet}}}}}}},
+                                           {Index=4,Fields={{Name="sin",Value=lsfConstants.sins.io},      {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.portConfig[1]},     {Name="value",Type="unsignedint",Value=3}}},
+                                                                                                                                    { Index=1,Fields={{Name="pin",Value=lsfConstants.pins.portEdgeDetect[1]}, {Name="value",Type="unsignedint",Value=3}}}}}}}}},
                                            {Name="save",Value=true}}
-	gateway.submitForwardMessage(message)
+
+  gateway.submitForwardMessage(message)
 
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
@@ -700,7 +713,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   gateway.submitForwardMessage(getPropertiesMessage)
 
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(cons.systemSIN, messagesMINs.propertyValues))
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues))
 
   local ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   assert_equal(ledControlUserSet,tonumber(ledControlProperty), "Value of ledControl property has not been correctly set")
@@ -735,7 +748,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- sending getProperties message (SIN 16, MIN 8) to mobile
   gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(cons.systemSIN, messagesMINs.propertyValues))
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues))
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if  ledControl property (PIN 6)  has been set to 1 - Terminal when entering LPM
@@ -775,7 +788,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- sending getProperties message (SIN 16, MIN 8) to mobile
 	gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(cons.systemSIN, messagesMINs.propertyValues))
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues))
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if ledControl property has been correctly reverted to value ledControlUserSet
@@ -1071,6 +1084,11 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
+  -----------------------------------------------------------------------------------
+  -- External power is present and ignition is on - terminal not in the LPM
+  -----------------------------------------------------------------------------------
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
@@ -1078,6 +1096,13 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
+  -- checking state of the terminal, Low Power Mode is not expected (LPM trigger is set to Built-in battery)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal in the Low Power Mode state")
+
+  -----------------------------------------------------------------------------------
+  -- External power is present but ignition is off - terminal put in the LPM
+  -----------------------------------------------------------------------------------
   device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
   framework.delay(5)                 -- waiting for the state to change
 
@@ -1091,13 +1116,16 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
 
+  -----------------------------------------------------------------------------------
+  -- External power is present and ignition is on again - terminal put out of LPM
+  -----------------------------------------------------------------------------------
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
 
   -- checking if terminal correctly goes to IgnitionOn state
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
-  framework.delay(5)   -- waiting for the state to change
+  framework.delay(7)   -- waiting for the state to change
 
   -- checking state of the terminal, low power mode is not expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1149,11 +1177,25 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
 
+  ---------------------------------------------------------
+  -- Ignition in on and external power is present
+  ---------------------------------------------------------
+
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
+  framework.delay(2)               -- wait until setting is applied
+  -- checking state of the terminal, Low Power Mode is not expected (LPM trigger is set to Built-in battery)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal in the Low Power Mode state")
+
+  ---------------------------------------------------------
+  -- Ignition in off and external power is still present
+  ---------------------------------------------------------
 
   device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
   framework.delay(5)                 -- waiting for the state to change
@@ -1429,12 +1471,5 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 end
 
 
-
---[[Start the tests]]
-for i=1, 1, 1 do     -- to check the reliability, will be removed
-  lunatest.run()
-end
-
-framework.printResults()
 
 
