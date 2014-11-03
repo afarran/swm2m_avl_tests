@@ -130,7 +130,7 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
 
   -- normally GpsFixAge is not reported, it should be included only when fix is older than 5 seconds; this condition allows to check it in the report
   if(expectedValues.GpsFixAge) then
-    assert_equal(expectedValues.GpsFixAge, tonumber(colmsg.Payload.GpsFixAge), 3, "GpsFixAge value is not correct in report")        -- if GpsFixAge is not passed in expectedValues table
+    assert_equal(expectedValues.GpsFixAge, tonumber(colmsg.Payload.GpsFixAge), 5, "GpsFixAge value is not correct in report")        -- if GpsFixAge is not passed in expectedValues table
   else                                                                                                                               -- it is expected not to be in the report
     assert_nil(colmsg.Payload.GpsFixAge, "GpsFixAge value not expected in the report")                                               --  otherwise a check of value is performed
   end
@@ -280,7 +280,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
               speed = 0,
               longitude = 0,                   -- degrees
               latitude = 0,                    -- degrees
-              fixType= 3,                      -- valid fix provided
+              fixType = 3,                     -- valid fix provided
                      }
 
   -- set the speed to zero and wait for stationaryDebounceTime

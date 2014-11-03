@@ -98,6 +98,10 @@ function setup()
                                                 {avlConstants.pins.funcDigInp[2], 0 },    -- disabled
                                                 {avlConstants.pins.funcDigInp[3], 0 },    -- disabled
                                                 {avlConstants.pins.funcDigInp[4], 0 },    -- disabled
+                                                {avlConstants.pins.funcDigOut[1], 0 },    -- output disabled
+                                                {avlConstants.pins.funcDigOut[2], 0 },    -- output disabled
+                                                {avlConstants.pins.funcDigOut[3], 0 },    -- output disabled
+                                                {avlConstants.pins.funcDigOut[4], 0 },    -- output disabled
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
