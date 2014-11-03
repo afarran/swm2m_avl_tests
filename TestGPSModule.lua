@@ -1967,7 +1967,6 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
 
 end
 
---]]
 
 --- TC checks if LongDriving message is sent when terminal is moving longer than maxDrivingTime and breakes together are longer than
   -- minRestTime but are not continues
@@ -2151,5 +2150,6 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
 
 end
+
 
 

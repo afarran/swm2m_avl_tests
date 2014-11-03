@@ -485,7 +485,7 @@ function test_LPM_WhenTerminalInLowPowerMode_ZoneEntryMessageSentAfterLpmGeoInte
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, messagesMINs.zoneEntry))
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry))
   assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
   gpsSettings.heading = 361          -- for stationary state
   local expectedValues={

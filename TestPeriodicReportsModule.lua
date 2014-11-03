@@ -183,7 +183,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
                    )
 
   gps.set({fixType = 1})                      -- no fix provided
-  framework.delay(cons.coldFixDelay)
+  framework.delay(lsfConstants.coldFixDelay)
 
   gateway.setHighWaterMark()                               -- to get the newest messages
 
@@ -401,7 +401,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   gps.set({fixType = 1})    -- no fix displayed
-  framework.delay(cons.coldFixDelay)
+  framework.delay(lsfConstants.coldFixDelay)
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEventTc = os.time()
   framework.delay(movingIntervalSat*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
@@ -499,6 +499,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
 end
 
 
+
 --- TC checks if Position message is periodically sent according to positionMsgInterval
   -- *actions performed:
   -- set positionMsgInterval to 10 seconds and wait for 20 seconds; verify
@@ -511,7 +512,7 @@ end
 function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
 
   local positionMsgInterval = 15     -- seconds
-  local numberOfReports = 2          -- number of expected reports received during the TC
+  local numberOfReports = 4          -- number of expected reports received during the TC
 
 
   -- gps settings table to be sent to simulator
@@ -531,22 +532,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEventTc = os.time()
-  framework.delay(positionMsgInterval*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
-
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
-
-  assert_equal(numberOfReports, table.getn(matchingMessages) , 2, "The number of received Position reports is incorrect")
-
-  gpsSettings.heading = 361                 -- that is for stationary state
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "Position",
-                  currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  framework.delay(positionMsgInterval*numberOfReports+2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to positionMsgInterval = 0 to get no more reports
   positionMsgInterval = 0       -- seconds
@@ -556,7 +542,26 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
                                              }
                    )
 
+  -- receiving all from mobile messages sent after setHighWaterMark()
+  local receivedMessages = gateway.getReturnMessages()
+  -- look for StationaryIntervalSat messages
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
+
+  assert_equal(numberOfReports, table.getn(matchingMessages), 1, "The number of received Position reports is incorrect")
+
+  gpsSettings.heading = 361                 -- that is for stationary state
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "Position",
+                  currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+
+
 end
+
 
 
 --- TC checks if Position message is sent when requested by MIN 1 for stationary terminal
@@ -763,7 +768,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
                                              }
                    )
   gps.set({fixType=1})            -- simulating no fix
-  framework.delay(cons.coldFixDelay)
+  framework.delay(lsfConstants.coldFixDelay)
   gateway.setHighWaterMark()      -- to get the newest messages
   local timeOfEventTc = os.time()
   framework.delay(positionMsgInterval*numberOfReports)    -- wait for time interval of generating report multiplied by number of expected reports
@@ -1102,8 +1107,8 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- setting the EIO properties (for IgnitionON)
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.port1Config, 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.port1EdgeDetect, 3}  -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
                                         }
                    )
 
@@ -1112,7 +1117,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                                                 {avlConstants.avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
                                                 {avlConstants.avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.funcDigInp1, cons.funcDigInp["IgnitionOn"]},              -- line number 1 set for Ignition function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn},              -- line number 1 set for Ignition function
                                                 {avlConstants.pins.defaultSpeedLimit, defaultSpeedLimit},
                                                 {avlConstants.pins.speedingTimeOver, speedingTimeOver},
                                              }
@@ -1205,7 +1210,6 @@ end
   local loggingPositionsInterval =  2   -- seconds
   local positionMsgInterval = 10        -- seconds
   local numberOfPositionReports = 3     -- number of expected reports received during the TC
-  local stationaryIntervalSat = 5
 
   -- definition of first position of terminal
   local gpsSettings = {
@@ -1223,7 +1227,6 @@ end
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
                                                 {avlConstants.pins.positionMsgInterval, positionMsgInterval},
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
                    )
 

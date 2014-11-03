@@ -48,6 +48,7 @@ module("TestDigitalInputsModule", package.seeall)
                                                     {avlConstants.pins.lpmTrigger, 0},
                                                   }
                     )
+  framework.delay(2)
   -- checking the state of terminal
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
