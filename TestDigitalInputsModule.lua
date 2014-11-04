@@ -130,12 +130,11 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)
 
-  -- setting all 4 ports to low stare
-  for counter = 1, 4, 1 do
-    device.setIO(counter, 1)
-  end
-  framework.delay(3)
-  -- setting all 4 ports to low stare
+  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
+  device.setIO(1, 1)
+  framework.delay(2)
+
+  -- setting all 4 ports to low state, including port 1 that should trigger IgnitionOff
   for counter = 1, 4, 1 do
     device.setIO(counter, 0)
   end

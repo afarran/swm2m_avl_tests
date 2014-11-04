@@ -107,6 +107,11 @@ function setup()
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)                 -- wait until settings are applied
+
+  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
+  device.setIO(1, 1)
+  framework.delay(2)
+
   device.setIO(1, 0)                 -- that should trigger IgnitionOff
   framework.delay(2)                 -- wait until settings are applied
 
@@ -848,7 +853,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   local geofence128DwellTime = 0    -- in minutes, 0  is for feature disabled
 
   -- setting ZoneDwellTimes for geofence 2
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.avlConstants.mins.setGeoDwellTimes}
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoDwellTimes}
   message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
                     {Index=1,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}}}},}
 
@@ -1067,7 +1072,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
 
   -- verification of the state of terminal - IgnitionOn false expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.avlConstants.pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected - Ignition is off
@@ -1078,7 +1083,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.avlConstants.pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
@@ -1126,7 +1131,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIs
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.avlConstants.pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected (Ignition is on )
@@ -1136,7 +1141,7 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIs
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
 
   -- verification of the state of terminal - IgnitionOn false expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.avlConstants.pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected (Ignition is off)
@@ -1319,7 +1324,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.avlConstants.pins.avlStates)
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected - both low power mode triggers are false
