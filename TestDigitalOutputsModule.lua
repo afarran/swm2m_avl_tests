@@ -26,6 +26,7 @@ function suite_setup()
                                                {avlConstants.pins.lpmTrigger, 0},
                                              }
                     )
+  framework.delay(1)
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
@@ -46,8 +47,6 @@ function suite_setup()
 	gateway.submitForwardMessage(message)
 
   framework.delay(5) -- wait until geofences service is up again
-
-
 
 
 
@@ -304,7 +303,8 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   local movingDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5     -- kmh
   local stationaryDebounceTime = 1  -- seconds
-  local speedingTimeOver  = 60      -- seconds
+  local speedingTimeOver  = 1       -- seconds
+  local speedingTimeUnder = 1       -- seconds
   local defaultSpeedLimit = 80      -- kmh
 
 
@@ -321,18 +321,17 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
-
-                                        }
+                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["Speeding"]}, -- digital output line number 1 set for Moving function
-                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},            -- moving related
-                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},          -- moving related
-                                                {avlConstants.pins.stationaryDebounceTime,stationaryDebounceTime},    -- moving related
-                                                {avlConstants.pins.speedingTimeOver,speedingTimeOver},                -- speeding related
-                                                {avlConstants.pins.defaultSpeedLimit,defaultSpeedLimit},              -- speeding related
-
+                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},              -- moving related
+                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},            -- moving related
+                                                {avlConstants.pins.stationaryDebounceTime,stationaryDebounceTime},      -- moving related
+                                                {avlConstants.pins.speedingTimeOver,speedingTimeOver},                  -- speeding related
+                                                {avlConstants.pins.defaultSpeedLimit,defaultSpeedLimit},                -- speeding related
+                                                {avlConstants.pins.speedingTimeUnder,speedingTimeUnder},                -- speeding related
                                              }
                    )
   -- activating special output function
@@ -345,7 +344,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   -- applying gps settings to simulate terminal moving
   gpsSettings.speed = defaultSpeedLimit + 10           -- kmh, 10 kmh above speed limit
   gps.set(gpsSettings)                                 -- speeding time over
-  framework.delay(4)                                   -- wait shorter than speedingTimeOver not to put terminal into speeding state
+  framework.delay(speedingTimeOver+15)                                   -- wait shorter than speedingTimeOver not to put terminal into speeding state
 
   -- asserting state of port 1 - high state is expected - speed above defau
   assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
@@ -353,7 +352,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   -- simulating speed below defaultSpeedLimit again
   gpsSettings.speed = defaultSpeedLimit - 10   -- 10 kmh below threshold
   gps.set(gpsSettings)
-  framework.delay(3)
+  framework.delay(speedingTimeUnder+5)
 
   -- asserting state of port 1 - low state is expected - speed below defaultSpeedLimit
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
@@ -1492,19 +1491,19 @@ end
 
 
 
---[[
-TODO:
-TCs for digital outputs associated with following functions:
 
-- Towing
-- GpsJammed
-- CellJammed
-- Tamper
-- AirBlocked
-- LoggedIn
-- AntCut
- add FuncDigOut5 - outputSink18 for 780
---]]
+--TODO:
+--TCs for digital outputs associated with following functions:
+
+-- - Towing
+-- - GpsJammed
+-- - CellJammed
+-- - Tamper
+-- - AirBlocked
+-- - LoggedIn
+-- - AntCut
+-- - add FuncDigOut5 - outputSink18 for 780
+
 
 
 --- TC checks if setDigitalOutputs message sets digital output ports for IDP 600 series terminal  .
@@ -2063,5 +2062,6 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
 
 
 end
+
 
 
