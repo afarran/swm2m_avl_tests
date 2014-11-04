@@ -929,6 +929,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
 
   framework.delay(2)  -- wait until settings are applied
 
+  timeOfEventTC = os.time()
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM4Time",Value=SMTimeTC},{Name="SM4Distance",Value=SMDistanceTC},}
 	gateway.submitForwardMessage(message)
@@ -948,7 +949,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTC,
                   SM4Time = SMTimeTC,           -- excpected value is SMTimeTC
                   SM4Distance =  SMDistanceTC   -- expected value is SMDistanceTC
                         }
