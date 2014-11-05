@@ -117,24 +117,51 @@ function setup()
   device.setIO(1, 1)
   framework.delay(2)
 
-  device.setIO(1, 0)                 -- that should trigger IgnitionOff
-  framework.delay(2)                 -- wait until settings are applied
+  -- setting all 4 ports to low state, including port 1 that should trigger IgnitionOff
+  for counter = 1, 4, 1 do
+    device.setIO(counter, 0)
+  end
+  framework.delay(3)
 
   -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
+--[[
+  if(terminalInUse==600) then
+
+  -- Sending setDigitalOutputs message setting all 4 ports to high state
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+  end
+
+  if(terminalInUse==800) then
+
+  -- Sending setDigitalOutputs message setting all 3 ports to high state
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
+
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+  end
+
+  if(terminalInUse==700) then
+  -- TODO: add
+  end
+--]]
   --setting properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.digOutActiveBitmap, digOutActiveBitmap}
                                              }
                     )
-
-  -- setting all 4 ports to low state
-  for counter = 1, 4, 1 do
-    device.setIO(counter, 0)
-  end
-  framework.delay(4)
 
   -- setting the EIO properties - disabling all 4 I/O ports
   lsf.setProperties(lsfConstants.sins.io,{
@@ -484,7 +511,6 @@ function test_DigitalOutput_WhenServiceMeter1IsON_DigitalOutputPortAssociatedWit
   assert_equal(0, device.getIO(1), "Port1 associated SM1 is not in low state as expected")
 
 end
-
 
 --- TC checks if digital output line associated with SM2 state is changing according to SM2 state
   -- *actions performed:

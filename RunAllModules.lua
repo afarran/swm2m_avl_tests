@@ -5,6 +5,7 @@ avlConstants =  require("AvlAgentConstants")
 lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
 
+
 -- global variables used in the tests
 gpsReadInterval   = 1 -- used to configure the time interval of updating the position , in seconds
 terminalInUse = avlHelperFunctions.getTerminalHardwareVersion()   -- 600, 700 and 800 available
@@ -23,6 +24,7 @@ local function setup()
   lunatest.suite("TestGeofencesModule")
   lunatest.suite("TestPeriodicReportsModule")
   lunatest.suite("TestServiceMeterModule")
+
 end
 
 local function teardown()
@@ -40,3 +42,6 @@ for idx, val in ipairs(arg) do print(idx, val) end
 setup()
 lunatest.run(nil, arg)
 teardown()
+
+
+

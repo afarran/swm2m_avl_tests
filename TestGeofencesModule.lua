@@ -869,6 +869,15 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   local geofence2DwellTime = 1       -- in minutes
   local geofence3DwellTime = 15      -- in minutes
   local allZonesDwellTime = 240      -- in minutes
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+
+  --applying properties of AVL service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
 
   -- setting ZoneDwellTimes for geofences
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoDwellTimes}
@@ -879,7 +888,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 5,                       -- kmh
+              speed = stationarySpeedThld+5,   -- kmh
               heading = 90,                    -- degrees
               latitude = 50.5,                 -- degrees, that is inside geofence 2
               longitude = 4.5,                 -- degrees, that is inside geofence 2
@@ -938,6 +947,15 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   local geofence2DwellTime = 1       -- in minutes
   local geofence3DwellTime = 15      -- in minutes
   local allZonesDwellTime = 240      -- in minutes
+  local movingDebounceTime = 1       -- seconds
+  local stationarySpeedThld = 5      -- kmh
+
+  --applying properties of AVL service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
 
   -- setting ZoneDwellTimes for geofences
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoDwellTimes}
@@ -948,7 +966,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 5,                       -- kmh
+              speed = stationarySpeedThld+ 5,  -- kmh
               heading = 90,                    -- degrees
               latitude = 50.5,                 -- degrees, that is inside geofence 2
               longitude = 4.5,                 -- degrees, that is inside geofence 2
@@ -962,13 +980,13 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
                                                 {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
-  gateway.setHighWaterMark()                      -- to get the newest messages
-  local timeOfEventTc = os.time()                -- to get correct value in the report
-  gps.set(gpsSettings)                            -- applying gps settings
-  framework.delay(gpsReadInterval+3)              -- wait until position of terminal is read
-  gpsSettings.fixType = 1                         -- no valid fix provided
-  gps.set(gpsSettings)                            -- applying gps settings
-  framework.delay(geofence2DwellTime*60+40)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  gateway.setHighWaterMark()                             -- to get the newest messages
+  local timeOfEventTc = os.time()                       -- to get correct value in the report
+  gps.set(gpsSettings)                                   -- applying gps settings
+  framework.delay(movingDebounceTime+gpsReadInterval+3)  -- wait until position of terminal is read
+  gpsSettings.fixType = 1                                -- no valid fix provided
+  gps.set(gpsSettings)                                   -- applying gps settings
+  framework.delay(geofence2DwellTime*60+40)              -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
@@ -1105,8 +1123,8 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
                                               }
                    )
 
-  gps.set(gpsSettings)                            -- applying gps settings
-  framework.delay(geofence2DwellTime*60+10)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  gps.set(gpsSettings)                                             -- applying gps settings
+  framework.delay(geofence2DwellTime*60+geofenceInterval+10)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1527,4 +1545,5 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
 
 
 end
+
 
