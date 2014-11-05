@@ -16,6 +16,7 @@ lsfConstantsAllTerminals = {
                                                           propertyValues = 5,     -- from mobile, system service
                                                           getTerminalInfo = 1,    -- to mobile, system service
                                                           terminalInfo = 1,       -- from mobile , system service
+                                                          restartService = 5,     -- to mobile message
                                                        },
                                                 -- Properties PINs
                                                 pins = {
@@ -66,6 +67,7 @@ lsfConstantsAllTerminals = {
                                                           propertyValues = 5,     -- from mobile, system service
                                                           getTerminalInfo = 1,    -- to mobile, system service
                                                           terminalInfo = 1,       -- from mobile , system service
+                                                          restartService = 5,     -- to mobile message
                                                        },
                                                 -- Properties PINs
                                                 pins = {

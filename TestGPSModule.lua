@@ -36,7 +36,11 @@ end
 -- executed after each test suite
 function suite_teardown()
 
--- nothing here for now
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+	gateway.submitForwardMessage(message)
+  framework.delay(3)
 
 end
 
@@ -204,8 +208,6 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
 end
-
-
 
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time and GPS fix age is included .
   -- Initial Conditions:

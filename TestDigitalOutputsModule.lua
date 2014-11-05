@@ -56,7 +56,11 @@ end
 -- executed after each test suite
 function suite_teardown()
 
--- nothing here for now
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+	gateway.submitForwardMessage(message)
+  framework.delay(3)
 
 end
 
@@ -77,6 +81,13 @@ end
 function setup()
 
   local digOutActiveBitmap = 0          -- setting DigOutActiveBitmap 0
+  local geofenceEnabled = false        -- to enable geofence feature
+
+  --applying properties of geofence service
+  lsf.setProperties(lsfConstants.sins.geofence,{
+                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"}
+                                              }
+                   )
 
   lsf.setProperties(lsfConstants.sins.position,{
                                                   {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
@@ -127,36 +138,7 @@ function setup()
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
---[[
-  if(terminalInUse==600) then
 
-  -- Sending setDigitalOutputs message setting all 4 ports to high state
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
-
-  gateway.submitForwardMessage(message)
-  framework.delay(2)
-  end
-
-  if(terminalInUse==800) then
-
-  -- Sending setDigitalOutputs message setting all 3 ports to high state
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
-
-  gateway.submitForwardMessage(message)
-  framework.delay(2)
-  end
-
-  if(terminalInUse==700) then
-  -- TODO: add
-  end
---]]
   --setting properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.digOutActiveBitmap, digOutActiveBitmap}
@@ -945,6 +927,8 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
+
+
 
 
 end

@@ -36,7 +36,11 @@ end
 -- executed after each test suite
 function suite_teardown()
 
--- nothing here for now
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+	gateway.submitForwardMessage(message)
+  framework.delay(3)
 
 end
 
