@@ -1408,7 +1408,7 @@ end
 
   local loggingPositionsInterval =  2   -- seconds
   local numberOfReports = 3             -- number of expected reports received during the TC
-  local distanceSatThld = 200           -- meters
+  local distanceSatThld = 1112          -- meters - that is equivalent to 0,1 degree
   local stationarySpeedThld = 10        -- kmh
   local movingDebounceTime = 1          -- seconds
 
@@ -1419,7 +1419,7 @@ end
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
               fixType = 3,                    -- valid fix provided
-              simulateLinearMotion = true
+              simulateLinearMotion = false
                        }
 
   --applying properties of the service
@@ -1440,9 +1440,14 @@ end
                                             }
                    )
 
-  framework.delay(numberOfReports*distanceSatThld/20+3)    -- wait for time of distanceSatThld divided by 20 m/s multiplied by number of expected reports
+  gps.set({latitude = gpsSettings.latitude + 0.1}) -- terminal travels 1112 m (0,1 degree)
+  framework.delay(3)                               -- wait until distanceSat message is sent
+  gps.set({latitude = gpsSettings.latitude + 0.2}) -- terminal travels 1112 m (0,1 degree)
+  framework.delay(3)                               -- wait until distanceSat message is sent
+  gps.set({latitude = gpsSettings.latitude + 0.3}) -- terminal travels 1112 m (0,1 degree)
+  framework.delay(3)                               -- wait until distanceSat message is sent
 
-  loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
+  loggingPositionsInterval = 0           -- seconds, not to get any more messages saved in log
   distanceSatThld = 0                    -- seconds, not to get any more distanceSat messages
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
