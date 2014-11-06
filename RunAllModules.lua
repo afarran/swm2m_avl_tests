@@ -20,10 +20,10 @@ local function setup()
   lunatest.suite("TestGPSModule")
   lunatest.suite("TestLPMModule")
   lunatest.suite("TestDigitalInputsModule")
+  lunatest.suite("TestServiceMeterModule")
   lunatest.suite("TestDigitalOutputsModule")
   lunatest.suite("TestGeofencesModule")
   lunatest.suite("TestPeriodicReportsModule")
-  lunatest.suite("TestServiceMeterModule")
 
 end
 

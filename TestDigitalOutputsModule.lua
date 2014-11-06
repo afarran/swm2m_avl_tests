@@ -385,7 +385,7 @@ end
   -- port 1 is high when terminal is stationary and ignition is switched on
 function test_DigitalOutput_WhenTerminalStationaryAndIgnitionIsOn_DigitalOutputPortAssociatedWithIdlingInHighState()
 
-  local maxIdlingTime =  15          -- seconds
+  local maxIdlingTime =  20          -- seconds
 
 
   -- setting the EIO properties
@@ -1442,7 +1442,7 @@ function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFuncti
                    )
   -- setting digital input bitmap describing when special function outputs are active
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
-  framework.delay(10002)               -- wait until settings are applied
+  framework.delay(5)               -- wait until settings are applied
 
   ---------------------------------------------------------------------------------------------------------------
   -- External power source not present - terminal not in the onMainPower state
