@@ -135,7 +135,16 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
     assert_nil(colmsg.Payload.GpsFixAge, "GpsFixAge value not expected in the report")                                               --  otherwise a check of value is performed
   end
 
+  -- this is only for LongDriving reports
+  if(expectedValues.currentTimeLongDriving) then
+    assert_equal(expectedValues.currentTimeLongDriving,tonumber(colmsg.Payload.EventTime),80, "EventTime in LongDriving report is not correct ")    -- 80 seconds of tolerance
+  end
+
+
+  if(expectedValues.currentTime) then
   assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),20, "EventTime value is not correct in the report")    -- 20 seconds of tolerance
+  end
+
 
   if(expectedValues.SpeedLimit) then                                                                                               -- checking speed limit if that parameter has been passed
     assert_equal(expectedValues.speedLimit,tonumber(colmsg.Payload.Speedlimit), "SpeedLimit value is not correct in the report")    -- in the expectedValues table

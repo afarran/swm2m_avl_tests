@@ -190,6 +190,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                      }
 
   gps.set(gpsSettings)     -- applying gps settings
+  timeOfEventTc = os.time()
   framework.delay(geofenceHisteresis+geofenceInterval)       -- waiting for the ZoneEntry message to be generated
 
   local receivedMessages = gateway.getReturnMessages()
@@ -200,7 +201,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ZoneEntry",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTc,
                   CurrentZoneId = 0     -- the number of the zone defined in this area
                         }
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields

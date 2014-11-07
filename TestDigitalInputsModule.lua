@@ -1351,11 +1351,13 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
 
 
   device.setIO(2, 1)                        -- port 2 to high level - that should trigger SM1=ON
-  framework.delay(4)
+  framework.delay(7)
 
-
-  --IdlingEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingEnd))
+  -- IdlingEnd  message expected
+  local receivedMessages = gateway.getReturnMessages()   -- receiving all from mobile messages sent after setHighWaterMark()
+  -- looking for LongDriving message
+  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingEnd))
+  assert_true(next(matchingMessages), "IdlingEnd report not received")   -- checking if IdlingEnd message has been caught
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -1364,7 +1366,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
                   currentTime = os.time()
                         }
 
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues) -- verification of the report fields
   -- checking if terminal correctly goes out from EngineIdling state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")

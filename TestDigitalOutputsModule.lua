@@ -86,7 +86,7 @@ function setup()
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"}
-                                              }
+                                               }
                    )
 
   lsf.setProperties(lsfConstants.sins.position,{
@@ -351,7 +351,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
 
   -- applying gps settings to simulate terminal moving
-  gpsSettings.speed = defaultSpeedLimit + 10           -- kmh, 10 kmh above speed limit
+  gpsSettings.speed = defaultSpeedLimit + 100          -- kmh, 10 kmh above speed limit
   gps.set(gpsSettings)                                 -- speeding time over
   framework.delay(speedingTimeOver+15)                                   -- wait shorter than speedingTimeOver not to put terminal into speeding state
 
