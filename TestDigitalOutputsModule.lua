@@ -1222,7 +1222,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
 
   -- check external power property
   local externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+  assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
   -- asserting state of port 1 - low state is expected - lpmTrigger is false (external power is present)
   assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
@@ -1232,7 +1232,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+  assert_equal("False", externalPowerPresentProperty[1].value, "External power source unexpectedly present")
 
   -- asserting state of port 1 - high state is expected - terminal is on Backup power source
   assert_equal(1, device.getIO(1), "Port1 associated with LowPower is not in high state as expected")
@@ -1243,7 +1243,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+  assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
   -- asserting state of port 1 - low state is expected - lpmTrigger is false (external power is present)
   assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
@@ -1326,7 +1326,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
 
   -- check external power property
   local externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+  assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
   device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
   framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
@@ -1346,7 +1346,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+  assert_equal("False", externalPowerPresentProperty[1].value, "External power source unexpectedly present")
 
   -- asserting state of port 1 - high state is expected - terminal is on Backup power source
   assert_equal(1, device.getIO(1), "Port1 associated with LowPower is not in high state as expected")
@@ -1357,7 +1357,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+  assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
   -- asserting state of port 1 - low state is expected - low power mode trigger is false again (external power is present)
   assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
@@ -1452,7 +1452,7 @@ function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFuncti
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+  assert_equal("False", externalPowerPresentProperty[1].value, "External power source unexpectedly present")
 
   -- verification of the state of terminal - onMainPower false is expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1469,7 +1469,7 @@ function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFuncti
 
   -- check external power property
   local externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 1, "External power source not present as expected")
+  assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
   -- verification of the state of terminal - onMainPower true expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1486,7 +1486,7 @@ function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFuncti
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal(externalPowerPresentProperty[1].value, 0, "External power source unexpectedly present")
+  assert_equal("False", externalPowerPresentProperty[1].value, "External power source unexpectedly present")
 
   -- verification of the state of terminal - onMainPower false is expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)

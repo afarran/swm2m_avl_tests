@@ -16,14 +16,15 @@ lsfConstants= lsfConstantsAllTerminals[terminalInUse]  -- getting constants spec
 local function setup()
   print("*** AVL Feature Tests Started ***")
   math.randomseed(os.time())
+  io.output():setvbuf("no")
   -- include the following test suites in the feature tests:
   lunatest.suite("TestGPSModule")
- -- lunatest.suite("TestLPMModule")
- -- lunatest.suite("TestDigitalInputsModule")
- -- lunatest.suite("TestServiceMeterModule")
- -- lunatest.suite("TestDigitalOutputsModule")
-  --lunatest.suite("TestGeofencesModule")
-  --lunatest.suite("TestPeriodicReportsModule")
+  lunatest.suite("TestLPMModule")
+  lunatest.suite("TestDigitalInputsModule")
+  lunatest.suite("TestServiceMeterModule")
+  lunatest.suite("TestDigitalOutputsModule")
+  lunatest.suite("TestGeofencesModule")
+  lunatest.suite("TestPeriodicReportsModule")
 
 end
 
