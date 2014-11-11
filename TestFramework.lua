@@ -1,6 +1,8 @@
+local rev = "$Revision: 1776 $"
+
 --- Lua Services Test Framework.
 -- You may find it convenient to run your test suite from SciTE.
--- @usage 
+-- @usage
 -- shell> lua -e "debugLevel = 0|1|2" <test file name>
 -- @usage
 -- -- Here, debugLevel 0 is implied
@@ -16,8 +18,6 @@ local mime = require("mime")
 local io = require("io")
 local json = require("json")
 local cfg = require("TestConfiguration")
-
-local rev = "$Revision: 1775 $"
 
 local startUTC = nil
 local testNum = 0
@@ -35,8 +35,11 @@ local device = {}
 local gps = {}
 local tf = {}
 
+local firstCallHouseKeeping
+
 gateway.returnMsgList = {}
-cfg.PORTMAP = {1, 2, 3, 4}
+cfg.PORTMAP = {}
+
 local function getTableLength(table)
 	local len = 0
 	for _ in pairs(table) do len = len + 1 end
@@ -79,26 +82,11 @@ local function lowerCaseNoSpace(str)
 	return str:gsub("%s", ""):lower()
 end
 
-if debugLevel == 2 then
-	tf.trace2 = printfLineDate
-	tf.trace1 = printfLineDate
-	print "tf.trace1 ON, tf.trace2 ON"
-elseif debugLevel == 1 then
-	tf.trace2 = dummyFunc
-	tf.trace1 = printfLineDate
-	print "tf.trace1 ON, tf.trace2 OFF"
-else
-	tf.trace2 = dummyFunc
-	tf.trace1 = dummyFunc
-	print "tf.trace1 OFF, tf.trace2 OFF"
-end
-tf.trace0 = printfLineDate
-
 --- print regardless of debugLevel
 -- @function tf.trace0
 -- @param ... variable arguments that could be passed to string.format
--- @usage 
--- -- output will be similar to this: 
+-- @usage
+-- -- output will be similar to this:
 -- -- [2014-06-24 21:18:16] Hello World!
 -- tf.trace0("Hello %s!", "World")
 -- @within tf
@@ -106,8 +94,8 @@ tf.trace0 = printfLineDate
 --- print when debug level is 1 or higher
 -- @function tf.trace1
 -- @param ... variable arguments that could be passed to string.format
--- @usage 
--- -- output will be similar to this: 
+-- @usage
+-- -- output will be similar to this:
 -- -- [2014-06-24 21:18:16] Today's day of week: Tuesday
 -- tf.trace1("Today's day of week: %s", os.date("%A"))
 -- @within tf
@@ -115,8 +103,8 @@ tf.trace0 = printfLineDate
 --- print when debug level is 2
 -- @function tf.trace2
 -- @param ... variable arguments that could be passed to string.format
--- @usage 
--- -- output will be similar to this: 
+-- @usage
+-- -- output will be similar to this:
 -- -- [2014-06-24 21:18:16] He said, "thank you".
 -- tf.trace2("He said, %q.", "thank you")
 -- @within tf
@@ -137,14 +125,8 @@ local function encode(t)
 	return table.concat(b, "&")
 end
 
--- function string.tohex(str)
---     return (str:gsub('.', function (c)
---         return string.format('%02X', string.byte(c))
---     end))
--- end
-
 local function webServiceGet(fullURL, decode)
-	tf.firstCallHouseKeeping()
+	firstCallHouseKeeping()
 	local encoded = json.encode(nil)
 	local source = ltn12.source.string(encoded);
 	local response = {}
@@ -153,7 +135,6 @@ local function webServiceGet(fullURL, decode)
 			["Content-Type"] = "application/json",
 			["Content-Length"] = 0		-- TODO: keep this? breaks something else?
 		}
-
 	if decode == nil then
 		decode = true
 	end
@@ -163,7 +144,7 @@ local function webServiceGet(fullURL, decode)
 		proxy = cfg.HTTP_PROXY,
 		method = "GET", headers = headers, source = source, sink = sink
 	}
-	if (ok and code == 200) then
+	if ok and code == 200 then
 		local response1 = response[1];
 		if decode then
 			return json.decode(response1)
@@ -221,7 +202,7 @@ end
 local function recordAndPrintMsg(msg)
 	local brief = {id=msg.ID, time=msg.MessageUTC, sin=msg.SIN, name=msg.Payload.Name}
 	if msg.SIN == 18 and msg.Payload.MIN == 3 then
-		print("Invalid ToTerminal msg: " .. tf.dump(msg))
+		print("Invalid to-terminal msg: " .. tf.dump(msg))
 	elseif msg.SIN == 18 and msg.Payload.MIN == 4 then
 		print("Terminal couldn't process msg: " .. tf.dump(msg))
 	elseif msg.SIN == 26 and msg.Payload.MIN == 1 and msg.Payload.success=="False" then
@@ -237,24 +218,14 @@ local function recordAndPrintMsg(msg)
 end
 
 local function checkShellResponse(msg, substring)
-	substring = substring and substring or ""
-	local colmsg = tf.collapseMessage(msg)
-	if(colmsg.Payload.Name == "cmdResult" and colmsg.Payload.output:find(substring)) then
-		return true
+	if msg then
+		if msg.Payload.SIN == 26 and msg.Payload.MIN == 1 then
+			substring = substring and substring or ""
+			local colmsg = tf.collapseMessage(msg)
+			return colmsg.Payload.output:find(substring)
+		end
 	end
-end
-
--- local function checkSinMin(msg, tbl)
--- 	--print("checking sin, min... ", msg.Payload.SIN, tbl[1], msg.Payload.MIN, tbl[2])
--- 	assert(msg, "Message with specified (SIN, MIN) = (" .. tostring(tbl[1]) .. ", " .. tostring(tbl[2]) .. ") never received")
--- 	local colmsg = tf.collapseMessage(msg)
--- 	if colmsg.Payload.SIN == tbl[1] and colmsg.Payload.MIN == tbl[2] then return true end
--- end
-
-local function checkPropValResponse(msg)
-	assert(msg, "PropertyValues response never received.")
-	local colmsg = tf.collapseMessage(msg)
-	if colmsg.Payload.Name == "propertyValues" then return true end
+	return false
 end
 
 local function assertSinRange(sin)
@@ -263,10 +234,7 @@ end
 
 local function checkValueType(t)
 	--unsignedint, signedint, string, boolean, enum, data
-	if t == "unsignedint" or t == "signedint" or t == "enum" or t == "string" or t == "boolean" or t == "data" then
-		return true
-	end
-	return false
+	return t == "unsignedint" or t == "signedint" or t == "enum" or t == "string" or t == "boolean" or t == "data"
 end
 
 local function getSettingsTable(settings)
@@ -278,61 +246,12 @@ local function getSettingsTable(settings)
 		sTable[i]={}
 		settings[i][3] = settings[i][3] and settings[i][3] or "unsignedint"
 		assert(settings[i][1] ~= nil and settings[i][2] ~= nil and settings[i][3] ~= nil, "settings must be array of {1=pin, 2=value, 3=valType}")
-		assert(checkValueType(settings[i][3]), "Value type must obe one of: unsignedint, signedint, string, boolean, enum, data; is " .. tostring(valType))
+		assert(checkValueType(settings[i][3]), "Value type must one one of: unsignedint, signedint, string, boolean, enum, data; is " .. tostring(valType))
 		sTable[i].Index=i-1
 		sTable[i].Fields={{Name="pin",Value=settings[i][1]},
 			{Name="value",Value=settings[i][2],Type=settings[i][3]}}
 	end
 	return sTable
-end
-
-local function getReturnMessages()
-	tf.firstCallHouseKeeping()
-	local encoded = json.encode(msgs)
-	local source = ltn12.source.string(encoded);
-
-	local response = {}
-	local sink = ltn12.sink.table(response)
-
-	local headers = {
-		["Content-Type"] = "application/json",
-	}
-	local startTime = startUTC
-	local params = {
-		["access_id"] = ACCESS_ID,
-		["password"] = PASSWORD,
-		--["from_id"] = lastID,
-		["start_utc"] = startTime
-	}
-	local url = cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX .. "/get_return_messages.json/?" .. encode(params)
-	ok, code, headers = http.request {
-		url = url,
-		proxy = cfg.HTTP_PROXY,
-		method = "GET", headers = headers, source = source, sink = sink
-	}
-
-	if (ok and code == 200) then
-		local response1 = response[1];
-		for i=2,10 do
-			if response[i] ~= nil then
-				response1 = response1 .. response[i]
-			else
-				break
-			end
-		end
-		local result, decoded = pcall(json.decode, response1)
-		if (not result) then
-			error("JSON decode failed: " .. decoded)
-		elseif (decoded.ErrorID == 0) then
-			startUTC = decoded.NextStartUTC
-			return decoded.Messages
-		else
-			error("Gateway message retrieval error... ErrorID: " .. tostring(ErrorID))
-		end
-	else
-		error("Gateway message retrieval error... OK?" .. tostring(ok) .. ", code: " .. tostring(code))
-	end
-	return nil
 end
 
 -- Converts timestamp (unsigned int) to its equivalent string representation
@@ -341,7 +260,10 @@ end
 -- @tparam number timestamp the timestamp to convert to string
 -- @treturn string the string representation of the timestamp
 local function EpochToISO(timestamp)
-	return os.date("%Y-%m-%d %H:%M:%S", timestamp)
+	if timestamp then
+		return os.date("%Y-%m-%d %H:%M:%S", timestamp)
+	end
+	return nil
 end
 
 -- converts date in yyyy-MM-dd hh:mm:ss format to timestamp (unsigned int)
@@ -352,6 +274,53 @@ end
 local function ISOToEpoch(s)
 	local year, month, day, hour, min, sec = s:match("(%d%d%d%d)-(%d%d)-(%d%d) (%d%d):(%d%d):(%d%d)")
 	return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+end
+
+local function getReturnMessages()
+	firstCallHouseKeeping()
+	local encoded = json.encode(msgs)
+	local source = ltn12.source.string(encoded);
+	local response = {}
+	local sink = ltn12.sink.table(response)
+	local headers = {
+		["Content-Type"] = "application/json",
+	}
+	local startTime = EpochToISO(startUTC)
+	local params = {
+		["access_id"] = cfg.ACCESS_ID,
+		["password"] = cfg.PASSWORD,
+		["start_utc"] = startTime
+	}
+	local url = cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX .. "/get_return_messages.json/?" .. encode(params)
+	ok, code, headers = http.request {
+		url = url,
+		proxy = cfg.HTTP_PROXY,
+		method = "GET", headers = headers, source = source, sink = sink
+	}
+	if ok and code == 200 then
+		local response1 = response[1];
+		for i=2,10 do
+			if response[i] ~= nil then
+				response1 = response1 .. response[i]
+			else
+				break
+			end
+		end
+		local result, decoded = pcall(json.decode, response1)
+		if not result then
+			error("JSON decode failed: " .. decoded)
+		elseif decoded.ErrorID == 0 then
+			if decoded.NextStartUTC ~= "" then
+				startUTC = ISOToEpoch(decoded.NextStartUTC)
+			end
+			return decoded.Messages
+		else
+			error("Gateway message retrieval error... ErrorID: " .. tostring(decoded.ErrorID))
+		end
+	else
+		error("Gateway message retrieval error... OK?" .. tostring(ok) .. ", code: " .. tostring(code))
+	end
+	return nil
 end
 
 -- Returns a number representing current gateway time
@@ -366,7 +335,7 @@ local function getTerminalResponse(payload, checkFunction, cbfParam)
 	return gateway.getReturnMessage(checkFunction, cbfParam)
 end
 
-function tf.firstCallHouseKeeping()
+function firstCallHouseKeeping()
 	if not calledGateway then
 		calledGateway = true
 		local gatewayTime = getGatewayTime()
@@ -374,20 +343,8 @@ function tf.firstCallHouseKeeping()
 		timeOffset = gatewayTime - localTime
 		gatewayVersion = getGatewayResource("info_version")
 		gateway.setHighWaterMark()
-	
 		gateway.submitForwardMessage{SIN = 16, MIN = 1}
-		local msg = gateway.getReturnMessage(
-			function(msg)
-				if not msg then 
-					print "Unable to retrieve terminal info. Tests will continue."
-					return false
-				end
-				local colmsg = tf.collapseMessage(msg)
-				if colmsg.Payload.SIN == 16 and colmsg.Payload.MIN == 1 then
-					return true
-				end
-			end
-		)
+		local msg = gateway.getReturnMessage(tf.checkMessageType(16, 1))
 		if msg then
 			local colmsg = tf.collapseMessage(msg)
 			if debugLevel == 2 then
@@ -395,6 +352,8 @@ function tf.firstCallHouseKeeping()
 			else
 				terminalInfo = colmsg.Payload.packageVersion and "Terminal package: " .. colmsg.Payload.packageVersion or "LSF Version: " .. colmsg.Payload.LSFVersion
 			end
+		else
+			print "Unable to retrieve terminal info. Tests will continue."
 		end
 	end
 end
@@ -438,9 +397,9 @@ end
 
 --- Returns a function that can then be passed to <span style="font-family:monospace">getReturnMessage</span>
 -- or <span style="font-family:monospace">filterReturnMessages</span> as the callback function; the callback function
--- verifies the SIN and MIN specified here.<br /><br />
+-- verifies the SIN and MIN specified.<br /><br />
 -- NOTE: In general, callback functions are written by users to match precise criteria.<br /><br />
--- NOTE: Use GUI tool MessageEditor to automatically generate useful callback functions.
+-- NOTE: Use "Message Editor" application to automatically generate useful callback functions.
 -- @tparam number sin SIN to check for
 -- @tparam number min MIN to check for
 -- @usage
@@ -453,9 +412,10 @@ end
 -- @within tf
 function tf.checkMessageType(sin, min)
 	return function(msg)
-		assert(msg, string.format("Message - (sin, min) = (%d, %d) - expected but not received.", sin, min))
-		local colmsg = tf.collapseMessage(msg)
-		return colmsg.Payload.SIN == sin and colmsg.Payload.MIN == min
+		if msg then
+			return msg.Payload.SIN == sin and msg.Payload.MIN == min
+		end
+		return false
 	end
 end
 
@@ -469,7 +429,7 @@ end
 --- Data fields in to-or-from terminal messages are encoded in base64 format; this function encodes string data to base64 format
 -- @param data string or array or numbers in range [0, 255]: the data to encode
 -- @treturn string base64-encoded data
--- @usage 
+-- @usage
 -- -- These are equivalent calls:
 -- tf.base64Encode({65, 66, 67})
 -- tf.base64Encode("ABC")
@@ -479,13 +439,12 @@ function tf.base64Encode(data)
 	if type(data) == "table" then
 		data1 = string.char(unpack(data))
 	end
-	
     return ((data1:gsub('.', function(x)
         local r,b='',x:byte()
         for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
         return r;
     end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
-        if (#x < 6) then return '' end
+        if #x < 6 then return '' end
         local c=0
         for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
         return b64map:sub(c+1,c+1)
@@ -495,12 +454,12 @@ end
 local function base64Decode(data)
     data = string.gsub(data, '[^'..b64map..'=]', '')
     return (data:gsub('.', function(x)
-        if (x == '=') then return '' end
+        if x == '=' then return '' end
         local r,f='',(b64map:find(x)-1)
         for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
         return r;
     end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
-        if (#x ~= 8) then return '' end
+        if #x ~= 8 then return '' end
         local c=0
         for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
         return string.char(c)
@@ -535,7 +494,6 @@ local function collapseMsg(tbl)
 			tbl[k] = nil
 		end
 	end
-
 	for k,v in pairs(tbl) do
 		if type(v) == "table" then
 			tbl[k] = tf.collapseMessage(v)
@@ -551,12 +509,15 @@ end
 -- local msgs = getReturnMessages()
 -- for _, msg in ipairs(msgs) do
 -- 	msg = tf.collapseMessage(msg)
---	print(tf.dump(msg)) 
+--	print(tf.dump(msg))
 -- end
 -- -- or simply:
 -- tf.dump(getReturnMessages())
 -- @within tf
 function tf.collapseMessage(tbl)
+	if not tbl then
+		return nil
+	end
 	local t2 = {}
 	for k,v in pairs(tbl) do
 		if k == "Index" and type(v) == "number" then
@@ -626,11 +587,10 @@ function tf.printResults(testSuiteSuccess)
 	if gatewayVersion then
 		printf("Gateway version: %s \n", gatewayVersion)
 	end
-	
-	if terminalInfo then		--if debugLevel == 2 then all msgs are logged automatically
+	--if debugLevel == 2 then all msgs are logged automatically
+	if terminalInfo then
 		print(terminalInfo)
 	end
-	
 	--resetStats
 	testStartTime = os.time()
 	gateway.returnMsgList = {}
@@ -642,12 +602,12 @@ end
 --- Submits a forward message payload. Specify only the payload - message metadata can be configured in the TestConfiguration file.
 -- @tparam table payload the payload field of the forward message
 -- @tparam[opt=false] ?boolean raw nil regarded as false; if true, this specifies the message's RawPayload field.
--- @usage 
+-- @usage
 -- -- Submit (SIN, MIN) = (16, 1) (getTerminalInfo) message to terminal
 -- gateway.submitForwardMessage{SIN = 16, MIN = 1}
 -- @within gateway
 function gateway.submitForwardMessage(payload, raw)
-	tf.firstCallHouseKeeping()
+	firstCallHouseKeeping()
 	local msg = { DestinationID = cfg.MOBILE_ID, UserMessageID = lastForwardID+1}
 	lastForwardID = lastForwardID + 1
 	if raw then
@@ -655,11 +615,9 @@ function gateway.submitForwardMessage(payload, raw)
 	else
 		msg.Payload = payload
 	end
-
 	local msgs = { ["accessID"] = cfg.ACCESS_ID, ["password"] =  cfg.PASSWORD, ["messages"] = { msg } }
 	local encoded = json.encode(msgs)
 	local source = ltn12.source.string(encoded);
-
 	local response = {}
 	local sink = ltn12.sink.table(response)
 	local headers = {
@@ -679,7 +637,7 @@ function gateway.submitForwardMessage(payload, raw)
 			tf.trace2("Submitted: " .. tf.dump(tf.collapseMessage(payload)))
 		end
 	end
-	
+
 	-- retry submission if gateway temporarily unavailable.
 	while code == 503 do
 		print "Gateway temporarily unavailable; retry submission."
@@ -694,7 +652,6 @@ function gateway.submitForwardMessage(payload, raw)
 	if ok and code == 200 then
 		local response1 = response[1];
 		local decoded = json.decode(response1)
-
 		local submitResult = decoded.SubmitForwardMessages_JResult
 		if submitResult.ErrorID == 0 then
 			local submissions = submitResult.Submissions
@@ -714,31 +671,33 @@ end
 -- NOTE: table hierarchy of each message is collapsed to a simpler table before being returned by calling tf.collapseMessage()
 -- @tparam function checkFunction function to call to determine if criteria matches; should throw exception if criteria doesn't match
 -- @tparam[opt=nil] ?AnyType checkParam callback function parameter; use table if >1 parameter needed
--- @tparam[opt=DEFAULT] ?number timeout parameter to control the timeout for this funciton
+-- @tparam[opt=DEFAULT] ?number timeout parameter to control the timeout for this function
 -- @treturn table the first message that matches criteria; nil otherwise
 -- @usage
 -- -- See TestSuiteExample* for more details...
 -- gateway.getReturnMessage(<your own callback or tf.checkMessageType>)
 -- @within gateway
 function gateway.getReturnMessage(
-			checkFunction, 			
-			checkParam, 			
-			timeout					
+			checkFunction,
+			checkParam,
+			timeout
 		)
 	assert(checkFunction, "checkFunction not provided to getReturnMessage")
 	time1 = os.time()
 	timeout = timeout and timeout or cfg.GATEWAY_TIMEOUT
 	while(true) do
 		local msgs = getReturnMessages()
-		for i, msg in ipairs(msgs) do
-			colmsg = tf.collapseMessage(msg)
-			colmsg.Payload = colmsg.Payload and colmsg.Payload or {}
-			recordAndPrintMsg(colmsg)
-			if checkFunction(msg, checkParam) then
-				return msg
+		if msgs then
+			for i, msg in ipairs(msgs) do
+				colmsg = tf.collapseMessage(msg)
+				colmsg.Payload = colmsg.Payload and colmsg.Payload or {}
+				recordAndPrintMsg(colmsg)
+				if checkFunction(msg, checkParam) then
+					return msg
+				end
 			end
 		end
-		if(os.time() - time1 >= timeout) then
+		if os.time() - time1 >= timeout then
 			checkFunction(nil, checkParam)
 			break;
 		end
@@ -770,15 +729,24 @@ end
 -- @tparam[opt=os.time()] number _date date/time to which to update the high water mark (number of secs since epoch - os.time())
 -- @within gateway
 function gateway.setHighWaterMark(_date)
-	local _time = _date and _date or os.time()
-	startUTC = EpochToISO(_time + timeOffset)
+	local _time
+	if _date then
+		_time = _date
+	else
+		_time = os.time()
+		if startUTC and os.difftime(_time, startUTC - timeOffset) < 1 then
+			tf.delay(1)
+			_time = os.time()
+		end
+	end
+	startUTC = _time + timeOffset
 end
 
 --- Get Test Framework's high water mark.
 -- @treturn number timestamp of current high water mark
 -- @within gateway
 function gateway.getHighWaterMark()
-	return ISOToEpoch(startUTC) - timeOffset
+	return startUTC - timeOffset
 end
 
 --------------------------LSF Functions--------------------------
@@ -829,12 +797,11 @@ function lsf.getProperties(sin, pinList)
 	if type(pinList) ~= "table" then
 		pinList = {pinList}
 	end
-	
 	local b64str = tf.base64Encode(string.char(unpack(pinList)))
-	local payload={Fields={{Elements={{Fields={{Name="sin",Value=sin},{Name="pinList",Value=b64str}},Index=0}},Name="list"}},MIN=8,Name="getProperties",SIN=16}
-	local msg = getTerminalResponse(payload, checkPropValResponse)
-	if msg == nil then
-		error("Property Values response from gateway not received!!")
+	local payload={SIN=16,MIN=8,Fields={{Elements={{Fields={{Name="sin",Value=sin},{Name="pinList",Value=b64str}},Index=0}},Name="list"}}}
+	local msg = getTerminalResponse(payload, tf.checkMessageType(16, 5))
+	if not msg then
+		return nil
 	end
 	msg = tf.collapseMessage(msg)
 	return msg.Payload.list[1].propList
@@ -868,7 +835,7 @@ end
 --        min - 10 (reset), or 11 (save), or 12 (revert)
 local function systemPropertyCall(sin, min)
 	assertSinRange(sin)
-	local payload={Fields={{Elements={{Fields={{Name="sin",Value=sin}},Index=0}},Name="list"}},MIN=min,SIN=16}
+	local payload={SIN=16,MIN=min,Fields={{Elements={{Fields={{Name="sin",Value=sin}},Index=0}},Name="list"}}}
 	gateway.submitForwardMessage(payload)
 end
 
@@ -902,26 +869,16 @@ function lsf.getPosition(forceNewFix)
 	forceNewFix = forceNewFix and forceNewFix or false
 	tf.delay(2)
 	local age = forceNewFix and 1 or 30
-	payload={Fields={{Name="fixType",Value="3D"},{Name="timeout",Value=cfg.GATEWAY_TIMEOUT},{Name="age",Value=age}},MIN=1,Name="getPosition",SIN=20}
+	payload={SIN=20,MIN=1,Fields={{Name="fixType",Value="3D"},{Name="timeout",Value=cfg.GATEWAY_TIMEOUT},{Name="age",Value=age}}}
 	gateway.submitForwardMessage(payload)
-	
-	local msg = gateway.getReturnMessage(
-		function(msg)
-			if msg == nil then return false end
-			local colmsg = tf.collapseMessage(msg)
-			if colmsg.Payload.SIN == 20 and colmsg.Payload.MIN == 1 then
-				return true
-			end
-		end
-	)
-	return msg
+	return gateway.getReturnMessage(tf.checkMessageType(20,1))
 end
 
 --- Sends a shell command and responds with the result if needed
 -- @string shellCmd shell command to execute
 -- @tparam[opt=false] ?bool needResponse whether to wait for a response to the shell command
 -- @return returns first shell response received if result needed; immediately returns true if result not requested; returns false if result requested but not received
--- @usage 
+-- @usage
 -- -- this prints the output of "mem" command on the terminal; note: since the response contains "%" character, you cannot use tf.trace0 here.
 -- print(lsf.shellCommand("mem", true))
 -- @within lsf
@@ -933,6 +890,9 @@ function lsf.shellCommand(shellCmd, needResponse)
 	  return true
 	end
 	local msg = gateway.getReturnMessage(checkShellResponse)
+	if not msg then
+		return nil
+	end
 	msg = tf.collapseMessage(msg)
 	return msg and msg.Payload and msg.Payload.output
 end
@@ -943,19 +903,17 @@ local function configureDevice(device, typ, port, value)
 	local source = ltn12.source.string(null);
 	local response = {}
 	local sink = ltn12.sink.table(response)
-
 	local headers = {
 		["Content-Type"] = "application/json",
 		["Content-Length"] = 0
 	}
-	local url = cfg.DEVICE_URL .. "/" .. device .. "/" .. cfg.PORTMAP[port] .. "/" .. typ .. "/" .. value
+	local url = cfg.DEVICE_URL .. "/" .. device .. "/" .. port .. "/" .. typ .. "/" .. value
 	ok, code, headers = http.request {
 		url = url,
 		proxy = cfg.HTTP_PROXY,
 		method = "POST", headers = headers, source = source, sink = sink
 	}
-
-	if (ok and code == 200) then
+	if ok and code == 200 then
 		return true
 	end
 	error("Unable to configure device. HTTP error code: " .. tostring(code))
@@ -1011,7 +969,7 @@ end
 
 --- Configure power service parameters
 -- @usage -- set battery voltage to 15V
--- device.setPower(3, 15000) 
+-- device.setPower(3, 15000)
 -- @tparam number id power service property ID to change (corresponds to PID of power service)
 --
 -- 3 - battery voltage, 4 - battery temp, 8 - external power present
@@ -1120,7 +1078,7 @@ local acceptedKeys = {latitude = gpsSetLocation, longitude = gpsSetLocation, alt
 -- <li>simulateLinearMotion: bool - whether or not the lat/long values change due to movement</li>
 -- </ul>
 -- @param parameters a table of GPS settings
--- @usage 
+-- @usage
 -- -- This sets the speed to 50km/h, heading to East, and updates lat/long according to movement
 -- gps.set({speed=50, heading=90, simulateLinearMotion=true})
 -- @within gps
@@ -1151,5 +1109,26 @@ function gps.set(parameters)
 		end
 	end
 end
+
+print("Test Framework v" .. tf.version)
+if debugLevel == 2 then
+	tf.trace1 = printfLineDate
+	tf.trace2 = printfLineDate
+	print("tf.trace1 ON, tf.trace2 ON")
+elseif debugLevel == 1 then
+	tf.trace1 = printfLineDate
+	tf.trace2 = dummyFunc
+	print("tf.trace1 ON, tf.trace2 OFF")
+else
+	tf.trace1 = dummyFunc
+	tf.trace2 = dummyFunc
+	print("tf.trace1 OFF, tf.trace2 OFF")
+end
+tf.trace0 = printfLineDate
+
+-- turn off buffering so that output will appear immediately
+-- when using PowerShell to tee the output, e.g.
+-- lua TestCases.lua | Tee-Object -file logfile.txt
+io.output():setvbuf("no") 
 
 return function() return cfg, tf, gateway, lsf, device, gps end

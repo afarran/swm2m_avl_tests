@@ -114,6 +114,7 @@ end
 -------------------------
 
 
+
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
   -- Initial Conditions:
   --
@@ -2105,6 +2106,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDisconti
 end
 
 
+
 --- TC checks if DiagnosticsInfo message is sent when requested and fields of the report have correct values
   -- *actions performed:
   -- for terminal in stationary state set send getDiagnosticsInfo message and check if DiagnosticsInfo message is sent after that
@@ -2143,7 +2145,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   -- getting digPortsProperty and DigPorts properties for analysis
   local digStatesDefBitmapProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.digStatesDefBitmap)
   -- getting current temperature value
-  local temperature = lsf.getProperties(lsfConstants.io,lsfConstants.pins.temperatureValue)
+  local temperature = lsf.getProperties(lsfConstants.sins.io,lsfConstants.pins.temperatureValue)
 
   -- sending getDiagnostics message
   local getDiagnosticsMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getDiagnostics}    -- to trigger DiagnosticsInfo message
@@ -2151,7 +2153,6 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 
   local timeOfEventTc = os.time()
   framework.delay(2)    -- wait until message is processed
-
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages()
@@ -2171,12 +2172,18 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(tonumber(avlStatesProperty[1].value), tonumber(colmsg.Payload.AvlStates), "AvlStates value is wrong in report")
   assert_equal(tonumber(digStatesDefBitmapProperty[1].value), tonumber(colmsg.Payload.DigStatesDefMap), "DigStatesDefMap value is wrong in report")
   assert_equal(tonumber(temperature[1].value), tonumber(colmsg.Payload.Temperature),1, "Temperature value is wrong in report")
-  assert_equal(4518, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")
+  assert_equal(0, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")
   assert_equal(99, tonumber(colmsg.Payload.CellRssi), "CellRssi value is wrong in report")
+  if (terminalInUse == 800) then
   assert_equal(extVoltage, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
   assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
+  else
+  assert_equal(0, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
+  assert_equal(0, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
+
+  end
 
 end
 
---]]
+
 
