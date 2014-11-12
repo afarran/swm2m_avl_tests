@@ -65,7 +65,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Send restartService (MIN 5) message from System (SIN 16) service
+  -- 1. Send restartService (MIN 5) message to System (SIN 16) service
   --
   -- Results:
   --
@@ -409,23 +409,34 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
 end
 
 
-
---- TC checks if MovingStart message is not sent when speed is above threshold for time below threshold
-  -- *actions performed:
-  -- set movingDebounceTime to 15 seconds and stationarySpeedThld to 5 kmh then wait for time shorter than
-  -- movingDebounceTime and check if the MovingStart message has not been been sent
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- *expected results:
-  -- terminal not put into moving state, MovingStart message not sent
-function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent()
+--- TC checks if MovingStart message is not sent when speed is above threshold for time below threshold .
+  -- Initial Conditions:
+  --
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS signal is good
+  --
+  -- Steps:
+  --
+  -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
+  -- 2. Simulate speed above stationarySpeedThld and wait shorted than movingDebounceTime
+  -- 3. Receive messages sent by terminal and check if there is any MovingStart (MIN 6) message
+  -- 4. Read avlStatesProperty and check if terminal is moving
+  --
+  -- Results:
+  --
+  -- 1. Properties movingDebounceTime and stationarySpeedThld correctly set
+  -- 2. Speed above stationarySpeedThld for period shorted than movingDebounceTime
+  -- 3. There is no MovingStart (MIN 6) message in received messages
+  -- 4. Terminal not in moving state
+ function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent()
 
   local movingDebounceTime = 15      -- seconds
   local stationarySpeedThld = 5      -- kmh
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-                    speed = stationarySpeedThld+10, -- 10 kmh above threshold
+                      speed = stationarySpeedThld+10, -- 10 kmh above threshold
                      }
 
   --applying properties of the service
@@ -435,11 +446,11 @@ function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotS
                                              }
                    )
 
-  gateway.setHighWaterMark()                -- to get the newest messages
-  gps.set(gpsSettings)                      -- applying gps settings
-  framework.delay(gpsReadInterval+2)        -- waiting for time shorter than movingDebounceTime
+  gateway.setHighWaterMark()                                    -- to get the newest messages
+  gps.set(gpsSettings)                                          -- applying gps settings
+  framework.delay(gpsReadInterval+movingDebounceTime*0.5)       -- waiting for time shorter than movingDebounceTime
 
-  -- MovingStart Message is not expected
+  -- Receive all messages sent by terminal
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
   -- look for MovingStart message
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart))
@@ -447,7 +458,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotS
 
   -- check the state of the terminal
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state") -- terminal should not be moving
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal unexpectedly in the moving state") -- terminal should not be moving
 
 end
 
