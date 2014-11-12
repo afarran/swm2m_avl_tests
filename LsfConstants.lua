@@ -1,6 +1,6 @@
 --- LSF Services consants definitions
 lsfConstantsAllTerminals = {
-                              [600] = {
+                              [1] = {
                                                 -- Services SINs and other
                                                 sins = {
                                                           system = 16,
@@ -47,11 +47,11 @@ lsfConstantsAllTerminals = {
                                                 coldFixDelay = 40,
                                             },
 
-                             [700] = {
+                             [2] = {
                                                   -- TODO: add this in future
                                                   },
 
-                             [800] = {
+                             [3] = {
                                                 -- Services SINs and other
                                                 sins = {
                                                           system = 16,

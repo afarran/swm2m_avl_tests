@@ -57,7 +57,7 @@ module("TestDigitalInputsModule", package.seeall)
   math.randomseed(os.time())                -- os.time used as randomseed
   math.random(1,4)
 
-  if terminalInUse == 800 then
+  if hardwareVariant == 3 then
   randomPortNumber = math.random(1,3)
   else
   randomPortNumber = math.random(1,4)
@@ -2569,7 +2569,7 @@ end
 function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
 
   -- Dual power source feature is specific to IDP 800
-  if(terminalInUse==800) then skip("TC related only to IDP 600 and 700s") end
+  if(hardwareVariant==3) then skip("TC related only to IDP 600 and 700s") end
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -2636,7 +2636,7 @@ end
 function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
 
   -- Dual power source feature is specific to IDP 800
-  if(terminalInUse==800) then skip("TC related only to IDP 600s and 700s") end
+  if(hardwareVariant==3) then skip("TC related only to IDP 600s and 700s") end
   -- properties values to be used in TC
 
   local movingDebounceTime = 1          -- seconds
@@ -2723,7 +2723,7 @@ end
  function test_PowerMain_WhenVirtualLine13ChangesStateTo1_PowerMainMessageSentAndPowerMainStateBecomesTrue()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local inputVoltageTC = 240      -- tenths of volts, external power voltage value
 
@@ -2803,7 +2803,7 @@ end
  function test_PowerBackup_WhenVirtualLine13ChangesStateTo0_PowerBackupMessageSentAndPowerMainStateBecomesFalse()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local inputVoltageTC = 240      -- tenths of volts, external power voltage value
 
@@ -2880,7 +2880,7 @@ end
  function test_Line13_WhenVirtualLine13ChangesStateTo1_IgnitionOnMessageSent()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2960,7 +2960,7 @@ end
  function test_Line13_WhenVirtualLine13ChangesStateTo0_IgnitionOffMessageSent()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3049,7 +3049,7 @@ end
   function test_Line13_WhenVirtualLine13IsAssociatedWithSeatbeltOffFunction_SeatbeltViolationStartAndSeatbeltViolationEndMessageSentAccordingToStateOfLine13()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
   local seatbeltDebounceTime = 10       -- seconds
 
   -- setting AVL properties
@@ -3186,7 +3186,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithIgnitionAndSM0_IgnitionAndSM0AreActivatedAndDeactivatedAccordingToStateOfLine13()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3337,7 +3337,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM1_ServiceMeter1BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3406,7 +3406,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM2_ServiceMeter2BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3475,7 +3475,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM3_ServiceMeter3BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3544,7 +3544,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM4_ServiceMeter4BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- line 13 is specific only in IDP 800s
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{

@@ -2172,9 +2172,9 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(tonumber(avlStatesProperty[1].value), tonumber(colmsg.Payload.AvlStates), "AvlStates value is wrong in report")
   assert_equal(tonumber(digStatesDefBitmapProperty[1].value), tonumber(colmsg.Payload.DigStatesDefMap), "DigStatesDefMap value is wrong in report")
   assert_equal(tonumber(temperature[1].value), tonumber(colmsg.Payload.Temperature),1, "Temperature value is wrong in report")
-  assert_equal(0, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")
+  assert_equal(0, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")                                         --TODO: this value will be simulated in the future
   assert_equal(99, tonumber(colmsg.Payload.CellRssi), "CellRssi value is wrong in report")
-  if (terminalInUse == 800) then
+  if (hardwareVariant==3) then
   assert_equal(extVoltage, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
   assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
   else

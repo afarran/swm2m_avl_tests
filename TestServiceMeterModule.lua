@@ -1077,7 +1077,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                   SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
                   SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                         }
-  if(terminalInUse == 800) then
+  if(hardwareVariant==3) then
     expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
     expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
   end

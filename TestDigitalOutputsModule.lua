@@ -1196,7 +1196,7 @@ end
 function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerSourceIsNotPresent_DigitalOutputPortAssociatedWithLowPowerInHighState()
 
   -- Dual power source feature is specific to IDP 800
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 10   -- time of lpmEntryDelay, in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
@@ -1293,7 +1293,7 @@ end
 function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOff_DigitalOutputPortAssociatedWithLowPowerInHighStateIfAnyOfTheTriggersIsActive()
 
   -- Dual power source feature is specific to IDP 800
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 10   -- time of lpmEntryDelay, in minutes
   local lpmTrigger = 3       -- 3 is for both IgnitionOn and Built-in battery
@@ -1428,7 +1428,7 @@ end
 function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFunction_DigitalOutputPortChangesAccordingToOnMainPowerState()
 
   -- Dual power source feature is specific to IDP 800
-  if(terminalInUse~=800) then skip("TC related only to IDP 600") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 600") end
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1547,7 +1547,7 @@ end
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- This TC only applies to IDP 600 series terminal
-  if(terminalInUse~=600) then skip("TC related only to IDP 600s") end
+  if(hardwareVariant~=1) then skip("TC related only to IDP 600s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1638,7 +1638,7 @@ end
 function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- This TC only applies to IDP 800 series terminal
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1726,7 +1726,7 @@ end
 function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- This TC only applies to IDP 800 series terminal
-  if(terminalInUse~=700) then skip("TC related only to IDP 700s") end
+  if(hardwareVariant~=2) then skip("TC related only to IDP 700s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1823,7 +1823,7 @@ end
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
   -- This TC only applies to IDP 600 series terminal
-  if(terminalInUse~=600) then skip("TC related only to IDP 600s") end
+  if(hardwareVariant~=1) then skip("TC related only to IDP 600s") end
 
   local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
 
@@ -1917,7 +1917,7 @@ end
 function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
   -- This TC only applies to IDP 700 series terminal
-  if(terminalInUse~=700) then skip("TC related only to IDP 700s") end
+  if(hardwareVariant~=2) then skip("TC related only to IDP 700s") end
 
   local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
 
@@ -2015,7 +2015,7 @@ end
 function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
   -- This TC only applies to IDP 600 series terminal
-  if(terminalInUse~=800) then skip("TC related only to IDP 800s") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
 

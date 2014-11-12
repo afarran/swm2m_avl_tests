@@ -348,7 +348,7 @@ end
 --- Function reads terminal hardware version
 -- @usage
 -- avlHelperFunctions.getTerminalHardwareVersion()
--- @treturn string - "600", "700" or "800" indicating version of hardware in use
+-- @treturn string - "1", "2" or 3" indicating version of hardware in use
 -- @within AvlhelperFunctions
 function avlHelperFunctions.getTerminalHardwareVersion()
 
@@ -361,9 +361,9 @@ function avlHelperFunctions.getTerminalHardwareVersion()
   -- receiving terminalInfo messge (MIN 1) as the response to the request
   local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16, 1))
   -- local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstans.mins.getTerminalInfo)) -- TODO: change function to use this line
-  if(terminalInfoMessage.Payload.Fields[1].Value == "IDP-6XX") then return 600
-  elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-7XX") then  return 700
-  elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-8XX") then return 800
+  if(terminalInfoMessage.Payload.Fields[1].Value == "IDP-6XX") then return 1
+  elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-7XX") then  return 2
+  elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-8XX") then return 3
   end
 
 

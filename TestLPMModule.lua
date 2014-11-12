@@ -715,6 +715,9 @@ end
   -- 6. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+
   local lpmEntryDelay = 0    -- in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
 
@@ -793,6 +796,9 @@ end
   -- 6. Terminal does not enter LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalNotPutInLpmWhenExternalPowerSourceNotPresentShorterThanLpmEntryDelayPeriod()
 
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+
   local lpmEntryDelay = 1    -- in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
 
@@ -868,6 +874,9 @@ end
   -- 6. External power present
   -- 7. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
+
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0    -- in minutes
   local lpmTrigger = 3       -- 3 is for IgnitionOn and Built-in battery
@@ -946,6 +955,9 @@ end
   -- 4. IgnitionOn event generated
   -- 5. Terminal put out of LPM
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutInLpmAfterIgnitionOffAndPutOutOfLpmAfterIgnitionOn()
+
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery
@@ -1039,6 +1051,9 @@ end
   -- 3. Terminal does not go to to LPM
  function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalIsNotPutIntoLpmByIgnitionOffEvent()
 
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 2      -- 2 is for Built-in Battery
 
@@ -1123,6 +1138,9 @@ end
   -- 6. Terminal doesn not enter LPM
  function test_LPM_WhenLpmTriggerSetToZero_TerminalIsNotPutIntoLpmByIgnitionOffEventOrUnpluggingExternalPowerSource()
 
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 0      -- 0 is for no trigger
 
@@ -1202,6 +1220,9 @@ end
   -- 3. Terminal does not enter LPM
  function test_LPM_WhenLpmTriggerSetToIgnitionOff_TerminalIsNotPutIntoLpmWhenExternalPowerSourceIsNotPresent()
 
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 1      -- 1 is for IgnitionOff
 
@@ -1273,6 +1294,9 @@ end
   -- 10. External power present
   -- 11. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutOutOfLpmWhenBothIgnitionIsOnAndExternalPowerIsPresent()
+
+  -- Dual power source feature is specific to IDP 800
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery

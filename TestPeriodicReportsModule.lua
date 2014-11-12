@@ -1135,8 +1135,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   local loggingStartTime = os.time()     -- time of start of logging - to be used in log filter message
 
+  -------------------------------------------------------------------------------------------------------------------------
+  -- #1 log entry settings
+  -------------------------------------------------------------------------------------------------------------------------
   device.setIO(1, 1)                      -- port 1 to high level - that should trigger IgnitionOn
-
   gps.set(gpsSettings[1])                        -- apply settings for first position and speeding state
   framework.delay(loggingPositionsInterval+3)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
   timeOfLogEntry[1] = os.time()                  -- save timestamp for first log entry
@@ -1148,8 +1150,11 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   local digPortsProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.digPorts)
   digPortsVerification[1] = tonumber(digPortsProperty[1].value)
 
-  device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
 
+  -------------------------------------------------------------------------------------------------------------------------
+  -- #2 log entry settings
+  -------------------------------------------------------------------------------------------------------------------------
+  device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
   gps.set(gpsSettings[2])                        -- apply settings for second position and non-speeding state
   framework.delay(loggingPositionsInterval+4)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
   timeOfLogEntry[2] = os.time()                  -- save timestamp for second log entry
@@ -1161,6 +1166,9 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   digPortsProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.digPorts)
   digPortsVerification[2] = tonumber(digPortsProperty[1].value)
 
+  -------------------------------------------------------------------------------------------------------------------------
+  -- disabling logging
+  -------------------------------------------------------------------------------------------------------------------------
   loggingPositionsInterval = 0     -- not to get any more messages saved
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -1169,6 +1177,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                    )
   local loggingEndTime = os.time()     -- time of end of logging - to be used in log filter message
 
+  -------------------------------------------------------------------------------------------------------------------------
+  -- setting log filter
+  -------------------------------------------------------------------------------------------------------------------------
+
   -- send setDataLogFilter to log service (to filter only LoggedPosition messages)
 	local setDataLogFilterMessage = {SIN = 23, MIN = 1}
   -- minList =  15 (filter only LoggedPosition)
@@ -1176,6 +1188,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                                    {Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},{Name="minList",Value="Dw=="}}}}},}
   gateway.submitForwardMessage(setDataLogFilterMessage)
 
+
+  -------------------------------------------------------------------------------------------------------------------------
+  -- getting log entries
+  -------------------------------------------------------------------------------------------------------------------------
   framework.delay(2)           -- wait until message is processed
   gateway.setHighWaterMark()   -- to get the newest messages
 
@@ -1183,7 +1199,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   local getDataLogEntriesMessage = {SIN = 23, MIN = 5} -- add maximum entries to limit TODO
   getDataLogEntriesMessage.Fields = {{Name="maxEntries",Value=10},}
   gateway.submitForwardMessage(getDataLogEntriesMessage)
-  framework.delay(2)  -- wait until message is processed
+  framework.delay(3)  -- wait until message is processed
 
   -- DataLogEntries message is expected (SIN 23, MIN 5)
   local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(23, 5))
