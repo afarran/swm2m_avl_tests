@@ -1138,8 +1138,8 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   -------------------------------------------------------------------------------------------------------------------------
   -- #1 log entry settings
   -------------------------------------------------------------------------------------------------------------------------
-  device.setIO(1, 1)                      -- port 1 to high level - that should trigger IgnitionOn
   gps.set(gpsSettings[1])                        -- apply settings for first position and speeding state
+  device.setIO(1, 1)                      -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(loggingPositionsInterval+3)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
   timeOfLogEntry[1] = os.time()                  -- save timestamp for first log entry
 
@@ -1154,8 +1154,8 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   -------------------------------------------------------------------------------------------------------------------------
   -- #2 log entry settings
   -------------------------------------------------------------------------------------------------------------------------
-  device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
   gps.set(gpsSettings[2])                        -- apply settings for second position and non-speeding state
+  device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
   framework.delay(loggingPositionsInterval+4)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
   timeOfLogEntry[2] = os.time()                  -- save timestamp for second log entry
 

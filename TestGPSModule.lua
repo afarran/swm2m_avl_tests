@@ -53,6 +53,7 @@ module("TestGPSModule", package.seeall)
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
                                              }
+                    )
   framework.delay(2)
 
 end
@@ -431,7 +432,7 @@ end
   -- 4. Terminal not in moving state
  function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent()
 
-  local movingDebounceTime = 15      -- seconds
+  local movingDebounceTime = 14      -- seconds
   local stationarySpeedThld = 5      -- kmh
 
   -- gps settings table to be sent to simulator
@@ -448,7 +449,7 @@ end
 
   gateway.setHighWaterMark()                                    -- to get the newest messages
   gps.set(gpsSettings)                                          -- applying gps settings
-  framework.delay(gpsReadInterval+movingDebounceTime*0.5)       -- waiting for time shorter than movingDebounceTime
+  framework.delay(gpsReadInterval+1)                            -- waiting for time shorter than movingDebounceTime
 
   -- Receive all messages sent by terminal
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
@@ -488,8 +489,8 @@ end
   -- 5. Terminal not in moving state
 function test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationaryDebounceTime = 15  -- seconds
+  local stationarySpeedThld = 5      -- kmh
+  local stationaryDebounceTime = 14  -- seconds
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -502,10 +503,9 @@ function test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSen
   avlHelperFunctions.putTerminalIntoMovingState()
 
   -- when the terminal is in the moving state the speed is reduced for short time (seconds)
-  gateway.setHighWaterMark()                                    -- to get the newest messages
-  gpsSettings.speed = stationarySpeedThld-1                     -- one kmh below threshold
-  gps.set(gpsSettings)                                          -- applying gps settings
-  framework.delay(gpsReadInterval+stationaryDebounceTime*0.5)   -- time much shorter than stationaryDebounceTime
+  gateway.setHighWaterMark()             -- to get the newest messages
+  gps.set({speed=stationarySpeedThld-1}) -- applying gps settings
+  framework.delay(gpsReadInterval+2)     -- time much shorter than stationaryDebounceTime
 
   -- MovingEnd message is not expected
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
@@ -560,6 +560,8 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingStartMessageNotS
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state") -- terminal should not be moving
 
 end
+
+
 
 --- TC checks if MovingEnd message is not sent if speed is above stationarySpeedThld for time above threshold
   -- *actions performed:
