@@ -7,17 +7,29 @@ module("TestGPSModule", package.seeall)
 
 -- Setup and Teardown
 
---- suite_setup function ensures that terminal is not in the moving state and not in the low power mode
- -- executed before each test suite
- -- * actions performed:
- -- lpmTrigger is set to 0 so that nothing can put terminal into the low power mode
- -- function checks if terminal is not the low power mode (condition necessary for all GPS related test cases)
- -- *initial conditions:
- -- running Terminal Simulator with installed AVL Agent, running Modem Simulator with Gateway Web Service and
- -- GPS Web Service switched on
- -- *Expected results:
- -- lpmTrigger set correctly and terminal is not in the Low Power mode
+
+--- Suite setup function ensures that terminal is not in the low power mode .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set lpmTrigger (PIN 31) to 0 (no trigger)
+  -- 2. Read avlStatesProperty and check LPM state
+  -- 3. Set the continues property (PIN 15) in position service (SIN 20) to value gpsReadInterval
+  -- 4. Set property geofenceEnabled (PIN 1) in Geofence service (SIN 21) to false
+  --
+  -- Results:
+  --
+  -- 1. lpmTrigger set to 0
+  -- 2. Terminal not in LPM
+  -- 3. Continues property set to gpsReadInterval
+  -- 4. GeofenceEnabled property set to false
  function suite_setup()
+
 
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -30,10 +42,34 @@ module("TestGPSModule", package.seeall)
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                               }
+                    )
+  framework.delay(2)
+
+  local geofenceEnabled = false        -- to disable geofence feature
+  --applying properties of geofence service
+  lsf.setProperties(lsfConstants.sins.geofence,{
+                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
+                                             }
+  framework.delay(2)
+
 end
 
-
--- executed after each test suite
+--- Suite teardown function resets AVL agent after running suite.
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Send restartService (MIN 5) message from System (SIN 16) service
+  --
+  -- Results:
+  --
+  -- 1. Message sent, AVl agent reset
 function suite_teardown()
 
   -- restarting AVL agent after running module
@@ -44,58 +80,24 @@ function suite_teardown()
 
 end
 
---- the setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval
-  -- executed before each unit test
-  -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
-  -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
-  -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
-  -- *initial conditions:
-  -- terminal not in the low power mode
-  -- *expected results:
-  -- terminal correctly put in the stationary state
+
+--- Setup function put terminal into stationary state .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Run helper function putting terminal into stationary state
+  --
+  -- Results:
+  --
+  -- 1. Terminal put in stationary state
 function setup()
 
-  lsf.setProperties(20,{
-                        {15,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
-                                                 -- gps will be read every gpsReadInterval (in seconds)
-                      }
-                    )
-
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local geofenceEnabled = false        -- to disable geofence feature
-
-  --setting properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                              {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime},
-                                             }
-                    )
- --applying properties of geofence service
-  lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                             }
-                   )
-
-  -- gps settings table
-  local gpsSettings={
-              latitude = 1,
-              longitude = 1,
-              heading = 90,                 -- degrees
-              speed = 0,                    -- to get stationary state
-              fixType = 3,                    -- valid 3D gps fix
-              simulateLinearMotion = false, -- terminal not moving
-                     }
-
-  -- set the speed to zero and wait for stationaryDebounceTime to make sure the moving state is false
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure the gps is read and processed by agent
-  framework.delay(3)                                        -- this delay is for reliability reasons
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal in the moving state")
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
 
 end
@@ -106,7 +108,6 @@ function teardown()
 -- nothing here for now
 
 end
-
 
 
 -------------------------

@@ -290,6 +290,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
               longitude = 0,                   -- degrees
               latitude = 0,                    -- degrees
               fixType = 3,                     -- valid fix provided
+              simulateLinearMotion = false,   -- terminal not moving
                      }
 
   -- set the speed to zero and wait for stationaryDebounceTime
