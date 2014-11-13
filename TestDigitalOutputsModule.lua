@@ -316,6 +316,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   local speedingTimeUnder = 1       -- seconds
   local defaultSpeedLimit = 80      -- kmh
 
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
   -- gpsSettings to be used in TC
   local gpsSettings={
@@ -352,10 +353,10 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
 
   -- applying gps settings to simulate terminal moving
   gpsSettings.speed = defaultSpeedLimit + 100          -- kmh, 10 kmh above speed limit
-  gps.set(gpsSettings)                                 -- speeding time over
-  framework.delay(speedingTimeOver+15)                                   -- wait shorter than speedingTimeOver not to put terminal into speeding state
+  gps.set(gpsSettings)                                 -- applying gps settings
+  framework.delay(speedingTimeOver+15)                 -- wait longer than speedingTimeOver not to put terminal into speeding state
 
-  -- asserting state of port 1 - high state is expected - speed above defau
+  -- asserting state of port 1 - high state is expected - speed above limit
   assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
 
   -- simulating speed below defaultSpeedLimit again
