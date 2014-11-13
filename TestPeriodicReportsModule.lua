@@ -676,64 +676,52 @@ function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN
 end
 
 
---- TC checks if Position message is sent after full positionMsgInterval when MovingStart event deffers it
+--- TC checks if Position message is sent after full positionMsgInterval when DiagnosticsInfo event deffers it
   -- *actions performed:
-  -- set positionMsgInterval to 20 seconds, movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh,
-  -- simulate speed above stationarySpeedThld and wait longer than positionMsgInterval (MovingStart message is sent meanwhile)
-  -- check if positionMsgInterval message has been sent after full positionMsgInterval period after MovingStart event
-  -- after verification set positionMsgInterval to 0 not get more reports
+  -- set positionMsgInterval and meanwhile trigger DiagnosticsInfo message; check if Position message has been correctly deffered
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
   -- *expected results:
-  -- Position messages correctly deffered by MovingStart event
-function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndMovingStartEventDeffers_PositionMessageSentAfterFullPositionMsgInterval()
+  -- Position messages correctly deffered by DiagnosticsInfo event
+function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndDiagnosticsInfoDeffers_PositionMessageSentAfterFullPositionMsgInterval()
 
   local positionMsgInterval = 20     -- seconds
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-
-
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                               {avlConstants.pins.positionMsgInterval, positionMsgInterval},
                                              }
                    )
 
   gateway.setHighWaterMark()              -- to get the newest messages
-  gps.set(gpsSettings)                    -- applying gps settings to generate MovingStart message
+  framework.delay(5)
+
+  -- sending getDiagnostics message to make DiagnosticsInfo deffer position periodic report
+  local getDiagnosticsMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getDiagnostics}   -- to trigger DiagnosticsInfo message
+	gateway.submitForwardMessage(getDiagnosticsMessage)
+
   framework.delay(positionMsgInterval+3)  -- wait longer than positionMsgInterval to receive report
 
   -- receiving all from mobile messages sent after setHighWaterMark()
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
 
   -- back to positionMsgInterval = 0 to get no more reports
-  positionMsgInterval = 0       -- seconds
-  --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.positionMsgInterval, 0},
                                              }
                    )
 
-  -- looking for Position and MovingStart message
+  -- looking for Position and DiagnosticsInfo message
   local positionMsgIntervalMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
-  local movingStartMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart))
+  local diagnosticsInfoMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.diagnosticsInfo))
 
   -- checking if expected messages has been received
-  assert_not_nil(next(positionMsgIntervalMessage), "PositionMsgInterval message message not received")       -- if PositionMsgInterval message not received assertion fails
-  assert_not_nil(next(movingStartMessage), "MovingStart message not received")                               -- if MovingStart message not received assertion fails
+  assert_not_nil(next(positionMsgIntervalMessage), "PositionMsgInterval message message not received")     -- if PositionMsgInterval message not received assertion fails
+  assert_not_nil(next(diagnosticsInfoMessage), "DiagnosticsInfo message not received")                     -- if DiagnosticsInfo message not received assertion fails
 
-  -- difference in time of occurence of MovingStart report and movingIntervalSat report
-  local differenceInTimestamps =  positionMsgIntervalMessage[1].Payload.EventTime - movingStartMessage[1].Payload.EventTime
+  -- difference in time of occurence of diagnosticsInfoMessage report and positionMsgIntervalMessage
+  local differenceInTimestamps =  positionMsgIntervalMessage[1].Payload.EventTime - diagnosticsInfoMessage[1].Payload.EventTime
+
   -- checking if difference in time is correct - full positionMsgInterval period is expected
   assert_equal(positionMsgInterval, differenceInTimestamps, 2, "PositionMsgInterval message has not been correctly deffered")
 
