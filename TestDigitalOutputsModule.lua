@@ -316,8 +316,6 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   local speedingTimeUnder = 1       -- seconds
   local defaultSpeedLimit = 80      -- kmh
 
-  avlHelperFunctions.putTerminalIntoStationaryState()
-
   -- gpsSettings to be used in TC
   local gpsSettings={
               speed = stationarySpeedThld+1 ,    -- speed above stationary threshold, terminal in moving (non-speeding) state
@@ -325,8 +323,6 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
               longitude = 1,                     -- degrees
               fixType=3,                         -- valid fix provided
                      }
-  gps.set(gpsSettings) -- apply gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2) -- wait until terminal goes to moving state
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -347,6 +343,11 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   -- activating special output function
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(3)                 -- wait until settings are applied
+
+  avlHelperFunctions.putTerminalIntoStationaryState()
+
+  gps.set(gpsSettings) -- apply gps settings
+  framework.delay(movingDebounceTime+gpsReadInterval+2) -- wait until terminal goes to moving state
 
   -- asserting state of port 1 - low state is expected as terminal is not speeding yet
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
