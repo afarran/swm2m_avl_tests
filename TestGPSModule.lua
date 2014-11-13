@@ -575,25 +575,38 @@ end
 end
 
 
---- TC checks if MovingEnd message is not sent if speed is above stationarySpeedThld for time above threshold
-  -- *actions performed:
-  -- set movingDebounceTime to 1 second and stationarySpeedThld to 5 kmh
-  -- then set speed above stationarySpeedThld and wait for time longer than movingDebounceTime to get the moving state
-  -- then reduce speed to 6 kmh (above stationarySpeedThld) and wait longer than stationaryDebounceTime
-  -- check if terminal is still in the moving state and MovingEnd message has not been sent
-  -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
-  -- *expected results:
-  -- terminal not put in the stationary state, MovingEnd message not sent
-function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSent()
+
+--- TC checks if MovingEnd message is not sent when terminal is moving and speed is above stationarySpeedThld for time above stationaryDebounceTime .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS signal is good
+  --
+  -- Steps:
+  --
+  -- 1. Set stationaryDebounceTime (PIN 2), stationarySpeedThld (PIN 1) and movingDebounceTime (PIN 3)
+  -- 2. Simulate speed above stationarySpeedThld for period longer than movingDebounceTime
+  -- 3. Reduce simulated speed to value above stationarySpeedThld and wait longer than stationaryDebounceTime
+  -- 4. Receive messages sent by terminal and check if there is any MovingEnd (MIN 7) message
+  -- 5. Read avlStatesProperty and check if terminal is still moving
+  --
+  -- Results:
+  --
+  -- 1. Properties stationaryDebounceTime, stationarySpeedThld and movingDebounceTime correctly set
+  -- 2. Terminal enters moving state
+  -- 3. Speed reduced to level above stationarySpeedThld for period longer than stationaryDebounceTime
+  -- 4. There is no MovingEnd (MIN 7) message in received messages
+  -- 5. Terminal is still in moving state
+function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveStationaryDebounceTime_MovingEndMessageNotSent()
 
   local movingDebounceTime = 1       -- seconds
   local stationaryDebounceTime = 1   -- seconds
   local stationarySpeedThld = 5      -- kmh
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = stationarySpeedThld+10, -- 10 kmh above threshold
-                     }
+                      speed = stationarySpeedThld+10, -- 10 kmh above threshold
+                    }
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -612,7 +625,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSen
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state") -- moving state expected
 
-  -- when the terminal is in the moving state the speed is reduced to 6 kmh for long time (8 seconds)
+  -- when the terminal is in the moving state the speed is reduced to one kmh above stationarySpeedThld for time longer than stationaryDebounceTime
   gateway.setHighWaterMark()                                 -- to get the newest messages
   gpsSettings.speed = stationarySpeedThld+1                  -- one kmh above threshold
   gps.set(gpsSettings)                                       -- applying gps settings
@@ -625,7 +638,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingEndMessageNotSen
   assert_false(next(matchingMessages), "MovingEnd report not expected")   -- checking if any MovingEnd message has been caught
 
   -- checking the terminal state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the stationary state") -- terminal should be in moving state
 
 end
