@@ -586,6 +586,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
 
   -- propertyValues message expected in response to getProperties
   propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues))
+  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   local ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   assert_equal(ledControlUserSet,tonumber(ledControlProperty), "Value of ledControl property has not been correctly set")
@@ -621,6 +622,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
   propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues))
+  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if  ledControl property (PIN 6)  has been set to 1 - Terminal when entering LPM
@@ -661,6 +663,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
 	gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
   propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues))
+  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if ledControl property has been correctly reverted to value ledControlUserSet
@@ -684,7 +687,6 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
 
 
 end
-
 
 
 

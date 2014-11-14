@@ -208,6 +208,8 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
 
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -283,6 +285,8 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0Tim
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -375,6 +379,8 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
 
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -450,6 +456,8 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1Tim
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -542,6 +550,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
 
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -618,6 +627,8 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2Tim
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -709,6 +720,8 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
 
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -783,6 +796,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3Tim
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -874,6 +888,8 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
 
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
+
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -950,6 +966,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -1064,6 +1081,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 
   --ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",

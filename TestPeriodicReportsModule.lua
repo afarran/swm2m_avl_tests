@@ -1191,6 +1191,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- DataLogEntries message is expected (SIN 23, MIN 5)
   local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(23, 5))
+  assert_not_nil(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[1].Value, "Received LogEntries message is empty")
 
   -- check if values of the fields reported in LoggedPosition reports are correct (2 runs of the loop for two messages)
   for i = 1, 2, 1 do
@@ -1198,14 +1199,13 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
     assert_equal(gpsSettings[i].longitude*60000, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[2].Value), "Longitude value is not correct in report") -- multiplied by 60000 for conversion from miliminutes
     assert_equal(gpsSettings[i].speed, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[3].Value), "Speed value is not correct in report")
     assert_equal(gpsSettings[i].heading, tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[4].Value), "Heading value is not correct in report")
-    assert_equal(timeOfLogEntry[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[5].Value),10, "EventTime value is not correct in report")
+    assert_equal(timeOfLogEntry[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[5].Value),15, "EventTime value is not correct in report")
     assert_equal(avlStateVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[6].Value), "AvlStates value is not correct in report")
     assert_equal(digPortsVerification[i], tonumber(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[7].Value),"DigitalPorts value is not correct in report")
 
   end
 
 end
-
 
 --- TC checks if LoggedPosition message does not deffer sending periodic Position message
   -- *actions performed:
