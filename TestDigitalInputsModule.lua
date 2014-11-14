@@ -1368,7 +1368,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndService
 
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues) -- verification of the report fields
   -- checking if terminal correctly goes out from EngineIdling state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
 
   device.setIO(2, 0)                        -- port 2 to high level - that should trigger SM1=OFF
@@ -1948,7 +1948,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   framework.delay(6)                                      -- wait for the messages to be processed
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
-  -- flitering received messages to find IdlingEnd message
+  -- filtering received messages to find IdlingEnd message
   local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
   assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
 
@@ -2141,7 +2141,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   framework.delay(10)                                     -- wait for the messages to be processed
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
-  -- flitering received messages to find IdlingEnd message
+  -- filtering received messages to find IdlingEnd message
   local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
   assert_true(next(filteredMessages), "SeatbeltViolationEnd report not received")   -- checking if SeatbeltViolationEnd message has been caught
 
@@ -2158,7 +2158,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 
   avlHelperFunctions.reportVerification(seatbeltViolationEndMessage, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolation state")
 
 end
@@ -3237,14 +3237,15 @@ end
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
 
-  -- Point#2 -- 111,12 kilometers away from Point#1
+  -- Point#2 -- 111,12 kilometres away from Point#1
+  gpsSettings.heading = 90
   gpsSettings.latitude = 2
   gps.set(gpsSettings)                    -- applying gps settings
   framework.delay(3)
 
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
+  gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   -- ServiceMeter message is expected
@@ -3260,7 +3261,7 @@ end
 
   gateway.setHighWaterMark()              -- to get the newest messages
   -- setting external power source
-  device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
+  device.setPower(8,0)             -- external power not present (terminal unplugged to external power source)
   timeOfEventTC = os.time()        -- to get correct timestamp
   framework.delay(2)
 
@@ -3279,7 +3280,8 @@ end
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not false as expected")
 
-  -- Point#3 -- 111,12 kilometers away from Point#2
+  -- Point#3 -- 111,12 kilometres away from Point#2
+  gpsSettings.heading = 90
   gpsSettings.latitude = 3
   gps.set(gpsSettings)                    -- applying gps settings
   framework.delay(3)
@@ -3287,7 +3289,7 @@ end
   gateway.setHighWaterMark()              -- to get the newest messages
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
+  gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
   -- ServiceMeter message is expected
