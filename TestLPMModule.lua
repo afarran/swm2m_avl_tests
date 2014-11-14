@@ -299,7 +299,6 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffAndIgnitionOffStateTrueForPeriod
 
 end
 
-
 --- TC checks if terminal is put out of Low Power Mode if the trigger of LPM is set to IgnitionOff and IgnitionOn state becomes true .
   -- Initial Conditions:
   --
@@ -337,16 +336,17 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffTerminalInLpmAndIgnitionOnStateB
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
-                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
-                                                {avlConstants.pins.lpmTrigger, lpmTrigger},                          -- setting lpmTrigger
+                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                      -- time of lpmEntryDelay, in minutes
+                                                {avlConstants.pins.lpmTrigger, lpmTrigger},                            -- setting lpmTrigger
                                              }
                    )
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  framework.delay(2)
 
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
-  framework.delay(2)
+  framework.delay(4)
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
@@ -366,7 +366,7 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffTerminalInLpmAndIgnitionOnStateB
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
-  framework.delay(2)
+  framework.delay(4)
 
   -- checking if terminal correctly goes to IgnitionOn state
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -452,7 +452,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal unexpectedly in moving state while being in LPM")
 
   device.setIO(1, 1) -- IgnitionOn line becomes active, that should trigger IgnitionOn
-  framework.delay(2)
+  framework.delay(4)
 
   -- checking state of the terminal, Low Power Mode is not expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -472,7 +472,6 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
 
 
 end
-
 
 --- TC checks if some specific properties are changing values when terminal enters LPM and are correctly reverted when terminal leaves it .
   -- Initial Conditions:
@@ -1114,7 +1113,6 @@ end
 end
 
 
-
 --- TC checks if terminal is not put in Low Power Mode by IgnitionOff or external power source not present when LPM trigger is set to 0 (no trigger) .
   -- Initial Conditions:
   --
@@ -1161,9 +1159,10 @@ end
                    )
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  framework.delay(2)
 
   device.setIO(1, 1) -- that should trigger IgnitionOn
-  framework.delay(2)
+  framework.delay(3)
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   framework.delay(2)
@@ -1199,7 +1198,6 @@ end
 
 
 end
-
 
 
 --- TC checks if terminal is not put in Low Power Mode when terminal is unplugged from external power source for LPM trigger set to IgnitionOff .
