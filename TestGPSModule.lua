@@ -1784,7 +1784,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
   -- terminal moving
-  framework.delay(maxDrivingTime*60-(maxDrivingTime*60)/2)   -- wait shorter than maxDrivingTime (multiplied by 60 to get seconds from minutes)
+  framework.delay(maxDrivingTime*60-100)   -- wait shorter than maxDrivingTime (multiplied by 60 to get seconds from minutes)
 
   -- gps settings table to be sent to simulator to make terminal stationary
   local gpsSettings={
@@ -1800,7 +1800,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the stationary state")
   -- terminal stationary (break in driving)
-  framework.delay(minRestTime*60-(minRestTime*60)/2)           -- wait shorter than 0,5* minRestTime
+  framework.delay(minRestTime*60-200)           -- wait shorter than minRestTime
 
   -- terminal moving again
   local gpsSettings={
@@ -1818,7 +1818,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
   -- terminal moving again
   gateway.setHighWaterMark()                  -- to get the newest messages
   -- waiting shorter than maxDrivingTime
-  framework.delay(maxDrivingTime*60-(maxDrivingTime*60)/2 + 10 + longDrivingCheckInterval)      -- wait 0,5*maxDrivingTime + 10 seconds + longDrivingCheckInterval
+  framework.delay(maxDrivingTime*60 - 70 + longDrivingCheckInterval)      -- wait for 110 seconds + longDrivingCheckInterval
 
   eventTimeTc = os.time() - 30                 -- to get the correct value in the report
 
@@ -1999,28 +1999,17 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
   local receivedMessages = gateway.getReturnMessages()   -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for LongDriving message
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.longDriving))
-  assert_true(next(matchingMessages), "LongDriving report not received")   -- checking if LongDriving message has been caught
-
-  print(framework.dump(matchingMessages))
-
-  local expectedValues={
-                    gps = gpsSettings,
-                    messageName = "LongDriving",
-                    currentTimeLongDriving = eventTimeTc,
-                    totalDrivingTime = maxDrivingTime            -- in minutes, totalDrivingTime is expected to be maxDrivingTime
-                        }
-  print(framework.dump(expectedValues))
-  avlHelperFunctions.reportVerification(matchingMessages[1],expectedValues)  -- verification of the report fields
+  assert_true(next(matchingMessages), "First LongDriving report not received")   -- checking if LongDriving message has been caught
 
   gateway.setHighWaterMark()                                         -- to get the newest messages
   framework.delay(maxDrivingTime*60+longDrivingCheckInterval+8)      -- to generate second LongDriving event, (maxDrivingTime multiplied by 60 to get seconds from minutes)
-  local eventTimeTc = os.time()                                     -- to get the correct value in the report
+  local eventTimeTc = os.time()                                      -- to get the correct value in the report
 
   -- LongDriving Message is expected
   local receivedMessages = gateway.getReturnMessages()   -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for LongDriving message
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.longDriving))
-  assert_true(next(matchingMessages), "LongDriving report not received")   -- checking if LongDriving message has been caught
+  assert_true(next(matchingMessages), "Second LongDriving report not received")   -- checking if LongDriving message has been caught
 
   local expectedValues={
                     gps = gpsSettings,
@@ -2028,7 +2017,7 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
                     currentTimeLongDriving = eventTimeTc,
                     totalDrivingTime = maxDrivingTime                        -- in minutes, totalDrivingTime is expected to be maxDrivingTime again (timer reseted)
                         }
-  print(framework.dump(expectedValues))
+
   avlHelperFunctions.reportVerification(matchingMessages[1],expectedValues)  -- verification of the report fields
 
   maxDrivingTime = 0                                       -- in minutes, 0 not to get more LongDriving reports
@@ -2041,7 +2030,6 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
 
 
 end
-
 
 --- TC checks if LongDriving message is sent when terminal is moving longer than maxDrivingTime and breakes together are longer than
   -- minRestTime but are not continues
