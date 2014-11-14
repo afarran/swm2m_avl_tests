@@ -137,7 +137,7 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
 
   -- this is only for LongDriving reports
   if(expectedValues.currentTimeLongDriving) then
-    assert_equal(expectedValues.currentTimeLongDriving,tonumber(colmsg.Payload.EventTime),80, "EventTime in LongDriving report is not correct ")    -- 80 seconds of tolerance
+    assert_equal(expectedValues.currentTimeLongDriving,tonumber(colmsg.Payload.EventTime), 100, "EventTime in LongDriving report is not correct ")    -- 100 seconds of tolerance
   end
 
 
