@@ -241,6 +241,8 @@ end
 
   --IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  assert_not_nil(message, "IgnitionOn message not received")
+
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -320,6 +322,7 @@ end
 
   --IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -406,6 +409,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
 
   --IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -489,6 +493,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
 
   --IgnitionOff message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  assert_not_nil(message, "IgnitionOff message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -579,6 +584,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
 
   --IgnitionOff message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  assert_not_nil(message, "IgnitionOff message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
@@ -1519,6 +1525,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 
   -- SeatbeltViolationStart message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  assert_not_nil(message, "SeatbeltViolationStart message not received")
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1602,6 +1609,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
 
   -- SeatbeltViolationStart message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  assert_not_nil(message, "SeatbeltViolationStart message not received")
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1690,6 +1698,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 
   -- SeatbeltViolationStart message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  assert_not_nil(message, "SeatbeltViolationStart message not received")
 
 
   local expectedValues={
@@ -1860,6 +1869,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
   -- SeatbeltViolationEnd message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
+  assert_not_nil(message, "SeatbeltViolationEnd message not received")
 
   local expectedValues={
                   gps = gpsSettings,
@@ -2753,6 +2763,7 @@ end
 
   -- PowerMain message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain))
+  assert_not_nil(message, "PowerMain message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2832,6 +2843,7 @@ end
 
   -- PowerMain message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerBackup))
+  assert_not_nil(message, "PowerBackup message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2913,6 +2925,7 @@ end
 
   -- IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -2993,6 +3006,7 @@ end
 
   -- IgnitionOff message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  assert_not_nil(message, "IgnitionOff message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -3087,6 +3101,7 @@ end
 
   -- seatbeltViolationStart message expected
   local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  assert_not_nil(message, "SeatbeltViolationStart message not received")
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationStart",
@@ -3117,6 +3132,7 @@ end
 
   -- seatbeltViolationEnd message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
+  assert_not_nil(message, "SeatbeltViolationEnd message not received")
   expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationEnd",
@@ -3224,6 +3240,7 @@ end
 
   -- IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -3250,6 +3267,7 @@ end
 
   -- ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
   expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
@@ -3267,6 +3285,7 @@ end
 
   -- IgnitionOff message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  assert_not_nil(message, "IgnitionOff message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
@@ -3294,6 +3313,7 @@ end
 
   -- ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
