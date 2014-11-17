@@ -135,14 +135,12 @@ end
   end
   framework.delay(3)
 
-
-  -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
+  -- reading avlStates property
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
-
- -- checking the the Low power mode - terminal is expected not be in the low power mode
- avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
- assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
+  -- checking the the Low power mode - terminal is expected not be in the low power mode
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
   -- disabling line number 1
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -990,9 +988,7 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
   -- checking if terminal correctly goes to IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
-
   -- checking state of the terminal, Low Power Mode is not expected (LPM trigger is set to Built-in battery)
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal in the Low Power Mode state")
 
   -----------------------------------------------------------------------------------
