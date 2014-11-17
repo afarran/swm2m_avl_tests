@@ -479,6 +479,9 @@ function test_DigitalOutput_WhenServiceMeter1IsON_DigitalOutputPortAssociatedWit
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
 
+  device.setIO(3, 0)     -- port 3 to low level - that should trigger SM1 = OFF
+  framework.delay(3)     -- wait until terminal changes state of port 3
+
   -- asserting state of port 1 - low state is expected as SM1 is not ON yet
   assert_equal(0, device.getIO(1), "Port1 associated SM1 is not in low state as expected")
 
@@ -529,6 +532,11 @@ function test_DigitalOutput_WhenServiceMeter2IsON_DigitalOutputPortAssociatedWit
   avlHelperFunctions.setDigStatesDefBitmap({"SM2Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
+
+
+  device.setIO(3, 0)     -- port 3 to low level - that should trigger SM2 = OFF
+  framework.delay(3)     -- wait until terminal changes state of port 3
+
 
   -- asserting state of port 1 - low state is expected as SM2 is not ON yet
   assert_equal(0, device.getIO(1), "Port1 associated SM2 is not in low state as expected")
@@ -583,6 +591,9 @@ function test_DigitalOutput_WhenServiceMeter3IsON_DigitalOutputPortAssociatedWit
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
 
+  device.setIO(3, 0)     -- port 3 to low level - that should trigger SM3 = OFF
+  framework.delay(3)     -- wait until terminal changes state of port 3
+
   -- asserting state of port 1 - low state is expected as SM3 is not ON yet
   assert_equal(0, device.getIO(1), "Port1 associated with SM3 is not in low state as expected")
 
@@ -635,6 +646,9 @@ function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInH
   avlHelperFunctions.setDigStatesDefBitmap({"SM4Active"})
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
+
+  device.setIO(3, 0)     -- port 3 to low level - that should trigger SM4 = OFF
+  framework.delay(3)     -- wait until terminal changes state of port 3
 
   -- asserting state of port 1 - low state is expected as SM4 is not ON yet
   assert_equal(0, device.getIO(1), "Port1 associated with SM4 is not in low state as expected")
