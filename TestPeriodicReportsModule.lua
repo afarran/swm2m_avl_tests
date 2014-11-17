@@ -1191,7 +1191,8 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- DataLogEntries message is expected (SIN 23, MIN 5)
   local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(23, 5))
-  assert_not_nil(logEntriesMessage.Payload.Fields[1].Elements[i].Fields[4].Message.Fields[1].Value, "Received LogEntries message is empty")
+  
+  assert_not_nil(next(logEntriesMessage.Payload.Fields[1].Elements), "Received LogEntries message is empty")
 
   -- check if values of the fields reported in LoggedPosition reports are correct (2 runs of the loop for two messages)
   for i = 1, 2, 1 do
@@ -1206,6 +1207,8 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   end
 
 end
+
+
 
 --- TC checks if LoggedPosition message does not deffer sending periodic Position message
   -- *actions performed:
