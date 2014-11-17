@@ -1048,6 +1048,12 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"SM1Active","SM2Active","SM3Active","SM4Active",})
 
+
+  device.setIO(1, 0)  -- port 1 to low level - that should trigger SM1 = OFF
+  device.setIO(2, 0)  -- port 2 to low level - that should trigger SM2 = OFF
+  device.setIO(3, 0)  -- port 3 to low level - that should trigger SM3 = OFF
+  device.setIO(4, 0)  -- port 4 to low level - that should trigger SM4 = OFF
+
   gps.set(gpsSettings) -- applying gps settings
 
   framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
@@ -1058,9 +1064,9 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 	gateway.submitForwardMessage(message)
 
   device.setIO(1, 1)  -- port 1 to high level - that should trigger SM1 = ON
-  device.setIO(2, 1)  -- port 1 to high level - that should trigger SM2 = ON
-  device.setIO(3, 1)  -- port 1 to high level - that should trigger SM3 = ON
-  device.setIO(4, 1)  -- port 1 to high level - that should trigger SM4 = ON
+  device.setIO(2, 1)  -- port 2 to high level - that should trigger SM2 = ON
+  device.setIO(3, 1)  -- port 3 to high level - that should trigger SM3 = ON
+  device.setIO(4, 1)  -- port 4 to high level - that should trigger SM4 = ON
   framework.delay(5)  -- wait until ServiceMeters are active
 
 
