@@ -127,7 +127,6 @@ end
                                                 {avlConstants.pins.funcDigInp[2], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[3], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[4], 0},  -- disabled
-                                                {avlConstants.pins.funcDigInp[13], 0},  -- disabled
                                              }
                     )
   -- activating special input function
@@ -848,11 +847,12 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
 
   -- IgnitionOff and IdlingEnd messages expected
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+  framework.delay(2)
 
-  -- flitering received messages to find IdlingEnd message
+  -- filtering received messages to find IdlingEnd message
   local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingEnd))
   local idlingEndMessage = filteredMessages[1]              -- that is performed because of the structure of the filteredMessages
-  assert_true((next(idlingEndMessage)), "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
+  assert_not_nil(idlingEndMessage, "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
 
   if((next(idlingEndMessage))) then              -- if IdlingEnd message has been received it is verified
   gpsSettings.heading = 361                       -- 361 is reported for stationary state
@@ -2749,22 +2749,21 @@ end
                      }
 
   gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(3)
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- setting external power source
-  device.setPower(8,0)                    -- external power not present (terminal unplugged from external power source)
   framework.delay(2)
 
+  device.setPower(8,0)                   -- external power not present (terminal unplugged from external power source)
+  framework.delay(3)
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+  -- setting external power source
   device.setPower(9,inputVoltageTC*100)  -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
   framework.delay(2)
-
-  -- setting external power source
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   timeOfEventTC = os.time()
   framework.delay(2)               -- wait until setting is applied
 
   -- PowerMain message expected
+
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain))
   assert_not_nil(message, "PowerMain message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
@@ -2862,7 +2861,6 @@ end
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "onMainPower state is incorrectly true")
 
 end
-
 
 
 --- TC checks if IgnitionOn message is sent when virtual line number 13 changes state to 1 (external power source becomes present) .
