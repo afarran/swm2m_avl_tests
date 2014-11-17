@@ -1421,17 +1421,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
                    )
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},      -- port 1 as digital input
-                                                {lsfConstants.pins.portConfig[2], 3},      -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3},  -- detection for both rising and falling edge
-                                                {lsfConstants.pins.portEdgeDetect[2], 3},  -- detection for both rising and falling edge
-
-                                        }
-                   )
-
-  -- setting AVL properties
+   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
                                                 {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SM1"]},   -- line number 2 set for ServiceMeter1 function
@@ -1441,6 +1431,11 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SM1Active"})
+
+  device.setIO(2, 0)                        -- that triggers SM = Off (Service Meter line inactive)
+  device.setIO(1, 0)                        -- port 1 to low level - that should trigger IgnitionOff
+
+  framework.delay(2)
 
   gateway.setHighWaterMark()                -- to get the newest messages
 
