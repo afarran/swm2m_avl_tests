@@ -633,7 +633,9 @@ end
   -- 8. EngineIdling state is true
 function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTime_IdlingStartMessageSent()
 
-  local maxIdlingTime = 10  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local maxIdlingTime = 10         -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local stationaryDebounceTime = 1 -- seconds
+
 
   -- Point#1 gps settings
   local gpsSettings={
@@ -642,8 +644,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
               longitude = 1,                  -- degrees
               fixType = 3,                    -- valid fix provided, good quality of gps signal
                      }
-  gps.set(gpsSettings)                        -- applying gps settings
-  framework.delay(gpsReadInterval+2)
+
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -654,18 +655,22 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
-                                                {avlConstants.pins.maxIdlingTime, maxIdlingTime}                                   -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.maxIdlingTime, maxIdlingTime},                                           -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.stationaryDebounceTime,stationaryDebounceTime}
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
+  gps.set(gpsSettings)                        -- applying gps settings
+  framework.delay(gpsReadInterval+2)
+
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
   device.setIO(randomPortNumber, 1)    -- port set to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime + 8)   -- wait longer than maxIdlingTime to trigger the IdlingStart event
+  framework.delay(maxIdlingTime + 10)   -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+  local receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
 
   -- IgnitionOn state expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -691,6 +696,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
 
 end
+
 
 
 
@@ -1012,15 +1018,16 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
 
   -- now moving start should be simulated, gps settings are changed
   local gpsSettings={
-              speed = 10,                     -- above movingDebounceTime
+              speed = stationarySpeedThld+10, -- above stationarySpeedThld
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
               fixType=3,                      -- valid fix
               heading = 90                    -- degrees
                      }
 
-  gps.set(gpsSettings)                  -- gps settings are applied
-  framework.delay(movingDebounceTime+4) -- wait until MovingStart and IdlingEnd messages are genarated
+  gateway.setHighWaterMark()         -- to get the newest messages from moment when terminal start movement
+  gps.set(gpsSettings)
+  framework.delay(movingDebounceTime+5) -- wait until MovingStart and IdlingEnd messages are genarated
 
   -- MovingStart and IdlingEnd messages expected
   receivedMessages = gateway.getReturnMessages()            -- receiving all the messages
@@ -1028,8 +1035,9 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
   -- flitering received messages to find IdlingEnd message
   local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingEnd))
   local idlingEndMessage = filteredMessages[1]                            -- that is performed because of the structure of the filteredMessages
+
   -- TODO: this need to be done in different way
-  assert_true((next(idlingEndMessage)), "IdlingEnd message not received")  -- checking if IdlingEnd message was received, if not that is not correct
+  assert_not_nil(idlingEndMessage, "IdlingEnd message not received")    -- checking if IdlingEnd message was received, if not that is not correct
 
   if((next(idlingEndMessage))) then                    -- if IdlingEnd message has been received it is verified
   local expectedValues={                               -- expected values of the fields in the report
