@@ -414,6 +414,7 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
 end
 
 
+
 --- TC checks if MovingStart message is not sent when speed is above stationarySpeedThld for time below movingDebounceTime .
   -- Initial Conditions:
   --
@@ -1755,6 +1756,8 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
 
 
 end
+
+
 --- TC checks if LongDriving message is sent when terminal is moving longer than maxDrivingTime and breakes together are shorter than
   -- minRestTime
   -- *actions performed:
@@ -1824,6 +1827,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
               latitude = 1,                   -- degrees
               longitude = 1                   -- degrees
                      }
+
   gps.set(gpsSettings)                                    -- gps settings applied
   framework.delay(movingDebounceTime+gpsReadInterval+1)   -- one second is added to make sure the gps is read and processed by agent
   --checking if terminal is in the moving state
@@ -2191,7 +2195,9 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   device.setPower(3, battVoltage) -- setting battery voltage
   device.setPower(9, extVoltage)  -- setting external power voltage
 
-
+  -- setting external power source
+  device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
+  framework.delay(2)
 
   gateway.setHighWaterMark() -- to get the newest messages
 

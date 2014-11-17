@@ -2818,7 +2818,7 @@ end
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
-  local inputVoltageTC = 240      -- tenths of volts, external power voltage value
+  local inputVoltageTC = 180      -- tenths of volts, external power voltage value
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -3085,6 +3085,7 @@ end
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
               fixType = 3,                    -- valid fix provided
+              heading = 90,
                      }
 
   gps.set(gpsSettings)                        -- applying gps settings
@@ -3219,6 +3220,7 @@ end
               latitude = 1,                   -- degrees
               longitude = 1,                  -- degrees
               fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90,
                      }
 
   gps.set(gpsSettings)                    -- applying gps settings
@@ -3603,7 +3605,6 @@ end
 
 
 end
-
 
 
 
