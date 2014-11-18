@@ -2050,6 +2050,8 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
 
 end
 
+
+
 --- TC checks if LongDriving message is sent when terminal is moving longer than maxDrivingTime and breakes together are longer than
   -- minRestTime but are not continues
   -- *actions performed:
@@ -2064,11 +2066,13 @@ end
   -- LongDriving message sent after exceeeding maxDrivingTime limit with discontinous breakes longer than minRestTime, report fields have correct values
 function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDiscontinuousBreakesLongerThanMinRestTime_LongDrivingMessageSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationaryDebounceTime = 1   -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local maxDrivingTime = 1           -- minutes
-  local minRestTime = 1              -- minutes
+  local movingDebounceTime = 1        -- seconds
+  local stationaryDebounceTime = 1    -- seconds
+  local stationarySpeedThld = 5       -- kmh
+  local maxDrivingTime = 3            -- minutes
+  local minRestTime = 2               -- minutes
+  local longDrivingCheckInterval = 60 -- seconds
+
 
 
   --applying properties of the service
@@ -2096,7 +2100,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDisconti
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
   -- terminal moving - LongDriving counter starts
-  framework.delay(maxDrivingTime*60-30)       -- wait shorter than maxDrivingTime (multiplied by 60 to get seconds from minutes)
+  framework.delay(maxDrivingTime*60+longDrivingCheckInterval-120)  -- wait shorter than maxDrivingTime (multiplied by 60 to get seconds from minutes)
 
   -- terminal stops
   gps.set({speed=0})                                          -- gps settings applied
@@ -2105,7 +2109,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDisconti
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the stationary state")
   -- terminal stationary (break in driving) for short time
-  framework.delay(minRestTime*60-50)                          -- wait shorter than minRestTime
+  framework.delay(minRestTime*60+longDrivingCheckInterval-100)  -- wait shorter than minRestTime
 
   -- terminal drives
   gps.set({speed=stationarySpeedThld+1})
@@ -2115,7 +2119,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDisconti
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
   -- waiting shorter than maxDrivingTime
-  framework.delay(maxDrivingTime*60-40)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
+  framework.delay(maxDrivingTime*60+longDrivingCheckInterval-100)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
 
   -- terminal stops
   gps.set({speed=0})
@@ -2124,20 +2128,20 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithDisconti
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the stationary state")
   -- terminal stationary (break in driving)
-  framework.delay(minRestTime*60-40)                          -- wait shorter than minRestTime
+  framework.delay(minRestTime*60+longDrivingCheckInterval-100)                          -- wait shorter than minRestTime
 
   -- terminal moving again
-  eventTimeTc = os.time()                 -- to get the correct value in the report  -- to get the newest messages
-    gps.set({speed=stationarySpeedThld+1})
+  gps.set({speed=stationarySpeedThld+1})
   framework.delay(movingDebounceTime+gpsReadInterval+1)   -- one second is added to make sure the gps is read and processed by agent
   --checking if terminal is in the moving state
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
+  eventTimeTc = os.time()                 -- to get the correct value in the report
   -- terminal moving again
   gateway.setHighWaterMark()
   -- waiting shorter than maxDrivingTime
-  framework.delay(maxDrivingTime*60-5)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
+  framework.delay(maxDrivingTime*60+longDrivingCheckInterval-30)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
 
   -- LongDriving Message is expected
   local receivedMessages = gateway.getReturnMessages()   -- receiving all from mobile messages sent after setHighWaterMark()
