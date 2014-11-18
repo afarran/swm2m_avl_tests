@@ -175,11 +175,10 @@ function teardown()
 
 end
 
---[[
-    START OF TEST CASES
 
-    Each test case is a global function whose name begins with "test"
---]]
+--    START OF TEST CASES
+--   Each test case is a global function whose name begins with "test"
+
 
 
 
@@ -1804,6 +1803,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
 end
 
 
+
 --- TC checks if SeatbeltViolationEnd message is correctly sent when terminal is in SeatbeltViolation state
   -- and SeatbeltOff line becomes inactive (driver fastened belt)
   -- *actions performed:
@@ -1870,7 +1870,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
   gateway.setHighWaterMark()           -- to get the newest messages
   device.setIO(2, 0)                   -- port 2 to low level - that triggers SeatbeltOff false, belt fastened
-   framework.delay(3)                  -- wait for the message to be processed
+  framework.delay(5)                   -- wait for the message to be processed
 
   -- SeatbeltViolationEnd message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
@@ -1884,7 +1884,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal incorrectly in the seatbeltViolationStart state")
 
 
@@ -3069,29 +3069,36 @@ end
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
   local seatbeltDebounceTime = 10       -- seconds
 
+  local movingDebounceTime = 1   -- seconds
+  local stationarySpeedThld = 10 -- kmh
+
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.SeatbeltOff}, -- digital input line 13 associated with SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, seatbeltDebounceTime},          -- setting seatbeltDebounceTime
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- moving related
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- moving related
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
-  avlHelperFunctions.putTerminalIntoMovingState()
-
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   -- Point#1 GPS Settings
   local gpsSettings={
               speed = 50,                     -- terminal moving
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
+              latitude = 0,                   -- degrees
+              longitude = 0,                  -- degrees
               fixType = 3,                    -- valid fix provided
               heading = 90,
                      }
 
-  gps.set(gpsSettings)                        -- applying gps settings
-  framework.delay(3)
+  gps.set(gpsSettings)                                  -- applying gps settings
+  framework.delay(gpsReadInterval+movingDebounceTime+3) -- wait until terminal goes to moving state
+
+  -- verification of the state of terminal - Moving state true expected
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal is not moving as expected")
 
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
@@ -3101,7 +3108,7 @@ end
   -- setting external power source
   device.setPower(8,1)                     -- external power present (terminal plugged to external power source - line 13 changes state to high)
   local timeOfEventTC = os.time()         -- to get exact timestamp
-  framework.delay(seatbeltDebounceTime+2)  -- wait longer than seatbeltDebounceTime to get seatbeltViolationStart message
+  framework.delay(seatbeltDebounceTime+3)  -- wait longer than seatbeltDebounceTime to get seatbeltViolationStart message
 
   -- seatbeltViolationStart message expected
   local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
@@ -3111,20 +3118,21 @@ end
                   messageName = "SeatbeltViolationStart",
                   currentTime = timeOfEventTC,
                         }
+
   -- verification of the report fields
   avlHelperFunctions.reportVerification(message, expectedValues)
 
   -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is not true")
 
   -- Point#2 GPS Settings
   gpsSettings={
-              speed = 51,                     -- terminal moving
-              latitude = 2,                   -- degrees
-              longitude = 2,                  -- degrees
-              fixType = 3,                    -- valid fix provided
-              heading = 90,
+                speed = 51,                     -- terminal moving
+                latitude = 2,                   -- degrees
+                longitude = 2,                  -- degrees
+                fixType = 3,                    -- valid fix provided
+                heading = 90,
               }
 
   gps.set(gpsSettings)                        -- applying gps settings
