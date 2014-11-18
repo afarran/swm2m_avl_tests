@@ -119,6 +119,7 @@ end
                                                 {avlConstants.pins.funcDigInp[2], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[3], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[4], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.GeneralPurpose}, -- digital input line 13 set for GeneralPurpose
                                              }
                     )
   -- activating special input function

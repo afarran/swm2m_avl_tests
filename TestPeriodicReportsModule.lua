@@ -179,7 +179,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
 
-                         --  to get fix older than 5 seconds
+
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
@@ -209,7 +209,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
                         }
   avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues ) -- verification of the report fields
 
-  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received stationaryIntervalSat reports is incorrect")
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 4, "The number of received stationaryIntervalSat reports is incorrect")
 
   -- back to stationaryIntervalSat = 0 to get no more reports
   local stationaryIntervalSat = 0       -- seconds
@@ -1191,7 +1191,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- DataLogEntries message is expected (SIN 23, MIN 5)
   local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(23, 5))
-  
+
   assert_not_nil(next(logEntriesMessage.Payload.Fields[1].Elements), "Received LogEntries message is empty")
 
   -- check if values of the fields reported in LoggedPosition reports are correct (2 runs of the loop for two messages)

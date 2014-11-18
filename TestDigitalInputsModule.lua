@@ -127,6 +127,7 @@ end
                                                 {avlConstants.pins.funcDigInp[2], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[3], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[4], 0},  -- disabled
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.GeneralPurpose}, -- digital input line 13 associated with IgnitionOn and SM0 functions
                                              }
                     )
   -- activating special input function
@@ -179,6 +180,7 @@ end
 
     Each test case is a global function whose name begins with "test"
 --]]
+
 
 
 
@@ -3121,7 +3123,9 @@ end
               speed = 51,                     -- terminal moving
               latitude = 2,                   -- degrees
               longitude = 2,                  -- degrees
-                     }
+              fixType = 3,                    -- valid fix provided
+              heading = 90,
+              }
 
   gps.set(gpsSettings)                        -- applying gps settings
   framework.delay(3)
@@ -3268,6 +3272,8 @@ end
   gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
+
   -- ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   assert_not_nil(message, "ServiceMeter message not received")
@@ -3313,6 +3319,8 @@ end
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
   gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
+
+  gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   -- ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
