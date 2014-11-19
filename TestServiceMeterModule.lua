@@ -85,6 +85,8 @@ function setup()
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+
   framework.delay(2)                 -- wait until settings are applied
   device.setIO(1, 0)                 -- that should trigger IgnitionOff
   framework.delay(2)                 -- wait until settings are applied
@@ -192,38 +194,44 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
   framework.delay(5)  -- wait until IgnitionOn message
 
   -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for i = 1, numberOfSteps, 1 do
+  for counter = 1, numberOfSteps, 1 do
 
-  -- terminal moving to another point distanceOfStep away from the initial position
-  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-  gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(2)                 -- wait until settings are applied
+    -- terminal moving to another point distanceOfStep away from the initial position
+    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+    gps.set(gpsSettings)               -- applying gps settings
+    framework.delay(4)                 -- wait until settings are applied
 
-  gateway.setHighWaterMark()         -- to get the newest messages
+    gateway.setHighWaterMark()         -- to get the newest messages
 
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message is received
+    -- sending getServiceMeter message
+    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+    gateway.submitForwardMessage(getServiceMeterMessage)
+    framework.delay(4)  -- wait until message is received
 
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
-  assert_not_nil(message, "ServiceMeter message not received")
+    --ServiceMeter message is expected
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+    assert_not_nil(message, "ServiceMeter message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM0Time = 0,                             -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
-                  SM0Distance = (distanceOfStep*111.12)*i  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                        }
+    local expectedValues={
+                            gps = gpsSettings,
+                            messageName = "ServiceMeter",
+                            currentTime = os.time(),
+                            SM0Time = 0,                                   -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
+                            SM0Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                          }
 
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 
  end
 
+
+  device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff and deactivate SM0
+  framework.delay(5)  -- wait until IgnitionOn message
+
+
 end
+
 
 
 --- TC checks if SetServiceMeter message correctly sets SM0Time and SM0Distance
@@ -363,33 +371,33 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
   framework.delay(5)  -- wait until IgnitionOn message
 
   -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for i = 1, numberOfSteps, 1 do
+  for counter = 1, numberOfSteps, 1 do
 
-  -- terminal moving to another point distanceOfStep away from the initial position
-  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-  gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(2)                 -- wait until settings are applied
+    -- terminal moving to another point distanceOfStep away from the initial position
+    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+    gps.set(gpsSettings)               -- applying gps settings
+    framework.delay(4)                 -- wait until settings are applied
 
-  gateway.setHighWaterMark()         -- to get the newest messages
+    gateway.setHighWaterMark()         -- to get the newest messages
 
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message is received
+    -- sending getServiceMeter message
+    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+    gateway.submitForwardMessage(getServiceMeterMessage)
+    framework.delay(4)  -- wait until message is received
 
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
-  assert_not_nil(message, "ServiceMeter message not received")
+    --ServiceMeter message is expected
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+    assert_not_nil(message, "ServiceMeter message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM1Time = 0,                             -- zero hours of SM1 is expected, value has been set to 0 a moment ago
-                  SM1Distance = (distanceOfStep*111.12)*i  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                        }
+    local expectedValues={
+                    gps = gpsSettings,
+                    messageName = "ServiceMeter",
+                    currentTime = os.time(),
+                    SM1Time = 0,                             -- zero hours of SM1 is expected, value has been set to 0 a moment ago
+                    SM1Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                          }
 
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 
  end
@@ -534,32 +542,32 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
   framework.delay(5)  -- wait until IgnitionOn message
 
   -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for i = 1, numberOfSteps, 1 do
+  for counter = 1, numberOfSteps, 1 do
 
-  -- terminal moving to another point distanceOfStep away from the initial position
-  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-  gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(2)                 -- wait until settings are applied
+    -- terminal moving to another point distanceOfStep away from the initial position
+    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+    gps.set(gpsSettings)               -- applying gps settings
+    framework.delay(2)                 -- wait until settings are applied
 
-  gateway.setHighWaterMark()         -- to get the newest messages
+    gateway.setHighWaterMark()         -- to get the newest messages
 
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message is received
+    -- sending getServiceMeter message
+    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+    gateway.submitForwardMessage(getServiceMeterMessage)
+    framework.delay(3)  -- wait until message is received
 
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM2Time = 0,                             -- zero hours of SM2 is expected, value has been set to 0 a moment ago
-                  SM2Distance = (distanceOfStep*111.12)*i  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                        }
+    --ServiceMeter message is expected
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+    assert_not_nil(message, "ServiceMeter message not received")
+    local expectedValues={
+                    gps = gpsSettings,
+                    messageName = "ServiceMeter",
+                    currentTime = os.time(),
+                    SM2Time = 0,                                 -- zero hours of SM2 is expected, value has been set to 0 a moment ago
+                    SM2Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                          }
 
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 
  end
@@ -704,7 +712,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
   framework.delay(5)  -- wait until IgnitionOn message
 
   -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for i = 1, numberOfSteps, 1 do
+  for counter = 1, numberOfSteps, 1 do
 
   -- terminal moving to another point distanceOfStep away from the initial position
   gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
@@ -726,8 +734,8 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
                   gps = gpsSettings,
                   messageName = "ServiceMeter",
                   currentTime = os.time(),
-                  SM3Time = 0,                             -- zero hours of SM3 is expected, value has been set to 0 a moment ago
-                  SM3Distance = (distanceOfStep*111.12)*i  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                  SM3Time = 0,                                   -- zero hours of SM3 is expected, value has been set to 0 a moment ago
+                  SM3Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
@@ -874,31 +882,31 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
   -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
   for counter = 1, numberOfSteps, 1 do
 
-  -- terminal moving to another point distanceOfStep away from the initial position
-  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-  gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(2)                 -- wait until settings are applied
+    -- terminal moving to another point distanceOfStep away from the initial position
+    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+    gps.set(gpsSettings)               -- applying gps settings
+    framework.delay(2)                 -- wait until settings are applied
 
-  gateway.setHighWaterMark()         -- to get the newest messages
+    gateway.setHighWaterMark()         -- to get the newest messages
 
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message in response is received
+    -- sending getServiceMeter message
+    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+    gateway.submitForwardMessage(getServiceMeterMessage)
+    framework.delay(3)  -- wait until message in response is received
 
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
-  assert_not_nil(message, "ServiceMeter message not received")
+    --ServiceMeter message is expected
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+    assert_not_nil(message, "ServiceMeter message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                --  SM4Time = 0,                                   -- zero hours of SM4 is expected, value has been set to 0 a moment ago
-                 -- SM4Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                        }
+    local expectedValues={
+                    gps = gpsSettings,
+                    messageName = "ServiceMeter",
+                    currentTime = os.time(),
+                  --  SM4Time = 0,                                   -- zero hours of SM4 is expected, value has been set to 0 a moment ago
+                   -- SM4Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                          }
 
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 
  end
@@ -1073,46 +1081,46 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
   -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
   for counter = 1, numberOfSteps, 1 do
 
-  -- terminal moving to another point distanceOfStep away from the initial position
-  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-  gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(2)                 -- wait until settings are applied
+    -- terminal moving to another point distanceOfStep away from the initial position
+    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+    gps.set(gpsSettings)               -- applying gps settings
+    framework.delay(2)                 -- wait until settings are applied
 
-  gateway.setHighWaterMark()         -- to get the newest messages
+    gateway.setHighWaterMark()         -- to get the newest messages
 
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message is received
+    -- sending getServiceMeter message
+    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+    gateway.submitForwardMessage(getServiceMeterMessage)
+    framework.delay(3)  -- wait until message is received
 
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM1Time = SM1TimeInitial,                                          -- zero hours of increase SM1 is expected
-                  SM1Distance = SM1DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                  SM2Time = SM2TimeInitial,                                      -- zero hours of increase SM2 is expected
-                  SM2Distance = SM2DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                  SM3Time = SM3TimeInitial,                                      -- zero hours of increase SM3 is expected
-                  SM3Distance = SM3DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                  SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
-                  SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                        }
-  if(hardwareVariant==3) then
-    expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
-    expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
-  end
+    --ServiceMeter message is expected
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+    assert_not_nil(message, "ServiceMeter message not received")
+    local expectedValues={
+                    gps = gpsSettings,
+                    messageName = "ServiceMeter",
+                    currentTime = os.time(),
+                    SM1Time = SM1TimeInitial,                                          -- zero hours of increase SM1 is expected
+                    SM1Distance = SM1DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    SM2Time = SM2TimeInitial,                                      -- zero hours of increase SM2 is expected
+                    SM2Distance = SM2DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    SM3Time = SM3TimeInitial,                                      -- zero hours of increase SM3 is expected
+                    SM3Distance = SM3DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
+                    SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                          }
+    if(hardwareVariant==3) then
+      expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
+      expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
+    end
 
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 
  end
 
 end
 
-
+--]]
 
 

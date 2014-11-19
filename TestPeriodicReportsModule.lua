@@ -41,7 +41,7 @@ function suite_teardown()
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
 	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
 	gateway.submitForwardMessage(message)
-  framework.delay(3)
+  framework.delay(30)
 
 end
 

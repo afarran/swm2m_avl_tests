@@ -71,7 +71,7 @@ function suite_teardown()
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
 	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
 	gateway.submitForwardMessage(message)
-  framework.delay(3)
+  framework.delay(30)
 
 end
 
@@ -887,6 +887,7 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInL
                                                 {avlConstants.pins.lpmTrigger, lpmTrigger},                  -- setting lpmTrigger
                                              }
                    )
+  framework.delay(2)
 
   -- checking if terminal is not in IgnitionOn state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -930,6 +931,7 @@ function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInL
 
 
 end
+
 
 --- TC checks if terminal is put in and out of Low Power Mode according to IgnitionOn and IgnitionOff events if the trigger of LPM is set to both IgnitionOff and Built-in Battery .
   -- Initial Conditions:
@@ -1377,6 +1379,7 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 
 
 end
+
 
 
 
