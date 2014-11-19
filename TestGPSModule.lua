@@ -111,6 +111,7 @@ function teardown()
 end
 
 
+
 -------------------------
 -- Test Cases
 -------------------------
@@ -497,6 +498,8 @@ function test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSen
   local stationarySpeedThld = 5      -- kmh
   local stationaryDebounceTime = 14  -- seconds
 
+  avlHelperFunctions.putTerminalIntoMovingState()
+
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
@@ -504,19 +507,29 @@ function test_Moving_WhenSpeedBelowThldForPeriodBelowThld_MovingEndMessageNotSen
                                              }
                    )
 
-  -- terminal put in moving state
-  avlHelperFunctions.putTerminalIntoMovingState()
+  -- GPS settings table
+  gpsSettings={
+                speed = stationarySpeedThld - 2, -- 2 kmh above threshold
+                heading = 90,                    -- degrees
+                latitude = 0,                    -- degrees
+                longitude = 0                    -- degrees
+              }
 
   -- when the terminal is in the moving state the speed is reduced for short time (seconds)
   gateway.setHighWaterMark()             -- to get the newest messages
-  gps.set({speed=stationarySpeedThld-1}) -- applying gps settings
+  gps.set(gpsSettings)
+
   framework.delay(gpsReadInterval+2)     -- time much shorter than stationaryDebounceTime
+  -- speed back to value above stationarySpeedThld
+  gps.set({speed = stationarySpeedThld +2})
 
   -- MovingEnd message is not expected
   local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for MovingStart message
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingEnd))
   assert_false(next(matchingMessages), "MovingEnd report not expected")   -- checking if any MovingEnd message has been caught
+
+  framework.delay(3)
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
