@@ -3164,6 +3164,7 @@ end
 
 
 
+
 --- TC checks if IgnitionOn message is sent and Service Meter 0 becomes active according to state of line number 13 .
   -- Initial Conditions:
   --
@@ -3218,25 +3219,39 @@ end
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
+  local odometerDistanceIncrement = 10  -- meters
+  local movingDebounceTime = 1          -- seconds
+  local stationarySpeedThld = 5         -- kmh
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                         }
+                   )
+
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.IgnitionAndSM0}, -- digital input line 13 associated with IgnitionOn and SM0 functions
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn","SM1Active"})
 
   -- Point#1
   local gpsSettings={
-              speed = 0,                      -- terminal in stationary state
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+              speed = stationarySpeedThld+10,   -- terminal in stationary state
+              latitude = 1,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 90,
                      }
 
-  gps.set(gpsSettings)                    -- applying gps settings
-  framework.delay(3)
+  gps.set(gpsSettings)                                     -- applying gps settings
+  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- waiting until terminal gets moving state in Point#1
 
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
@@ -3246,7 +3261,12 @@ end
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
 	message.Fields = {{Name="SM0Time",Value=0},{Name="SM0Distance",Value=0},}
 	gateway.submitForwardMessage(message)
+  framework.delay(2)
 
+
+  ------------------------------------------------------------------------------------
+  -- external power present - Igniton is on ans SM0 is active
+  ------------------------------------------------------------------------------------
   gateway.setHighWaterMark()              -- to get the newest messages
   local timeOfEventTC = os.time()        -- to get correct timestamp
   -- setting external power source
@@ -3256,7 +3276,6 @@ end
   -- IgnitionOn message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
   assert_not_nil(message, "IgnitionOn message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
                   gps = gpsSettings,
@@ -3280,8 +3299,6 @@ end
   gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
 
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
-
   -- ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
   assert_not_nil(message, "ServiceMeter message not received")
@@ -3294,6 +3311,10 @@ end
                         }
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
+  ------------------------------------------------------------------------------------
+  -- external power not present - Igniton is off ans SM0 is not active
+  ------------------------------------------------------------------------------------
+
   gateway.setHighWaterMark()              -- to get the newest messages
   -- setting external power source
   device.setPower(8,0)             -- external power not present (terminal unplugged to external power source)
@@ -3303,32 +3324,28 @@ end
   -- IgnitionOff message expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
   assert_not_nil(message, "IgnitionOff message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOff",
-                  currentTime = timeOfEventTC,
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - IgnitionON true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not false as expected")
 
-  -- Point#3 -- 111,12 kilometres away from Point#2
-  gpsSettings.heading = 90
-  gpsSettings.latitude = 3
-  gps.set(gpsSettings)                    -- applying gps settings
-  framework.delay(3)
+  -- Terminal moving in Point#3 -- 111,12 kilometres away from Point#2
+  local gpsSettings={
+              speed = stationarySpeedThld+10,   -- terminal in stationary state
+              latitude = 3,                     -- degrees
+              longitude = 1,                    -- degrees
+              fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
+              heading = 90,
+                     }
+
+  gps.set(gpsSettings)                                     -- applying gps settings
+  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- waiting until terminal gets moving state in Point#3
 
   gateway.setHighWaterMark()              -- to get the newest messages
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
   gateway.submitForwardMessage(getServiceMeterMessage)
   framework.delay(3)  -- wait until message is received
-
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   -- ServiceMeter message is expected
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
