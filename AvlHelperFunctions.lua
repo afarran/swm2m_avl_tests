@@ -142,7 +142,7 @@ function avlHelperFunctions.reportVerification(message, expectedValues)
 
 
   if(expectedValues.currentTime) then
-  assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),20, "EventTime value is not correct in the report")    -- 20 seconds of tolerance
+  assert_equal(expectedValues.currentTime,tonumber(colmsg.Payload.EventTime),25, "EventTime value is not correct in the report")    -- 20 seconds of tolerance
   end
 
 

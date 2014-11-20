@@ -644,22 +644,22 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
 
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true      -- to enable geofence feature
+  local geofenceEnabled = true       -- to enable geofence feature
   local geofenceInterval = 10        -- in seconds
   local geofenceHisteresis = 1       -- in seconds
   local geofence0SpeedLimit = 60     -- in kmh
   local geofence1SpeedLimit = 90     -- in kmh
   local speedingTimeUnder = 1        -- in seconds
-  local speedingTimeOver = 1        -- in seconds
+  local speedingTimeOver = 1         -- in seconds
 
 
-  -- gps settings: terminal inside geofence 0 and , moving with speed above geofence0SpeedLimit threshold
+  -- gps settings: terminal inside ovelapping geofences: 0 and 1, moving with speed above geofence0SpeedLimit threshold
   local gpsSettings={
-              speed = geofence0SpeedLimit+10,     -- 10 kmh above speeding threshold
-              heading = 90,                       -- degrees
-              latitude = 50.3,                    -- degrees, this is are of two overlapping geofences (0 and 1)
-              longitude = 3,                      -- degrees, this is are of two overlapping geofences (0 and 1)
-              simulateLinearMotion = false,
+                      speed = geofence0SpeedLimit+10,     -- 10 kmh above speeding threshold
+                      heading = 90,                       -- degrees
+                      latitude = 50.3,                    -- degrees, this is are of two overlapping geofences (0 and 1)
+                      longitude = 3,                      -- degrees, this is are of two overlapping geofences (0 and 1)
+                      simulateLinearMotion = false,
                      }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 1
@@ -684,10 +684,10 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
                                                 {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
                                               }
                    )
-
+  gateway.setHighWaterMark()                             -- to get the newest messages
   timeOfEventTc = os.time()
-  gps.set(gpsSettings) -- applying gps settings
-  framework.delay(speedingTimeOver+geofenceInterval+15)  -- speed above geofence0SpeedLimit to get the speeding state,
+  gps.set(gpsSettings)                                   -- applying gps settings - speed above geofence0SpeedLimit to get the speeding state
+  framework.delay(speedingTimeOver+geofenceInterval+35)  -- 35 seconds delay is added because there are 4 messages to be processed (1 MovingStart, 2 ZoneEntry and 1 SpeedingStart)
 
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
@@ -695,18 +695,19 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart))
   assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
   local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "SpeedingStart",
-                  currentTime = timeOfEventTc,
-                  speedLimit = geofence0SpeedLimit,   -- the speed limit of geofence 0 should be considered
+                          gps = gpsSettings,
+                          messageName = "SpeedingStart",
+                          currentTime = timeOfEventTc,
+                          speedLimit = geofence0SpeedLimit,   -- the speed limit of geofence 0 should be considered
                        }
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
-  --checking the state of terminal, speeding state is expected
+  -- checking the state of terminal, speeding state is expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
 end
+
 
 
 --- TC checks if when terminal enters area of two overlapping geofences the ZoneEntry report contains the lower ID
