@@ -763,16 +763,26 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
   local geofenceEnabled = true       -- to enable geofence feature
   local geofenceInterval = 10        -- in seconds
   local geofenceHisteresis = 1       -- in seconds
+  local gpsSettings = {}             -- gps settings table to be sent to simulator
 
 
-  -- gps settings: terminal outside geofence 0, moving with speed above defaultSpeedLimit threshold
-  local gpsSettings={
-              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-              heading = 90,                       -- degrees
-              latitude = 50.3,                    -- degrees, this is outside geofence 0 and 1
-              longitude = 1,                      -- degrees, this is outside geofence 0 and 1
-              simulateLinearMotion = false,
-                     }
+  -- Point#1 - terminal moving outside geofence 0 and 1
+  gpsSettings[1]={
+                  speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+                  heading = 90,                       -- degrees
+                  latitude = 50.3,                    -- degrees, this is outside geofence 0 and 1
+                  longitude = 1,                      -- degrees, this is outside geofence 0 and 1
+                  simulateLinearMotion = false,
+                 }
+
+  -- Point#1 - terminal inside geofence 0 and 1
+  gpsSettings[2]={
+                  speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+                  heading = 90,                       -- degrees
+                  latitude = 50.3,                    -- degrees, this is inside of two overlapping geofences (0 and 1)
+                  longitude = 3,                      -- degrees, this is inside of two overlapping geofences (0 and 1)
+                  simulateLinearMotion = false,
+                 }
 
   --applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -789,22 +799,20 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
                                               }
                    )
 
-  gps.set(gpsSettings)                  -- applying gps settings
-  framework.delay(geofenceInterval+15)  -- to make sure terminal is outside geofence 0 and 1
+  ------------------------------------------------------------------------------------------------
+  -- terminal moving outside geofence 0 and 1
+  ------------------------------------------------------------------------------------------------
 
+  gps.set(gpsSettings[1])                                  -- applying gps settings of Point#1
+  framework.delay(geofenceInterval+movingDebounceTime+15)  -- to make sure terminal goes to moving state outside geofence 0 and 1
 
-  -- gps settings: terminal inside geofence 0 and 1
-  local gpsSettings={
-              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-              heading = 90,                       -- degrees
-              latitude = 50.3,                    -- degrees, this is inside of two overlapping geofences (0 and 1)
-              longitude = 3,                      -- degrees, this is inside of two overlapping geofences (0 and 1)
-              simulateLinearMotion = false,
-                     }
+  ------------------------------------------------------------------------------------------------
+  -- terminal enters two overlapping geofences: 0 and 1
+  ------------------------------------------------------------------------------------------------
 
   timeOfEventTc = os.time()
-  gps.set(gpsSettings) -- applying gps settings
-  framework.delay(geofenceInterval+15)  -- wait until report is generated
+  gps.set(gpsSettings[2])                                  -- applying gps settings of Point#2
+  framework.delay(geofenceInterval+geofenceHisteresis+20)  -- wait until report is generated
 
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
@@ -812,13 +820,13 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry))
   assert_not_nil(next(matchingMessages), "ZoneEntry message not received") -- checking if any ZoneEntry message has been received
   local expectedValues={
-                  gps = gpsSettings,
+                  gps = gpsSettings[2],
                   messageName = "ZoneEntry",
                   currentTime = timeOfEventTc,
                   CurrentZoneId = 0,         -- lower Id should be reported
                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
-
+  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the 1st report fields
+  avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues ) -- verification of the 2nd report fields
 
 end
 
