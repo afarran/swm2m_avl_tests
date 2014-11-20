@@ -172,7 +172,6 @@ end
 
 
 
-
 --- TC checks if digital output line associated with IgnitionOn state is changing according to IgnitionOn state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with IgnitionOn function;
@@ -925,7 +924,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
                longitude = 4.5,     -- degrees, that is inside geofence 2
               }
   gps.set(gpsSettings)         -- applying gps settings, terminal moving inside geofence 2
-  framework.delay(gpsReadInterval+geofenceInterval+10)  -- wait until settings are applied
+  framework.delay(gpsReadInterval+geofenceInterval+geofenceHisteresis+15)  -- wait until settings are applied
 
   -- asserting state of port 1 - high state is expected as terminal is inside geofence 2 (with defined DwellTime)
   assert_equal(1, device.getIO(1), "Port1 associated with GeoDwelling is not in high state as expected")
@@ -936,8 +935,8 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
                longitude = 1,     -- degrees, that is outside any of the geofences
               }
 
-  gps.set(gpsSettings)                                  -- applying gps settings
-  framework.delay(gpsReadInterval+geofenceInterval+10)  -- wait until settings are applied
+  gps.set(gpsSettings)                                                     -- applying gps settings
+  framework.delay(gpsReadInterval+geofenceInterval+geofenceHisteresis+20)  -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
