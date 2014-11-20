@@ -166,12 +166,10 @@ function teardown()
 
 end
 
---[[
-    START OF TEST CASES
+ --   START OF TEST CASES
 
-    Each test case is a global function whose name begins with "test"
+ --   Each test case is a global function whose name begins with "test"
 
---]]
 
 
 
@@ -1117,6 +1115,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
 end
 
 
+
 --- TC checks if digital output line associated with IgnitionOn state is changing according to IgnitionOn state
   -- when for for active line digital output is low (digOutActiveBitmap set to 0)
   -- *actions performed:
@@ -1582,11 +1581,11 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 4 ports has been correctly set to high level
   for counter = 1, 4, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+    assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
   end
 
   -- Sending setDigitalOutputs message setting all 4 port to low state
@@ -1597,11 +1596,11 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 4 ports has been correctly set to low level
   for counter = 1, 4, 1 do
-  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message")
+    assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message")
   end
 
   -- Sending setDigitalOutputs message setting all 4 port back to high state
@@ -1612,7 +1611,7 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 4 ports has been correctly set to high level
   for counter = 1, 4, 1 do
@@ -1620,8 +1619,9 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
   end
 
 
-
 end
+
+
 
 --- TC checks if setDigitalOutputs message sets digital output ports for IDP 800 series terminal  .
   -- Initial Conditions:
@@ -1671,7 +1671,7 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 3 ports has been correctly set to high level
   for counter = 1, 3, 1 do
@@ -1685,7 +1685,7 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 3 ports has been correctly set to low level
   for counter = 1, 3, 1 do
@@ -1699,7 +1699,7 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 3 ports has been correctly set to high level
   for counter = 1, 3, 1 do
@@ -1761,7 +1761,7 @@ function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=4,Fields={{Name="LineNum",Value="IDP7xxLine18"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- TODO: modify following section to work on 700's IDP
   -- checking if all 3 ports has been correctly set to high level
@@ -1778,7 +1778,7 @@ function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=4,Fields={{Name="LineNum",Value="IDP7xxLine18"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- TODO: modify following section to work on 700's IDP
   -- checking if all 3 ports has been correctly set to low level
@@ -1795,7 +1795,7 @@ function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutput
                                                  {Index=4,Fields={{Name="LineNum",Value="IDP7xxLine18"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- TODO: modify following section to work on 700's IDP
   -- checking if all 3 ports has been correctly set to high level
@@ -1860,7 +1860,7 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeG
                                                  {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 4 ports has been correctly set to high level
   for counter = 1, 4, 1 do
