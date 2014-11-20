@@ -810,16 +810,26 @@ function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_LowerGeofe
   local geofenceEnabled = true       -- to enable geofence feature
   local geofenceInterval = 10        -- in seconds
   local geofenceHisteresis = 1       -- in seconds
+  local gpsSettings = {}             -- gps settings table to be sent to simulator
 
 
-  -- gps settings: terminal inside geofence 0, moving with speed above defaultSpeedLimit threshold
-  local gpsSettings={
-              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-              heading = 90,                       -- degrees
-              latitude = 50.3,                    -- degrees, this is inside geofence 0 and 1
-              longitude = 3,                      -- degrees, this is inside geofence 0 and 1
-              simulateLinearMotion = false,
-                     }
+  -- Point#1 - terminal moving inside two overlapping geofences: 0 and 1
+  gpsSettings[1]={
+                    speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+                    heading = 90,                       -- degrees
+                    latitude = 50.3,                    -- degrees, this is inside geofence 0 and 1
+                    longitude = 3,                      -- degrees, this is inside geofence 0 and 1
+                    simulateLinearMotion = false,
+                 }
+
+  -- Point#2 - terminal moving in area outside geofence 0 and 1
+  gpsSettings[2]={
+                    speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
+                    heading = 90,                       -- degrees
+                    latitude = 50.3,                    -- degrees, this is outside of two overlapping geofences (0 and 1)
+                    longitude = 1,                      -- degrees, this is outside of two overlapping geofences (0 and 1)
+                    simulateLinearMotion = false,
+                  }
 
   --applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -836,35 +846,48 @@ function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_LowerGeofe
                                               }
                    )
 
-  gps.set(gpsSettings)                  -- applying gps settings
-  framework.delay(geofenceInterval+15)  -- to make sure terminal is outside geofence 0 and 1
+  ----------------------------------------------------------------------------------------
+  -- Terminal moving inside two overlapping geofences (geofence 0 and geofence 1)
+  ----------------------------------------------------------------------------------------
+  gps.set(gpsSettings[1])               -- applying gps settings
+  framework.delay(geofenceInterval+25)  -- wait until terminal is in moving state inside two overlapping geofences
 
-
-  -- gps settings: terminal outside geofence 0 and 1
-  local gpsSettings={
-              speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-              heading = 90,                       -- degrees
-              latitude = 50.3,                    -- degrees, this is outside of two overlapping geofences (0 and 1)
-              longitude = 1,                      -- degrees, this is outside of two overlapping geofences (0 and 1)
-              simulateLinearMotion = false,
-                     }
+  ----------------------------------------------------------------------------------------
+  -- Terminal moves outside two overlapping geofences
+  ----------------------------------------------------------------------------------------
 
   timeOfEventTc = os.time()
-  gps.set(gpsSettings) -- applying gps settings
-  framework.delay(geofenceInterval+15)  -- wait until report is generated
+  gateway.setHighWaterMark()                      -- to get the newest messages
+  gps.set(gpsSettings[2])                         -- applying gps settings
+  framework.delay(geofenceInterval+20)            -- wait until report is generated
 
   -- receiving all messages
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneExit messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit))
-  assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
+  print(framework.dump(matchingMessages))
+
+  assert_not_nil(next(matchingMessages), "No ZoneExit message received") -- checking if any ZoneExit message has been received
+
+  ----------------------------------------------------------------------------------------
+  -- Verification of two received ZoneExit messages
+  ----------------------------------------------------------------------------------------
   local expectedValues={
-                  gps = gpsSettings,
+                  gps = gpsSettings[2],
                   messageName = "ZoneExit",
                   currentTime = timeOfEventTc,
-                  PreviousZoneId = 0,         -- lower Id should be reported
+                  PreviousZoneId = 0,
                        }
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+
+
+  expectedValues={
+                  gps = gpsSettings[2],
+                  messageName = "ZoneExit",
+                  currentTime = timeOfEventTc,
+                  PreviousZoneId = 1,         -- lower Id should be reported
+                       }
+  avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues ) -- verification of the report fields
 
 
 end
