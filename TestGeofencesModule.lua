@@ -150,16 +150,26 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
   local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10         -- in seconds
+  local geofenceInterval = 10        -- in seconds
   local geofenceHisteresis = 1       -- in seconds
+  local gpsSettings = {}             -- gps settings table to be sent to simulator
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = 5,                       -- one kmh above threshold
-              heading = 90,                    -- degrees
-              latitude = 50,                   -- degrees
-              longitude = 2,                   -- degrees, that is outside geofence 0
-              simulateLinearMotion = false,
+  -- Point#1 - terminal outside geofence 0
+  gpsSettings[1]={
+                   speed = stationarySpeedThld + 1,    -- one kmh above threshold
+                   heading = 90,                       -- degrees
+                   latitude = 50,                      -- degrees
+                   longitude = 2,                      -- degrees, that is outside geofence 0
+                   simulateLinearMotion = false,
+                  }
+
+  -- Point#2 - terminal inside geofence 0
+  gpsSettings[2]={
+                      speed = stationarySpeedThld + 1,    -- one kmh above threshold
+                      heading = 90,                    -- degrees
+                      latitude = 50,                   -- degrees
+                      longitude = 3,                   -- degrees, that is inside geofence 0
+                      simulateLinearMotion = false,
                      }
 
   --applying properties of AVL service
@@ -177,21 +187,19 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                                               }
                    )
 
-  gps.set(gpsSettings)     -- applying gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2)       -- waiting until terminal gets Moving state true
+  ---------------------------------------------------------------------------------------
+  --- Terminal moving outside geofence 0
+  ---------------------------------------------------------------------------------------
+  gps.set(gpsSettings[1])     -- applying gps settings
+  framework.delay(movingDebounceTime+gpsReadInterval+5)       -- waiting until terminal gets Moving state true
 
-  -- changing gps settings
-  local gpsSettings={
-              speed = 5,                       -- one kmh above threshold
-              heading = 90,                    -- degrees
-              latitude = 50,                   -- degrees
-              longitude = 3,                   -- degrees, that is inside geofence 0
-              simulateLinearMotion = false,
-                     }
-
-  gps.set(gpsSettings)     -- applying gps settings
+  ---------------------------------------------------------------------------------------
+  --- Terminal moving inside geofence 0
+  ---------------------------------------------------------------------------------------
+  gateway.setHighWaterMark()            -- to get the newest messages
+  gps.set(gpsSettings[2])               -- applying gps settings
   timeOfEventTc = os.time()
-  framework.delay(geofenceHisteresis+geofenceInterval)       -- waiting for the ZoneEntry message to be generated
+  framework.delay(geofenceHisteresis+geofenceInterval+10)       -- waiting for the ZoneEntry message to be generated
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
@@ -199,7 +207,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
 
   local expectedValues={
-                  gps = gpsSettings,
+                  gps = gpsSettings[2],
                   messageName = "ZoneEntry",
                   currentTime = timeOfEventTc,
                   CurrentZoneId = 0     -- the number of the zone defined in this area
@@ -207,6 +215,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
 end
+
 
 
 --- TC checks if ZoneEntry message is not sent when terminal enters defined zone and stays there shorter longer than
