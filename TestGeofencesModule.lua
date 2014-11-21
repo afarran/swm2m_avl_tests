@@ -203,12 +203,10 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   gateway.setHighWaterMark()            -- to get the newest messages
   gps.set(gpsSettings[2])               -- applying gps settings
   timeOfEventTc = os.time()
-  framework.delay(geofenceHisteresis+geofenceInterval+10)       -- waiting for the ZoneEntry message to be generated
+  framework.delay(geofenceHisteresis+geofenceInterval)       -- waiting for the ZoneEntry message to be generated
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for zoneEntry messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry))
-  assert_not_nil(next(matchingMessages), "ZoneEntry message not received")  -- checking if any of ZoneEntry messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "ZoneEntry message not received")   -- checking if any of ZoneEntry messages has been received
 
   local expectedValues={
                   gps = gpsSettings[2],
@@ -216,7 +214,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                   currentTime = timeOfEventTc,
                   CurrentZoneId = 0     -- the number of the zone defined in this area
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 end
 
@@ -288,6 +286,10 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
               longitude = 2,                   -- degrees, that is inside geofence 0
               simulateLinearMotion = false,
                      }
+
+  gps.set(gpsSettings)                  -- applying gps settings
+  gateway.setHighWaterMark()            -- to get the newest messages
+  framework.delay(geofenceInterval+5)   -- waiting shorter than geofenceHisteresis
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneEntry messages
@@ -365,10 +367,8 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
   gps.set(gpsSettings[2])                                    -- applying gps settings of Point#2
   framework.delay(geofenceHisteresis+geofenceInterval+20)   -- terminal enters geofence 128
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for zoneExit messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit))
-  assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "ZoneExit message not received")   -- checking if any of ZoneExit messages has been received
 
   local expectedValues={
                   gps = gpsSettings[2],
@@ -377,7 +377,7 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
                   CurrentZoneId = 128,     -- terminal goes out from geofence 0 to undefined geofence
                   PreviousZoneId = 0
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(messages, expectedValues) -- verification of the report fields
 
 end
 
@@ -460,13 +460,11 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
   gateway.setHighWaterMark()                            -- to get the newest messages
   timeOfEventTc = os.time()                             -- to get the correct value in the report
   gps.set(gpsSettings[2])
-  framework.delay(speedingTimeOver+geofenceInterval+15) -- waiting until terminal enters the zone and the report is generated
+  framework.delay(speedingTimeOver+geofenceInterval)    -- waiting until terminal enters the zone and the report is generated
 
-  -- receiving all messages
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for SpeedingStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart))
-  assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "SpeedingStart message not received")   -- checking if any of SpeedingStart messages has been received
+
   local expectedValues={
                   gps = gpsSettings[2],
                   messageName = "SpeedingStart",
@@ -563,20 +561,18 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   gateway.setHighWaterMark()                             -- to get the newest messages
   timeOfEventTc = os.time()                              -- to get the correct value in the report
   gps.set(gpsSettings[2])
-  framework.delay(speedingTimeUnder+geofenceInterval+20) -- waiting until terminal enters the zone and the SpeedingEnd report is generated
+  framework.delay(speedingTimeUnder+geofenceInterval)    -- waiting until terminal enters the zone and the SpeedingEnd report is generated
 
-  -- receiving all messages
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for SpeedingEnd messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingEnd))
-  assert_not_nil(next(matchingMessages), "SpeedingEnd message not received") -- checking if any SpeedingEnd message has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingEnd),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "SpeedingEnd message not received") -- checking if any of SpeedingEnd messages has been received
+
   local expectedValues={
                   gps = gpsSettings[2],
                   messageName = "SpeedingEnd",
                   currentTime = timeOfEventTc,
                   maxSpeed = geofence128SpeedLimit+10,   -- maximal registered speed
                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
   -- checking the state of terminal, speeding state is not expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -650,12 +646,11 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
   gateway.setHighWaterMark()                                -- to get the newest messages
   gps.set(gpsSettings[2])                                   -- applying gps settings of Point#2
   timeOfEventTc = os.time()                                 -- to get the correct value for verification
-  framework.delay(geofenceInterval+geofenceHisteresis+25)   -- waiting longer than geofenceHisteresis to get ZoneExit message
+  framework.delay(geofenceInterval+geofenceHisteresis)      -- waiting longer than geofenceHisteresis to get ZoneExit message
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for ZoneExit messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit))
-  assert_not_nil(next(matchingMessages), "ZoneExit message not received") -- checking if any ZoneExit message has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "ZoneExit message not received") -- checking if any of ZoneExit messages has been received
+
   local expectedValues={
                   gps = gpsSettings[2],
                   messageName = "ZoneExit",
@@ -664,10 +659,9 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
                   PreviousZoneId = 0         -- for latitude 50 and longitude 3 geofence ID is 0
 
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
 end
-
 
 
 --- TC checks if SpeedingStart message is sent when terminal is in area of two overlapping geofences and moves with the speed above speed limit of the geofence with lower ID
@@ -705,7 +699,6 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 1
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoSpeedLimits}
-	local message = {SIN = 126, MIN = 7}
 	message.Fields = {{Name="ZoneSpeedLimits",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="SpeedLimit",Value=geofence0SpeedLimit}}},{Index=1,Fields={{Name="ZoneId",Value=1},{Name="SpeedLimit",Value=geofence1SpeedLimit}}}}},}
 	gateway.submitForwardMessage(message)
 
@@ -728,20 +721,18 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   gateway.setHighWaterMark()                             -- to get the newest messages
   timeOfEventTc = os.time()
   gps.set(gpsSettings)                                   -- applying gps settings - speed above geofence0SpeedLimit to get the speeding state
-  framework.delay(speedingTimeOver+geofenceInterval+35)  -- 35 seconds delay is added because there are 4 messages to be processed (1 MovingStart, 2 ZoneEntry and 1 SpeedingStart)
+  framework.delay(speedingTimeOver+geofenceInterval)     -- wait until report is generated
 
-  -- receiving all messages
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for SpeedingStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart))
-  assert_not_nil(next(matchingMessages), "SpeedingStart message not received") -- checking if any SpeedingStart message has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "SpeedingStart message not received") -- checking if SpeedingStart message has been received
+
   local expectedValues={
                           gps = gpsSettings,
                           messageName = "SpeedingStart",
                           currentTime = timeOfEventTc,
                           speedLimit = geofence0SpeedLimit,   -- the speed limit of geofence 0 should be considered
                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
   -- checking the state of terminal, speeding state is expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -990,12 +981,10 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   gateway.setHighWaterMark()                      -- to get the newest messages
   local timeOfEventTc = os.time()                -- to get correct value in the report
   gps.set(gpsSettings)                            -- applying gps settings
-  framework.delay(geofence2DwellTime*60+10)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  framework.delay(geofence2DwellTime*60)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1003,7 +992,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
                   currentTime = timeOfEventTc,
                   DwellTimeLimit = geofence2DwellTime     -- in minutes, DwellTimeLimit defined in geofence2
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1070,21 +1059,19 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   framework.delay(movingDebounceTime+gpsReadInterval+10)  -- wait until position of terminal is read
   gpsSettings.fixType = 1                                -- no valid fix provided
   gps.set(gpsSettings)                                   -- applying gps settings
-  framework.delay(geofence2DwellTime*60+40)              -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  framework.delay(geofence2DwellTime*60)                -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "GeoDwellStart",
-                  currentTime = timeOfEventTc,
-                  DwellTimeLimit = geofence2DwellTime,     -- in minutes, DwellTimeLimit defined in geofence2
-                  GpsFixAge = 95,
+                          gps = gpsSettings,
+                          messageName = "GeoDwellStart",
+                          currentTime = timeOfEventTc,
+                          DwellTimeLimit = geofence2DwellTime,     -- in minutes, DwellTimeLimit defined in geofence2
+                          GpsFixAge = 95,
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1227,25 +1214,22 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
   local timeOfEventTc = os.time()                -- to get correct value in the report
   gps.set(gpsSettings)                            -- applying gps settings
 
-  framework.delay(6)   -- wait until report is generated
-
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellEnd messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellEnd))
-  assert_not_nil(next(matchingMessages), "GeoDwellEnd message not received")  -- checking if any of GeoDwellEnd messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellEnd),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellEnd message not received") -- checking if any of GeoDwellEnd messages has been received
 
   local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "GeoDwellEnd",
-                  currentTime = timeOfEventTc,
-                                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+                        gps = gpsSettings,
+                        messageName = "GeoDwellEnd",
+                        currentTime = timeOfEventTc,
+                        }
+  avlHelperFunctions.reportVerification(message, expectedValues)    -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal not in Geodwelling state")
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Geodwelling, "Terminal unexpectedly in GeoDwell tate")
 
 end
+
 
 
 --- TC checks if GeoDwellStart message is correctly sent when terminal enters zone and and stays there longer than DefaultGeoDwellTime
@@ -1292,12 +1276,10 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
   gateway.setHighWaterMark()                      -- to get the newest messages
   local timeOfEventTc = os.time()                 -- to get correct value in the report
   gps.set(gpsSettings)                            -- applying gps settings
-  framework.delay(defaultGeoDwellTime*60+10)      -- waiting until defaultGeoDwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  framework.delay(defaultGeoDwellTime*60)         -- waiting until defaultGeoDwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1305,7 +1287,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
                   currentTime = timeOfEventTc,
                   DwellTimeLimit = defaultGeoDwellTime     -- in minutes, defaultGeoDwellTime
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1361,12 +1343,10 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   gateway.setHighWaterMark()                     -- to get the newest messages
   local timeOfEventTc = os.time()               -- to get correct value in the report
   gps.set(gpsSettings)                           -- applying gps settings
-  framework.delay(allZonesDwellTime*60+20)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  framework.delay(allZonesDwellTime*60)          -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1374,7 +1354,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
                   currentTime = timeOfEventTc,
                   DwellTimeLimit = AllZonesTime     -- in minutes, AllZonesTime defined in geofence 1
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1449,12 +1429,10 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
 
   gateway.setHighWaterMark()                     -- to get the newest messages
   local timeOfEventTc = os.time()               -- to get correct value in the report
-  framework.delay(geofence128DwellTime*60+10)    -- waiting until geofence128DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  framework.delay(geofence128DwellTime*60)       -- waiting until geofence128DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1462,7 +1440,7 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
                   currentTime = timeOfEventTc,
                   DwellTimeLimit = geofence128DwellTime     -- in minutes, geofence128DwellTime defined in geofence 128
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1528,13 +1506,11 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
   gps.set(gpsSettings)                          -- applying gps settings
 
   gateway.setHighWaterMark()                                     -- to get the newest messages
-  local timeOfEventTc = os.time()                               -- to get correct value in the report
-  framework.delay(geofence2DwellTime*60+geofenceInterval+10)     -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
+  local timeOfEventTc = os.time()                                -- to get correct value in the report
+  framework.delay(geofence2DwellTime*60+geofenceInterval)        -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_not_nil(next(matchingMessages), "GeoDwellStart message not received")  -- checking if any of GeoDwellStart messages has been received
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
                   gps = gpsSettings,
@@ -1542,7 +1518,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
                   currentTime = timeOfEventTc,
                   DwellTimeLimit = geofence2DwellTime     -- in minutes, geofence2DwellTime defined in geofence 2
                         }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1621,6 +1597,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
 
 
 end
+
 
 
 
