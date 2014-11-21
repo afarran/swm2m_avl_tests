@@ -259,7 +259,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPosi
   gps.set(gpsSettings)                       -- applying gps settings
   framework.delay(3)                         -- to make sure terminal is stationary
   gateway.setHighWaterMark()                 -- to get the newest messages
-  local message = {SIN = 126, MIN = 1}      -- to trigger Position event
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}      -- to trigger Position event
 	gateway.submitForwardMessage(message)
 
   framework.delay(stationaryIntervalSat+3)  -- wait longer than stationaryIntervalSat receive report
@@ -1169,7 +1169,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   -------------------------------------------------------------------------------------------------------------------------
 
   -- send setDataLogFilter to log service (to filter only LoggedPosition messages)
-	local setDataLogFilterMessage = {SIN = 23, MIN = 1}
+	local setDataLogFilterMessage = {SIN = lsfConstants.sins.log, MIN = lsfConstants.mins.setDataLogFilter}
   -- minList =  15 (filter only LoggedPosition)
   setDataLogFilterMessage.Fields = {{Name="timeStart",Value=loggingStartTime},{Name="timeEnd",Value=loggingEndTime},{Name="reverse",Value=false},
                                    {Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},{Name="minList",Value="Dw=="}}}}},}
@@ -1183,13 +1183,12 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   gateway.setHighWaterMark()   -- to get the newest messages
 
   -- send getDataLogEntries message
-  local getDataLogEntriesMessage = {SIN = 23, MIN = 5} -- add maximum entries to limit TODO
+  local getDataLogEntriesMessage = {SIN = lsfConstants.sins.log, MIN = lsfConstants.mins.getDataLogEntries} -- add maximum entries to limit TODO
   getDataLogEntriesMessage.Fields = {{Name="maxEntries",Value=10},}
   gateway.submitForwardMessage(getDataLogEntriesMessage)
-  framework.delay(3)  -- wait until message is processed
 
   -- DataLogEntries message is expected (SIN 23, MIN 5)
-  local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(23, 5))
+  local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.log, lsfConstants.mins.dataLogEntries),nil,getReturnMessageTimeout)
 
   assert_not_nil(next(logEntriesMessage.Payload.Fields[1].Elements), "Received LogEntries message is empty")
 
