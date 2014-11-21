@@ -240,18 +240,19 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
+  local timeOfEventTC = os.time()   -- to get exact timestamp
   device.setIO(randomPortNumber, 1)  -- port  to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOn message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOn",
-                  currentTime = os.time()
+                          gps = gpsSettings,
+                          messageName = "IgnitionOn",
+                          currentTime = timeOfEventTC,
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
@@ -320,18 +321,17 @@ end
   device.setIO(1, 1)                 -- port 1 to high level
   framework.delay(2)
   device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOn
-  timeOfEventTC = os.time()          -- get the exact time of event occurence
-  framework.delay(2)
+  local timeOfEventTC = os.time()   -- to get exact timestamp
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IgnitionOn",
-                  currentTime = timeOfEventTC
+                  currentTime = timeOfEventTC,
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
@@ -408,17 +408,18 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gateway.setHighWaterMark()         -- to get the newest messages
+  local timeOfEventTC = os.time()   -- to get exact timestamp
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IgnitionOn",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTC,
                   GpsFixAge = 8
                         }
 
@@ -491,18 +492,18 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   gateway.setHighWaterMark()         -- to get the newest messages
+  local timeOfEventTC = os.time()   -- to get exact timestamp
   device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
-  framework.delay(5)                 -- wait for report to be generated
 
   --IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOff message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IgnitionOff",
-                  currentTime = os.time()
+                  currentTime = timeOfEventTC,
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
@@ -582,18 +583,18 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
   framework.delay(6)                          -- to make sure gpsFix age is above 5 seconds
 
   gateway.setHighWaterMark()         -- to get the newest messages
+  local timeOfEventTC = os.time()   -- to get exact timestamp
   device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
-  framework.delay(3)                 -- wait for report to be generated
 
   --IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOff message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "IgnitionOff",
-                  currentTime = os.time(),
+                  currentTime = timeOfEventTC,
                   GpsFixAge = 6
                         }
 
@@ -761,7 +762,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
-  device.setIO(1, 1)                              -- port 1 to high level - that should trigger IgnitionOn
+  device.setIO(1, 1)                                           -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(maxIdlingTime+lsfConstants.coldFixDelay+2)   -- wait longer than maxIdlingTime to trigger the IdlingStart event, coldFixDelay taken into consideration
 
   receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
@@ -1527,17 +1528,18 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
   gateway.setHighWaterMark()                -- to get the newest messages
+  local timeOfEventTC = os.time()           -- to get exact timestamp
   device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
-  framework.delay(seatbeltDebounceTime+3)   -- to make sure seatbeltDebounceTime passes
+  framework.delay(seatbeltDebounceTime)     -- wait for seatbeltDebounceTime
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
 
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationStart",
-                  currentTime = os.time()
+                  currentTime = timeOfEventTC,
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
@@ -1598,11 +1600,11 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
 
   -- terminal should be put in the moving state
   local gpsSettings={
-              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
-              heading = 90                    -- deegres
+                      speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                      heading = 90                    -- deegres
                      }
 
   gps.set(gpsSettings)
@@ -1611,17 +1613,18 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   -- verification of the state of terminal - IgnitionOn true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
-  gateway.setHighWaterMark()         -- to get the newest messages
+  gateway.setHighWaterMark()            -- to get the newest messages
+  local timeOfEventTC = os.time()      -- to get exact timestamp
   framework.delay(seatbeltDebounceTime) -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
 
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationStart",
-                  currentTime = os.time()
+                  currentTime = timeOfEventTC,
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
@@ -1696,7 +1699,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   -- verification of the state of terminal - IgnitionOn true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
-  local timeOfEvent = os.time()
+  local timeOfEventTC = os.time()
   gpsSettings.fixType = 1                    -- no valid fix provided from now
   gps.set(gpsSettings)                       -- applying gps setttings
   framework.delay(7)                         -- to make sure gps fix is older than 5 seconds related to EventTime
@@ -1704,14 +1707,14 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(seatbeltDebounceTime)      -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
 
 
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationStart",
-                  currentTime = timeOfEvent,
+                  currentTime = timeOfEventTC,
                   GpsFixAge = 8
                         }
 
@@ -1872,17 +1875,17 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
 
   gateway.setHighWaterMark()           -- to get the newest messages
+  timeOfEventTC = os.time()
   device.setIO(2, 0)                   -- port 2 to low level - that triggers SeatbeltOff false, belt fastened
-  framework.delay(5)                   -- wait for the message to be processed
 
   -- SeatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SeatbeltViolationEnd message not received")
 
   local expectedValues={
                   gps = gpsSettings,
                   messageName = "SeatbeltViolationEnd",
-                  currentTime = os.time()
+                  currentTime = timeOfEventTC,
                         }
 
   avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
@@ -2679,8 +2682,8 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[4], avlConstants.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},              -- stationarySpeedThld
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},                -- movingDebounceTime
 
                                              }
                    )
@@ -2765,11 +2768,9 @@ end
   framework.delay(2)
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   timeOfEventTC = os.time()
-  framework.delay(2)               -- wait until setting is applied
 
   -- PowerMain message expected
-
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain),nil,getReturnMessageTimeout)
   assert_not_nil(message, "PowerMain message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -2846,10 +2847,9 @@ end
   -- setting external power source
   device.setPower(8,0)            -- external power not present (terminal unplugged from external power source)
   timeOfEventTC = os.time()
-  framework.delay(2)               -- wait until setting is applied
 
   -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerBackup))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerBackup),nil,getReturnMessageTimeout)
   assert_not_nil(message, "PowerBackup message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -2927,10 +2927,9 @@ end
   local timeOfEventTC = os.time()        -- to get correct timestamp
   -- setting external power source
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
-  framework.delay(2)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -3008,10 +3007,9 @@ end
   local timeOfEventTC = os.time()        -- to get correct timestamp
   -- setting external power source
   device.setPower(8,0)                    -- external power becomes not present (line 13 changes state to 0)
-  framework.delay(2)
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOff message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -3111,10 +3109,10 @@ end
   -- setting external power source
   device.setPower(8,1)                     -- external power present (terminal plugged to external power source - line 13 changes state to high)
   local timeOfEventTC = os.time()         -- to get exact timestamp
-  framework.delay(seatbeltDebounceTime+3)  -- wait longer than seatbeltDebounceTime to get seatbeltViolationStart message
+  framework.delay(seatbeltDebounceTime)    -- wait for period seatbeltDebounceTime to get seatbeltViolationStart message
 
   -- seatbeltViolationStart message expected
-  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart))
+  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
   local expectedValues={
                   gps = gpsSettings,
@@ -3145,10 +3143,9 @@ end
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
   timeOfEventTC = os.time()               -- to get exact timestamp
-  framework.delay(2)
 
   -- seatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SeatbeltViolationEnd message not received")
   expectedValues={
                   gps = gpsSettings,
@@ -3274,10 +3271,9 @@ end
   local timeOfEventTC = os.time()        -- to get correct timestamp
   -- setting external power source
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
-  framework.delay(2)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOn message not received")
 
   local expectedValues={
@@ -3300,10 +3296,9 @@ end
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
   gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message is received
 
   -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
   assert_not_nil(message, "ServiceMeter message not received")
   expectedValues={
                   gps = gpsSettings,
@@ -3322,10 +3317,9 @@ end
   -- setting external power source
   device.setPower(8,0)             -- external power not present (terminal unplugged to external power source)
   timeOfEventTC = os.time()        -- to get correct timestamp
-  framework.delay(2)
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
   assert_not_nil(message, "IgnitionOff message not received")
 
   -- verification of the state of terminal - IgnitionON true expected
@@ -3348,10 +3342,9 @@ end
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
   gateway.submitForwardMessage(getServiceMeterMessage)
-  framework.delay(3)  -- wait until message is received
 
   -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
   assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
