@@ -377,7 +377,7 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
                   CurrentZoneId = 128,     -- terminal goes out from geofence 0 to undefined geofence
                   PreviousZoneId = 0
                         }
-  avlHelperFunctions.reportVerification(messages, expectedValues) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
 end
 
@@ -472,7 +472,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
                   SpeedLimit = geofence0SpeedLimit,   -- speed limit of detected Speeding event should be the one defined in the geofence
 
                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
 
 
 end
