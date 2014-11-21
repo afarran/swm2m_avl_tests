@@ -42,7 +42,7 @@ function suite_setup()
   framework.delay(5) -- to make sure file is saved
 
   -- restarting geofences service, that action is necessary after sending new fences.dat file
-  local message = {SIN = lsfConstants.sins.system, MIN = lsfConstants.mins.restartService}
+  message = {SIN = lsfConstants.sins.system, MIN = lsfConstants.mins.restartService}
 	message.Fields = {{Name="sin",Value=lsfConstants.sins.geofence}}
 	gateway.submitForwardMessage(message)
 
