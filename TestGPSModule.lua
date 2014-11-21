@@ -142,7 +142,7 @@ end
   -- 6. Report fields contain Point#2 GPS and time information
 function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDebounceTime_MovingStartMessageSent()
 
-  local movingDebounceTime = 10      -- seconds
+  local movingDebounceTime = 60      -- seconds
   local stationarySpeedThld = 5      -- kmh
   local gpsSettings = {}             -- table containing gpsSettings used in TC
 
@@ -193,10 +193,10 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   gps.set(gpsSettings[3])
 
   -- wait longer than movingDebounceTime
-  framework.delay(movingDebounceTime+gpsReadInterval+1)
+  framework.delay(movingDebounceTime+gpsReadInterval)
 
   -- MovingStart Message expected
-  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart))
+  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart),nil,30)
   assert_not_nil(message, "MovingStart message not received")
 
   local expectedValues={
@@ -211,7 +211,6 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
 end
-
 
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time and GPS fix age is included .
   -- Initial Conditions:
