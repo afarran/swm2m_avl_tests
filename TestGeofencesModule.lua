@@ -58,7 +58,11 @@ function suite_teardown()
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
 	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
 	gateway.submitForwardMessage(message)
-  framework.delay(30)
+
+  -- wait until service is up and running again and sends Reset message
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "Reset message after reset of AVL not received")
+
 end
 
 --- the setup function puts terminal into the stationary state and checks if that state has been correctly obtained
