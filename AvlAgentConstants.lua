@@ -4,6 +4,7 @@ avlConstants = {
                     -- AVL Agent MINs
                     mins = {
                               positionRequest = 1,    -- to mobile
+                              reset = 1,
                               setDigitalOutputs = 2,  -- to mobile
                               powerMain = 2,
                               powerBackup = 3,

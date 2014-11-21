@@ -77,7 +77,11 @@ function suite_teardown()
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
 	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
 	gateway.submitForwardMessage(message)
-  framework.delay(30)
+
+  -- wait until service is up and running again and sends Reset message
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  assert_not_nil(message, "Reset message after reset of AVL not received")
+
 
 end
 
@@ -111,7 +115,6 @@ function teardown()
 end
 
 
-
 -------------------------
 -- Test Cases
 -------------------------
@@ -142,7 +145,7 @@ end
   -- 6. Report fields contain Point#2 GPS and time information
 function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDebounceTime_MovingStartMessageSent()
 
-  local movingDebounceTime = 60      -- seconds
+  local movingDebounceTime = 100      -- seconds
   local stationarySpeedThld = 5      -- kmh
   local gpsSettings = {}             -- table containing gpsSettings used in TC
 
@@ -192,11 +195,12 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   -- terminal in Point#3 - moved to another position (before MovingStart message was sent)
   gps.set(gpsSettings[3])
 
-  -- wait longer than movingDebounceTime
+  -- wait for period of movingDebounceTime
   framework.delay(movingDebounceTime+gpsReadInterval)
 
   -- MovingStart Message expected
-  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart),nil,30)
+  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart),nil,getReturnMessageTimeout)
+
   assert_not_nil(message, "MovingStart message not received")
 
   local expectedValues={
@@ -211,6 +215,7 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
 end
+
 
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time and GPS fix age is included .
   -- Initial Conditions:
@@ -296,7 +301,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
 
 
   -- MovingStart Message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "MovingStart message not received")
 
 
@@ -345,7 +350,9 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
 
   local stationaryDebounceTime = 10  -- seconds
   local stationarySpeedThld = 5      -- kmh
-  local gpsSettings = {}
+  local gpsSettings = {}             -- gps settings table to be sent to simulator
+  local expectedValues = {}          -- expected values for report verification
+  local expectedGpsValues = {}       -- expectedGpsValues
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -397,12 +404,18 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
   framework.delay(stationaryDebounceTime+gpsReadInterval)
 
   -- MovingEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingEnd))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingEnd),nil,getReturnMessageTimeout)
   assert_not_nil(message, "MovingEnd message not received")
 
-  -- gps settings table to be sent to simulator
-  local expectedValues={
-                    gps = gpsSettings[2],       -- in Point#2 speed below started to be below stationarySpeedThld
+  expectedGpsValues = {
+                        heading = 361,
+                        speed = 0,
+                        longitude = gpsSettings[2].longitude, -- in Point#2 speed was lower than stationarySpeedThld
+                        latitude =  gpsSettings[2].latitude,
+                      }
+
+  expectedValues={
+                    gps = expectedGpsValues,
                     messageName = "MovingEnd",
                     currentTime = timeOfEventTc
                         }
@@ -710,10 +723,10 @@ function test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessage
 
   gpsSettings.speed = defaultSpeedLimit+1  -- one kmh above the speed limit threshold
   gps.set(gpsSettings)
-  framework.delay(speedingTimeOver+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(speedingTimeOver+gpsReadInterval) -- wait until terminal gets speeding state
 
- -- SpeedingStart Message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart))
+  -- SpeedingStart Message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SpeedingStart message not received")
 
 
@@ -787,14 +800,14 @@ function test_Speeding_WhenSpeedBelowSpeedingThldForPeriodAboveThld_SpeedingEndM
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
-  gateway.setHighWaterMark() -- to get the newest messages
+  gateway.setHighWaterMark()                            -- to get the newest messages
 
-  gpsSettings.speed = defaultSpeedLimit-1  -- one kmh above the speed limit threshold
+  gpsSettings.speed = defaultSpeedLimit-1               -- one kmh above the speed limit threshold
   gps.set(gpsSettings)
-  framework.delay(speedingTimeUnder+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(speedingTimeUnder+gpsReadInterval)    -- wait until terminal stops speeding
 
- -- SpeedingEnd Message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingEnd))
+  -- SpeedingEnd Message expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingEnd),nil,getReturnMessageTimeout)
   assert_not_nil(message, "MovingEnd message not received")
 
   local expectedValues={
@@ -1010,7 +1023,7 @@ function test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessage
   gps.set({fixType=1})                                -- simulated no fix (gps signal loss)
 
   -- SpeedingStart Message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,getReturnMessageTimeout)
   assert_not_nil(message, "SpeedingStart message not received")
 
 
@@ -1383,10 +1396,10 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   gps.set(gpsSettings[3])    -- applying gps settings of Point#3
 
   -- waiting until turnDebounceTime passes
-  framework.delay(turnDebounceTime+gpsReadInterval+3)
+  framework.delay(turnDebounceTime+gpsReadInterval)
 
   -- Turn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.turn))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.turn),nil,getReturnMessageTimeout)
   assert_not_nil(message, "Turn message not received")
 
   -- content of the report should contain Point#2 gps and time information
@@ -1673,10 +1686,10 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   gps.set(gpsSettings[3])    -- applying gps settings of Point#3 with signal loss
 
   -- waiting until turnDebounceTime passes
-  framework.delay(turnDebounceTime+gpsReadInterval+3)
+  framework.delay(turnDebounceTime+gpsReadInterval)
 
   -- Turn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.turn))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.turn),nil,getReturnMessageTimeout)
   assert_not_nil(message, "Turn message not received")
 
   -- content of the report should contain Point#2 gps and time information
@@ -1742,11 +1755,11 @@ function test_LongDriving_WhenTerminalMovingWithoutBreakForPeriodLongerThanMaxDr
 
   gateway.setHighWaterMark()                 -- to get the newest messages
   -- waiting until maxDrivingTime limit passes
-  framework.delay(maxDrivingTime*60+longDrivingCheckInterval+8)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
+  framework.delay(maxDrivingTime*60+longDrivingCheckInterval)       -- maxDrivingTime multiplied by 60 to get seconds from minutes
   eventTimeTc = os.time() - 30
 
   -- LongDriving message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.longDriving))
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.longDriving),nil,getReturnMessageTimeout)
   assert_not_nil(message, "LongDriving message not received")
 
 
@@ -2252,11 +2265,11 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(0, tonumber(colmsg.Payload.SatCnr), "SatCnr value is wrong in report")                                         --TODO: this value will be simulated in the future
   assert_equal(99, tonumber(colmsg.Payload.CellRssi), "CellRssi value is wrong in report")
   if (hardwareVariant==3) then
-  assert_equal(extVoltage, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
-  assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
+    assert_equal(extVoltage, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
+    assert_equal(battVoltage, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
   else
-  assert_equal(0, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
-  assert_equal(0, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
+    assert_equal(0, tonumber(colmsg.Payload.ExtVoltage), "ExtVoltage value is wrong in report")
+    assert_equal(0, tonumber(colmsg.Payload.BattVoltage), "BattVoltage value is wrong in report")
 
   end
 
