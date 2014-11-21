@@ -7,16 +7,19 @@ lsfConstantsAllTerminals = {
                                                           power = 17,
                                                           geofence = 21,
                                                           position = 20,
+                                                          filesystem =  24,
                                                           idp = 27,
                                                           io = 25,
                                                         },
                                                 -- Messages MINs
                                                 mins = {
+                                                          write = 1,              -- to mobile message, filesystem service
                                                           saveProperties = 11,    -- to mobile, system service
                                                           propertyValues = 5,     -- from mobile, system service
                                                           getTerminalInfo = 1,    -- to mobile, system service
                                                           terminalInfo = 1,       -- from mobile , system service
                                                           restartService = 5,     -- to mobile message
+
                                                        },
                                                 -- Properties PINs
                                                 pins = {

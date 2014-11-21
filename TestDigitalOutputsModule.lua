@@ -34,16 +34,16 @@ function suite_setup()
 
   -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
   -- for more details please go to Geofences.jpg file in Documentation
-  local message = {SIN = 24, MIN = 1}
+  local message = {SIN = lsfConstants.sins.filesystem, MIN = lsfConstants.mins.write}
 	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},
   {Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
 	gateway.submitForwardMessage(message)
 
   framework.delay(5) -- to make sure file is saved
 
-  -- restaring geofences service, that action is necessary after sending new fences.dat file
-  local message = {SIN = 16, MIN = 5}
-	message.Fields = {{Name="sin",Value=21}}
+  -- restarting geofences service, that action is necessary after sending new fences.dat file
+  local message = {SIN = lsfConstants.sins.system, MIN = lsfConstants.mins.restartService}
+	message.Fields = {{Name="sin",Value=lsfConstants.sins.geofence}}
 	gateway.submitForwardMessage(message)
 
   framework.delay(5) -- wait until geofences service is up again
@@ -163,6 +163,8 @@ function setup()
 end
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
+-----------------------------------------------------------------------------------------------
+
 function teardown()
 
 -- nothing here for now
@@ -2090,6 +2092,7 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
 
 
 end
+
 
 
 
