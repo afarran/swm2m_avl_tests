@@ -42,18 +42,18 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
 
 --- setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval, sets all 4 ports to low state
+  -- it also sets GPS_READ_INTERVAL (in position service) to the value of GPS_READ_INTERVAL, sets all 4 ports to low state
   -- and checks if terminal is not in the IgnitionOn state
   -- executed before each unit test
   -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+  -- setting of the GPS_READ_INTERVAL (in the position service) is made using global GPS_READ_INTERVAL variable
   -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
   -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
   -- set all 4 ports to low state and check if terminal is not in the IgnitionOn state
@@ -65,7 +65,7 @@ function setup()
 
   -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}
+                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
                                                }
                     )
 
@@ -146,7 +146,7 @@ end
   -- request; verify the fields in the received reportorted fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM0Time and SM0Distance correctly reported
 function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -211,7 +211,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterReque
     gateway.submitForwardMessage(getServiceMeterMessage)
 
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
     assert_not_nil(message, "ServiceMeter message not received")
 
     local expectedValues={
@@ -244,7 +244,7 @@ end
   -- and check if ServiceMeter message is sent after that and values of SM0Time and SM0Distance are correct (as set in TC)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM0Time and SM0Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -292,7 +292,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0Tim
 	gateway.submitForwardMessage(getServiceMeterMessage)
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
 
   local expectedValues={
@@ -320,7 +320,7 @@ end
   -- request; verify the fields in the received reportorted fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM1Time and SM1Distance correctly reported
 function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -385,7 +385,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterReque
     gateway.submitForwardMessage(getServiceMeterMessage)
 
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
     assert_not_nil(message, "ServiceMeter message not received")
 
     local expectedValues={
@@ -412,7 +412,7 @@ end
   -- and check if ServiceMeter message is sent after that and values of SM1Time and SM1Distance are correct (as set in TC)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM1Time and SM1Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -460,7 +460,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1Tim
 	gateway.submitForwardMessage(getServiceMeterMessage)
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
 
   local expectedValues={
@@ -488,7 +488,7 @@ end
   -- request; verify the fields in the received reportorted fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM2Time and SM2Distance correctly reported
 function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -552,7 +552,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterReque
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
     assert_not_nil(message, "ServiceMeter message not received")
     local expectedValues={
                     gps = gpsSettings,
@@ -579,7 +579,7 @@ end
   -- and check if ServiceMeter message is sent after that and values of SM2Time and SM2Distance are correct (as set in TC)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM2Time and SM2Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -627,7 +627,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2Tim
 	gateway.submitForwardMessage(getServiceMeterMessage)
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
 
   local expectedValues={
@@ -654,7 +654,7 @@ end
   -- request; verify the fields in the received reportorted fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM3Time and SM3Distance correctly reported
 function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -718,7 +718,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterReque
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
 
   local expectedValues={
@@ -744,7 +744,7 @@ end
   -- and check if ServiceMeter message is sent after that and values of SM3Time and SM3Distance are correct (as set in TC)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM3Time and SM3Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -792,7 +792,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3Tim
 	gateway.submitForwardMessage(getServiceMeterMessage)
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
@@ -818,7 +818,7 @@ end
   -- request; verify the fields in the received report
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM4Time and SM4Distance correctly reported
 function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -882,7 +882,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
     assert_not_nil(message, "ServiceMeter message not received")
 
     local expectedValues={
@@ -909,7 +909,7 @@ end
   -- and check if ServiceMeter message is sent after that and values of SM4Time and SM4Distance are correct (as set in TC)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM4Time and SM4Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -958,7 +958,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4Tim
 	gateway.submitForwardMessage(getServiceMeterMessage)
   gpsSettings.heading = 361  -- for stationary state
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,
@@ -985,7 +985,7 @@ end
   -- request; verify if all 4 ServiceMeters values are correctly reported
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; All SMTimes and SMDistances are correctly reported
 function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
@@ -1077,7 +1077,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
     assert_not_nil(message, "ServiceMeter message not received")
     local expectedValues={
                     gps = gpsSettings,

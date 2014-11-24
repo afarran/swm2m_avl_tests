@@ -62,18 +62,18 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
 
 --- setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval, sets all 4 ports to low state
+  -- it also sets GPS_READ_INTERVAL (in position service) to the value of GPS_READ_INTERVAL, sets all 4 ports to low state
   -- and checks if terminal is not in the IgnitionOn state
   -- executed before each unit test
   -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+  -- setting of the GPS_READ_INTERVAL (in the position service) is made using global GPS_READ_INTERVAL variable
   -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
   -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
   -- set all 4 ports to low state and check if terminal is not in the IgnitionOn state
@@ -93,7 +93,7 @@ function setup()
                    )
 
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode of position service (SIN 20, PIN 15)
                                                }
                     )
 
@@ -186,7 +186,7 @@ end
   -- simulate port 3 value change to low state - check if terminal goes to IgnitionOn false and port 1 goes back to low state
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to IgnitionOn state
 function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssociatedWithIgnitionOnInHighState()
@@ -245,7 +245,7 @@ end
   -- is obtained); then simulate speed below Stationary Speed Threshold and check if port 1 changes back to low level
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes state when speed is above Stationary Speed Threshold
 function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutputPortAssociatedWithMovingStateInHighState()
@@ -306,7 +306,7 @@ end
   -- state of port 1 changes to high; then simulate speed below defaultSpeedLimit again and check if port state changes back to low;
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes when speed above defaultSpeedLimit
 function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAssociatedWithSpeedingInHighState()
@@ -349,7 +349,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   avlHelperFunctions.putTerminalIntoStationaryState()
 
   gps.set(gpsSettings) -- apply gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2) -- wait until terminal goes to moving state
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2) -- wait until terminal goes to moving state
 
   -- asserting state of port 1 - low state is expected as terminal is not speeding yet
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
@@ -384,7 +384,7 @@ end
   -- in low state then (no idling)
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 is high when terminal is stationary and ignition is switched on
 function test_DigitalOutput_WhenTerminalStationaryAndIgnitionIsOn_DigitalOutputPortAssociatedWithIdlingInHighState()
@@ -456,7 +456,7 @@ end
   -- then set port 3 to low level - that triggers SM1 = OFF and after that check if port 1 output is low again
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM1 state
 function test_DigitalOutput_WhenServiceMeter1IsON_DigitalOutputPortAssociatedWithSM1InHighState()
@@ -510,7 +510,7 @@ end
   -- then set port 3 to low level - that triggers SM2 = OFF and after that check if port 1 output is low again
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM2 state
 function test_DigitalOutput_WhenServiceMeter2IsON_DigitalOutputPortAssociatedWithSM2InHighState()
@@ -568,7 +568,7 @@ end
   -- then set port 3 to low level - that triggers SM3 = OFF and after that check if port 1 output is low again
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM3 state
 function test_DigitalOutput_WhenServiceMeter3IsON_DigitalOutputPortAssociatedWithSM3InHighState()
@@ -624,7 +624,7 @@ end
   -- then set port 3 to low level - that triggers SM4 = OFF and after that check if port 1 output is low again
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM4 state
 function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInHighState()
@@ -681,7 +681,7 @@ end
   -- are back to low state
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 and port 2 states change according to speed and SM1 state
 function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_AssociatedDigitalOutputPortsInHighState()
@@ -741,7 +741,7 @@ function test_DigitalOutput_WhenTerminalInMovingStateAndServiceMeter1IsOn_Associ
   -- simulating speed below stationarySpeedThld
   gpsSettings.speed = stationarySpeedThld - 1   -- kmh, one kmg below stationarySpeedThld
   gps.set(gpsSettings)                          -- apply settings
-  framework.delay(gpsReadInterval+3)            -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+3)            -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected - speed below stationarySpeedThld
   assert_equal(0, device.getIO(1), "Port1 associated with Moving is not in low state as expected")
@@ -764,7 +764,7 @@ end
   -- 0 (terminal stationary) and check if Seatbelt Violation line is not high in this case
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 associated with SeatbeltViolation function changes state according to SeatbeltOff line and moving state
 function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_DigitalOutputPortAssociatedWithSeatBeltViolationInHighState()
@@ -836,7 +836,7 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
   -- checking if the Seatbelt Violation line is not active when SeatbeltOff is active but terminal is not moving
   gpsSettings.speed = 0  -- terminal stationary
   gps.set(gpsSettings)   -- applying gps settings
-  framework.delay(stationaryDebounceTime+gpsReadInterval+2) -- wait until terminal is stationary
+  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+2) -- wait until terminal is stationary
 
 
   -- asserting state of port 1 - low state is expected as - SeatBelt fastened
@@ -918,7 +918,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   framework.delay(2) -- wait until settings are applied
 
   gps.set(gpsSettings)         -- applying gps settings, terminal moving outside any of the defined geofences (DwellTime = 0)
-  framework.delay(gpsReadInterval+geofenceInterval+10)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+10)  -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
@@ -929,7 +929,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
                longitude = 4.5,     -- degrees, that is inside geofence 2
               }
   gps.set(gpsSettings)         -- applying gps settings, terminal moving inside geofence 2
-  framework.delay(gpsReadInterval+geofenceInterval+geofenceHisteresis+15)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis+15)  -- wait until settings are applied
 
   -- asserting state of port 1 - high state is expected as terminal is inside geofence 2 (with defined DwellTime)
   assert_equal(1, device.getIO(1), "Port1 associated with GeoDwelling is not in high state as expected")
@@ -941,7 +941,7 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
               }
 
   gps.set(gpsSettings)                                                     -- applying gps settings
-  framework.delay(gpsReadInterval+geofenceInterval+geofenceHisteresis+20)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis+20)  -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
@@ -1033,7 +1033,7 @@ end
 
 
   gps.set(gpsSettings)     -- applying gps settings, terminal moving inside geofence 2
-  framework.delay(gpsReadInterval+geofenceInterval+10)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+10)  -- wait until settings are applied
 
   -- asserting state of port 1 - low state is expected - now terminal moving in geofence 2 (DwellTime = 0)
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
@@ -1054,7 +1054,7 @@ end
   -- then change port 3 back to high state to trigger IgnitionOn and check if port 1 goes back to low state (lpmTrigger is not active);
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to lpmTrigger state
 function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitionOnFalseState_DigitalOutputPortAssociatedWithLowPowerInHighState()
@@ -1130,7 +1130,7 @@ end
   -- simulate port 3 value change to low state - check if terminal goes to IgnitionOn false and port 1 goes to high state
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state, digOutActiveBitmap set to 0
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state, digOutActiveBitmap set to 0
   -- *expected results:
   -- port 1 state changes according to IgnitionOn state (low state is for active line)
 function test_DigitalOutput_WhenTerminalInIgnitionOnStateAndDigOutActiveBitmapIsSetToZero_DigitalOutputPortAssociatedWithIgnitionOnInLowState()

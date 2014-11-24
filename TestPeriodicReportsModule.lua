@@ -43,16 +43,16 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
 --- the setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval
+  -- it also sets GPS_READ_INTERVAL (in position service) to the value of GPS_READ_INTERVAL
   -- executed before each unit test
   -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+  -- setting of the GPS_READ_INTERVAL (in the position service) is made using global GPS_READ_INTERVAL variable
   -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
   -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
   -- *initial conditions:
@@ -62,7 +62,7 @@ end
 function setup()
 
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode of position service (SIN 20, PIN 15)
                                                }
                    )
 
@@ -97,7 +97,7 @@ end
   -- stationaryIntervalSat reports in collected messages; verify alle the fields of single report
   -- set stationaryIntervalSat to 0 to disable reports (not to cause any troubles in other TCs)ate
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- StationaryIntervalSat reports received periodically, content of the report is correct
 function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryIntervalSatGreaterThenZero_StationaryIntervalSatReportsMessageSentPeriodically()
@@ -125,7 +125,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
 
   gateway.setHighWaterMark()                                                -- to get the newest messages
   local timeOfEventTc = os.time()                                           -- time of receiving first stationaryIntervalSat report
-  framework.delay(stationaryIntervalSat*numberOfReports+gpsReadInterval+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(stationaryIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
 
    -- back to stationaryIntervalSat = 0 to get no more reports
   local stationaryIntervalSat = 0       -- seconds
@@ -162,7 +162,7 @@ end
   -- stationaryIntervalSat reports in collected messages; verify alle the fields of single report
   -- set stationaryIntervalSat to 0 to disable reports (not to cause eny troubles in other TCs)ate
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- StationaryIntervalSat reports received periodically, content of the report is correct
 function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryIntervalSatGreaterThanZero_StationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
@@ -195,7 +195,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   gateway.setHighWaterMark()                               -- to get the newest messages
 
   local timeOfEventTc = os.time()                                          -- time of receiving first stationaryIntervalSat report
-  framework.delay(stationaryIntervalSat*numberOfReports+gpsReadInterval+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(stationaryIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to stationaryIntervalSat = 0 to get no more reports
   local stationaryIntervalSat = 0       -- seconds
@@ -231,7 +231,7 @@ end
   -- should be equal to full StationaryIntervalSat period if the report has been correctly deffered
   -- in the end set stationaryIntervalSat to 0 to get no more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- StationaryIntervalSat message sent after full StationaryIntervalSat period (deffered by Position message)
 function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPositionEventOccurs_StationaryIntervalSatMessageSentAfterFullStationaryIntervalSatPeriodIfDeffered()
@@ -295,7 +295,7 @@ end
   -- correctly in the moving state then wait for 20 seconds and check if movingIntervalSat messages have been
   -- sent and verify the fields of single report; after verification set movingIntervalSat to 0 not get more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
 function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingIntervalSatGreaterThanZero_MovingIntervalSatMessageSentPeriodically()
@@ -325,13 +325,13 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEventTc = os.time()
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- checking if terminal is moving state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
-  framework.delay(movingIntervalSat*numberOfReports+gpsReadInterval+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(movingIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to movingIntervalSat = 0 to get no more reports
   movingIntervalSat = 0       -- seconds
@@ -369,7 +369,7 @@ end
   -- after that check if movingIntervalSat messages have been sent and verify the fields of single report;
   -- after verification set movingIntervalSat to 0 not get more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
 function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingIntervalSatGreaterThanZero_MovingIntervalSatMessageSentPeriodicallyGpsFixReported()
@@ -397,7 +397,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
                    )
 
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
 
   -- checking if terminal is moving state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -407,7 +407,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   framework.delay(lsfConstants.coldFixDelay)
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEventTc = os.time()
-  framework.delay(movingIntervalSat*numberOfReports+gpsReadInterval+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(movingIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to movingIntervalSat = 0 to get no more reports
   movingIntervalSat = 0       -- seconds
@@ -445,7 +445,7 @@ end
   -- in time between Position message and MovingIntervalSat message - that should be equal to full movingIntervalSat period
   -- in the end set MovingIntervalSat to get no more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  MovingIntervalSat message sent after full movingIntervalSat period (deffered by Position message)
 function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEventoccurs_MovingIntervalSatMessageSentAfterFullMovingIntervalSatPeriodIfDeffered()
@@ -473,7 +473,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
 
   gateway.setHighWaterMark()                 -- to get the newest messages
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+6)         -- wait until terminal gets moving state
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+6)         -- wait until terminal gets moving state
 
   local message = {SIN = 126, MIN = 1}      -- to trigger Position event
 	gateway.submitForwardMessage(message)
@@ -511,7 +511,7 @@ end
   -- if position messages has been received and check if fields of the single report are correct
   -- after verification set positionMsgInterval to 0 not get more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  Position messages sent periodically and fields of the reports have correct values
 function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
@@ -574,7 +574,7 @@ end
   -- for terminal in stationary state set positionMsgInterval to 0 seconds; send request of Position message (SIN 126, MIN 1)
   -- verify if position messages has been received and check if fields of the single report are correct
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  Position message sent after request and fields of the reports have correct values
 function test_Position_WhenTerminalInStationaryStateAndRequestedPositionMessageByMIN1_PositionMessageSent()
@@ -627,7 +627,7 @@ end
   -- simulate terminal moving, set positionMsgInterval to 0 seconds; send request of Position message (SIN 126, MIN 1)
   -- verify if position messages has been received and check if fields of the single report are correct
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  Position message sent after request and fields of the reports have correct values
 function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN1_PositionMessageSent()
@@ -651,7 +651,7 @@ function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN
               longitude = 1                   -- degrees
                      }
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+gpsReadInterval+1)
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1)
 
   gateway.setHighWaterMark() -- to get the newest messages
 
@@ -681,7 +681,7 @@ end
   -- *actions performed:
   -- set positionMsgInterval and meanwhile trigger DiagnosticsInfo message; check if Position message has been correctly deffered
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- Position messages correctly deffered by DiagnosticsInfo event
 function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndDiagnosticsInfoDeffers_PositionMessageSentAfterFullPositionMsgInterval()
@@ -738,7 +738,7 @@ end
   -- verify if position messages has been received and check if fields of the single report are correct
   -- after verification set positionMsgInterval to 0 not get more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   --  Position messages sent periodically and fields of the reports have correct values
 function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodicallyGpsFixReported()
@@ -804,7 +804,7 @@ end
   -- for every position change check if DistanceSat has been generated and verify fields of the report
   -- in the end set distanceSatThld back to 0 to get no more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- DistanceSat set after terminal travels distanceSatThld, content of the reports is correct
 function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent()
@@ -885,7 +885,7 @@ end
   -- lat = 0, long = 0 then move terminal to the second position 89 km away; check if DistanceSat report has not been sent;
   -- set distanceSatThld to 0 not to get more reports
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- DistanceSat not sent when covered distance is below distanceSatThld
 function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceSatMessageNotSent()
@@ -957,7 +957,7 @@ end
   -- 33 km away from first - check if DistanceSat report has not been sent; then simulate third position 122 km away from the second
   -- and check if DistanceSat message is sent and field in report have correct values
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- DistanceSat correctly deffered by Position message
 function test_Odometer_WhenTerminalTravelsDistanceSatThldAndPositionReportDeffersIt_DistanceSatMessageNotSent()
@@ -1068,7 +1068,7 @@ end
   -- log filter and select entries created during the TC collect log form terminal and analyse every single field in the saved LoggedPosition reports
   -- (values in log should be the same as the state of terminal when message saved)
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- LoggedPosition messages saved periodically in log according to LoggingPositionsInterval, fields of report have correct values
 function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsIntervallGreaterThanZero_LoggedPositionMessageSavedPeriodically()
@@ -1188,7 +1188,7 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   gateway.submitForwardMessage(getDataLogEntriesMessage)
 
   -- DataLogEntries message is expected (SIN 23, MIN 5)
-  local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.log, lsfConstants.mins.dataLogEntries),nil,getReturnMessageTimeout)
+  local logEntriesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.log, lsfConstants.mins.dataLogEntries),nil,GATEWAY_TIMEOUT)
 
   assert_not_nil(next(logEntriesMessage.Payload.Fields[1].Elements), "Received LogEntries message is empty")
 
@@ -1215,7 +1215,7 @@ end
   -- to 0 not get more reports and check how many periodic Position reports has been sent; if periodic position message has not been deffered by
   -- saving LoggedPosition this number is expected to be numberOfPositionReports defined in TC
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- saving LoggedPosition messages does not deffer periodic Position message
   function test_LoggedPosition_WhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingPeriodicPositionMessage()
@@ -1272,7 +1272,7 @@ end
   -- and stationaryIntervalSat to 0 not get more reports and check how many periodic stationaryIntervalSat reports has been sent;
   -- if stationaryIntervalSat message has not been deffered by saving LoggedPosition this number is expected to be numberOfReports defined in TC
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- saving LoggedPosition messages does not deffer periodic stationaryIntervalSat message
   function test_LoggedPosition_ForTerminalStationaryWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingStationaryIntervalSat()
@@ -1300,7 +1300,7 @@ end
                    )
 
   gps.set(gpsSettings)                                         -- apply settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2)        -- wait until terminal is stationary
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2)        -- wait until terminal is stationary
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
@@ -1338,7 +1338,7 @@ end
   -- and movingIntervalSat to 0 not get more reports and check how many periodic MovingIntervalSat reports has been sent;
   -- if MovingIntervalSat message has not been deffered by saving LoggedPosition this number is expected to be numberOfReports defined in TC
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- saving LoggedPosition messages does not deffer periodic MovingIntervalSat message
   function test_LoggedPosition_ForTerminalMovingyWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingMovingIntervalSat()
@@ -1366,7 +1366,7 @@ end
                    )
 
   gps.set(gpsSettings)                                         -- apply settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2)        -- wait until terminal is moving
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2)        -- wait until terminal is moving
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
@@ -1406,7 +1406,7 @@ end
   -- and distanceSatThld to 0 not get more reports and check how many  DistanceSat reports has been sent;
   -- if DistanceSat message has not been deffered by saving LoggedPosition this number is expected to be numberOfReports defined in TC
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- saving LoggedPosition messages does not deffer DistanceSat message
   function test_LoggedPosition_ForTerminalMovingyWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingDistanceSatMessage()
@@ -1435,7 +1435,7 @@ end
                    )
 
   gps.set(gpsSettings)                                         -- apply settings
-  framework.delay(movingDebounceTime+gpsReadInterval+2)        -- wait until terminal is moving
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2)        -- wait until terminal is moving
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now

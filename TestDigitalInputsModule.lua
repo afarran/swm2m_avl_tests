@@ -76,7 +76,7 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
@@ -92,14 +92,14 @@ end
   --
   -- Steps:
   --
-  -- 1. Set continues property (PIN 15) in Position service (SIN 20) to value gpsReadInterval
+  -- 1. Set continues property (PIN 15) in Position service (SIN 20) to value GPS_READ_INTERVAL
   -- 2. Put terminal into stationary state
   -- 3. Simulate all 4 port change to low state
   -- 4. Disable 4 digital input lines
   --
   -- Results:
   --
-  -- 1. continues property set to gpsReadInterval, GPS read periodically
+  -- 1. continues property set to GPS_READ_INTERVAL, GPS read periodically
   -- 2. Terminal put into stationary state
   -- 3. All 4 ports in low state
   -- 4. Digital input lines 1-4 disabled
@@ -107,7 +107,7 @@ end
 
   -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}
+                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
                                                }
                     )
 
@@ -244,7 +244,7 @@ end
   device.setIO(randomPortNumber, 1)  -- port  to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOn message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
@@ -324,7 +324,7 @@ end
   local timeOfEventTC = os.time()   -- to get exact timestamp
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -385,7 +385,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
               fixType = 3,                    -- valid fix provided at this point
                      }
   gps.set(gpsSettings)
-  framework.delay(gpsReadInterval+2)          -- wait until terminal reads the gps position
+  framework.delay(GPS_READ_INTERVAL+2)          -- wait until terminal reads the gps position
 
   -- gps signal loss is simulated at this moment
   gpsSettings["fixType"] = 1              -- no valid fix provided, gps signal loss
@@ -412,7 +412,7 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
 
   --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -496,7 +496,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
 
   --IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOff message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
@@ -587,7 +587,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSentGpsFixAge
   device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
 
   --IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOff message not received")
 
   gpsSettings.heading = 361   -- 361 is reported for stationary state
@@ -667,7 +667,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gps.set(gpsSettings)                        -- applying gps settings
-  framework.delay(gpsReadInterval+2)
+  framework.delay(GPS_READ_INTERVAL+2)
 
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
@@ -714,7 +714,7 @@ end
   -- then wait until maxIdlingTime passes and check if message IdlingStart has been correctly sent,
   -- verify reported fields and check if terminal entered EngineIdling state
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the EngineIdling state, IdlingStart message sent and report fields
@@ -732,7 +732,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                      }
 
   gps.set(gpsSettings)
-  framework.delay(gpsReadInterval+3)
+  framework.delay(GPS_READ_INTERVAL+3)
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -758,7 +758,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
               fixType = 1,                    -- no valid fix provided,  gps signal loss simulated
                      }
   gps.set(gpsSettings)
-  framework.delay(gpsReadInterval+3)
+  framework.delay(GPS_READ_INTERVAL+3)
 
   gateway.setHighWaterMark()
   timeOfEventTC = os.time()
@@ -805,7 +805,7 @@ end
   -- then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
   -- state becomes false; also verify the fields of the IdlingEnd report
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
@@ -886,7 +886,7 @@ end
   -- then simulate port 1 change to low level (IgnitionOff) and check if IdlingEnd message is correctly sent and EngineIdling
   -- state becomes false; also verify the fields of the IdlingEnd report
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
@@ -904,7 +904,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
                      }
 
   gps.set(gpsSettings)
-  framework.delay(gpsReadInterval+2)
+  framework.delay(GPS_READ_INTERVAL+2)
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -976,7 +976,7 @@ end
   -- after that simulate gps speed above stationarySpeedThld for longer then movingDebounceTime to put the terminal into moving state
   -- check if IdlingEnd message is correctly sent and EngineIdling state becomes false; also verify the fields of the IdlingEnd report
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
@@ -1068,7 +1068,7 @@ end
   -- then simulate port 1 value change to high state to get the IgnitionOn state is true; then wait shorter
   -- than maxIdlingTime and check if message IdlingStart has not been sent and check if terminal has not entered EngineIdling state
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal does not enter the EngineIdling state, IdlingStart message not sent
@@ -1125,7 +1125,7 @@ end
   -- port 1 change to low level to trigger IgnitionOff event and check if MovingEnd message is sent
   -- and terminal is no longer in the moving state after that
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval,
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL,
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the stationary and IgnitionOFF state, MovingEnd message sent
@@ -1162,7 +1162,7 @@ function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_Moving
   -- first terminal is put into moving state
   gateway.setHighWaterMark()                              -- to get the newest messages
   gps.set(gpsSettings)                                    -- gps settings applied
-  framework.delay(movingDebounceTime+gpsReadInterval+1)   -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1)   -- one second is added to make sure the gps is read and processed by agent
   --checking if terminal is in the moving state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
@@ -1219,7 +1219,7 @@ end
   -- port 1 change to low level to trigger IgnitionOff event and check if MovingEnd and SpeedingEnd messages are sent
   -- and terminal is no longer in the speeding state after that
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval,
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL,
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the stationary and IgnitionOFF state, SpedingEnd and MovingEnd messages sent
@@ -1261,7 +1261,7 @@ function test_Ignition_WhenTerminalInSpeedingStateAndIgnitionOffEventOccurs_Movi
   -- first terminal is put into moving state
   gateway.setHighWaterMark()                              -- to get the newest messages
   gps.set(gpsSettings)                                    -- gps settings applied,
-  framework.delay(movingDebounceTime+speedingTimeOver+gpsReadInterval+6)     -- 5 seconds are added as prior to SpeedingStart there will be movingStart message sent
+  framework.delay(movingDebounceTime+speedingTimeOver+GPS_READ_INTERVAL+6)     -- 5 seconds are added as prior to SpeedingStart there will be movingStart message sent
 
   --checking if terminal is in the speeding state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1320,7 +1320,7 @@ end
   -- then simulate port 2 change to high level (SM1 = ON) and check if IdlingEnd message is correctly sent and EngineIdling state becomes false;
   -- also verify the fields of the IdlingEnd report
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the out of EngineIdling state, IdlingEnd message sent and report fields
@@ -1406,7 +1406,7 @@ end
   -- wait longer than maxIdlingTime; after that check if message IdlingStart has not been sent and check if terminal has not
   -- entered EngineIdling state
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- none of Service Meters lines is high, all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal does not enter the EngineIdling state, IdlingStart message not sent
@@ -1480,7 +1480,7 @@ end
   -- reported fields have correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
   -- have correct values
@@ -1533,7 +1533,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(seatbeltDebounceTime)     -- wait for seatbeltDebounceTime
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
 
   local expectedValues={
@@ -1563,7 +1563,7 @@ end
   -- reported fields have correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
   -- have correct values
@@ -1618,7 +1618,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   framework.delay(seatbeltDebounceTime) -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
 
   local expectedValues={
@@ -1648,7 +1648,7 @@ end
   -- reported fields have correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put in the SeatbeltViolation state, SeatbeltViolationStart message sent and reported fields
   -- have correct values
@@ -1707,7 +1707,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   framework.delay(seatbeltDebounceTime)      -- to make sure seatbeltDebounceTime passes
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
 
 
@@ -1738,7 +1738,7 @@ end
   -- check if SeatbeltViolationStart message is not sent and terminal does not go to SeatbeltViolation state
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal not put in the SeatbeltViolation state, SeatbeltViolationStart message not sent
 function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForPeriodAboveThld_SeatbeltViolationStartMessageSent()
@@ -1822,7 +1822,7 @@ end
   -- SeatbeltViolationEnd message is sent and reported fields have correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
@@ -1879,7 +1879,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   device.setIO(2, 0)                   -- port 2 to low level - that triggers SeatbeltOff false, belt fastened
 
   -- SeatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SeatbeltViolationEnd message not received")
 
   local expectedValues={
@@ -1911,7 +1911,7 @@ end
   -- correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
@@ -2004,7 +2004,7 @@ end
   -- fields have correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
@@ -2100,7 +2100,7 @@ end
   -- fields have correct values
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- terminal correctly put out of the SeatbeltViolation state, SeatbeltViolationEnd message sent and reported fields
   -- have correct values
@@ -2193,7 +2193,7 @@ end
   -- has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp1Hi message sent when port changes state from low to high
 function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent()
@@ -2227,7 +2227,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(1, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2256,7 +2256,7 @@ end
   -- and check if DigInp1Lo message has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp1Lo message sent when port changes state from high to low
 function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent()
@@ -2290,7 +2290,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(1, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2322,7 +2322,7 @@ end
   -- has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp2Hi message sent when port changes state from low to high
 function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent()
@@ -2356,7 +2356,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(2, 1)                                       -- set port 2 to high level - that should trigger DigInp2Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2386,7 +2386,7 @@ end
   -- and check if DigInp2Lo message has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp2Lo message sent when port changes state from high to low
 function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent()
@@ -2420,7 +2420,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(2, 1)                                       -- set port 2 to high level - that should trigger DigInp2Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2453,7 +2453,7 @@ end
   -- has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp2Hi message sent when port changes state from low to high
 function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent()
@@ -2487,7 +2487,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(3, 1)                                       -- set port 3 to high level - that should trigger DigInp3Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2517,7 +2517,7 @@ end
   -- and check if DigInp3Lo message has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp3Lo message sent when port changes state from high to low
 function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent()
@@ -2551,7 +2551,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(3, 1)                                       -- set port 3 to high level - that should trigger DigInp3Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2584,7 +2584,7 @@ end
   -- has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp4Hi message sent when port changes state from low to high
 function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
@@ -2621,7 +2621,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(4, 1)                                       -- set port 4 to high level - that should trigger DigInp4Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2651,7 +2651,7 @@ end
   -- and check if DigInp4Lo message has been sent from terminal and report contains correct values of fields
   -- *initial conditions:
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of
-  -- gpsReadInterval; all 4 ports in LOW state, terminal not in the IgnitionOn state
+  -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp4Lo message sent when port changes state from high to low
 function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
@@ -2688,7 +2688,7 @@ function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_D
                                              }
                    )
   gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- wait terminal gets moving state and MovingStart message is processed
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(4, 1)                                       -- set port 4 to high level - that should trigger DigInp4Hi
   framework.delay(3)                                       -- wait until message is processed
@@ -2770,7 +2770,7 @@ end
   timeOfEventTC = os.time()
 
   -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "PowerMain message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -2849,7 +2849,7 @@ end
   timeOfEventTC = os.time()
 
   -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerBackup),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerBackup),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "PowerBackup message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -2929,7 +2929,7 @@ end
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOn message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -3009,7 +3009,7 @@ end
   device.setPower(8,0)                    -- external power becomes not present (line 13 changes state to 0)
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOff message not received")
   gpsSettings.heading = 361   -- 361 is reported for stationary state
 
@@ -3095,7 +3095,7 @@ end
                      }
 
   gps.set(gpsSettings)                                  -- applying gps settings
-  framework.delay(gpsReadInterval+movingDebounceTime+3) -- wait until terminal goes to moving state
+  framework.delay(GPS_READ_INTERVAL+movingDebounceTime+3) -- wait until terminal goes to moving state
 
   -- verification of the state of terminal - Moving state true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -3112,7 +3112,7 @@ end
   framework.delay(seatbeltDebounceTime)    -- wait for period seatbeltDebounceTime to get seatbeltViolationStart message
 
   -- seatbeltViolationStart message expected
-  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,getReturnMessageTimeout)
+  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SeatbeltViolationStart message not received")
   local expectedValues={
                   gps = gpsSettings,
@@ -3145,7 +3145,7 @@ end
   timeOfEventTC = os.time()               -- to get exact timestamp
 
   -- seatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SeatbeltViolationEnd message not received")
   expectedValues={
                   gps = gpsSettings,
@@ -3251,7 +3251,7 @@ end
                      }
 
   gps.set(gpsSettings)                                     -- applying gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- waiting until terminal gets moving state in Point#1
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- waiting until terminal gets moving state in Point#1
 
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
@@ -3273,7 +3273,7 @@ end
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOn message not received")
 
   local expectedValues={
@@ -3298,7 +3298,7 @@ end
   gateway.submitForwardMessage(getServiceMeterMessage)
 
   -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
   expectedValues={
                   gps = gpsSettings,
@@ -3319,7 +3319,7 @@ end
   timeOfEventTC = os.time()        -- to get correct timestamp
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "IgnitionOff message not received")
 
   -- verification of the state of terminal - IgnitionON true expected
@@ -3336,7 +3336,7 @@ end
                      }
 
   gps.set(gpsSettings)                                     -- applying gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+3)    -- waiting until terminal gets moving state in Point#3
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- waiting until terminal gets moving state in Point#3
 
   gateway.setHighWaterMark()              -- to get the newest messages
   -- sending getServiceMeter message
@@ -3344,7 +3344,7 @@ end
   gateway.submitForwardMessage(getServiceMeterMessage)
 
   -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ServiceMeter message not received")
   local expectedValues={
                   gps = gpsSettings,

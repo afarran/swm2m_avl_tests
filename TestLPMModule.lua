@@ -73,13 +73,13 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
 
---- Setup function puts terminal into stationary state, configures gpsReadInterval, sets all ports to low level and checks if terminal is not in LPM and IgnitionOn state .
+--- Setup function puts terminal into stationary state, configures GPS_READ_INTERVAL, sets all ports to low level and checks if terminal is not in LPM and IgnitionOn state .
   -- Initial Conditions:
   --
   -- * Running Terminal Simulator
@@ -88,7 +88,7 @@ end
   --
   -- Steps:
   --
-  -- 1. Set gpsReadInterval (PIN 15) in Position service (SIN 20)
+  -- 1. Set GPS_READ_INTERVAL (PIN 15) in Position service (SIN 20)
   -- 2. Put terminal into stationary state
   -- 3. Set all ports to low level
   -- 4. Assert if terminal not in LPM and IgnitionOn mode
@@ -99,7 +99,7 @@ end
  function setup()
 
   lsf.setProperties(lsfConstants.sins.position,{
-                                                {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode interval of position service
+                                                {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode interval of position service
                                                }
                     )
 
@@ -465,7 +465,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
   framework.delay(2)
 
   -- waiting until terminal goes into moving state again (speed is above threshold)
-  framework.delay(movingDebounceTime[1].value+gpsReadInterval+10)
+  framework.delay(movingDebounceTime[1].value+GPS_READ_INTERVAL+10)
 
   -- reading AVLStates property to check moving state
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -484,7 +484,7 @@ end
   -- Steps:
   --
   -- 1. Set ledControl  property (PIN 6) in System service (SIN 16) to value ledControlUserSet
-  -- 2. Set Continues  property (PIN 15) in Position service (SIN 20) to value gpsReadInterval
+  -- 2. Set Continues  property (PIN 15) in Position service (SIN 20) to value GPS_READ_INTERVAL
   -- 3. Set Interval property (PIN 2) in Geofence service (SIN 21) to value A and LpmGeoInterval (PIN 33) in AVL service (SIN 126) to value B
   -- 4. Set WakeUpInterval property (PIN 11) in IDP service  (SIN 27) to value C and LpmModemWakeUpInterval property (PIN 34) in AVL service (SIN 126) to value D
   -- 5. Set powerMode property (PIN 11) in IDP service  (SIN 27) to value powerModeUserSet
@@ -497,7 +497,7 @@ end
   -- 12. Read WakeUpInterval property (PIN 11) in IDP service (SIN 27) and verify that is has value D (LpmModemWakeUpInterval)
   -- 13. Simulate IgnitionOn line in active state and check terminals state
   -- 14. Read ledControl property (PIN 6) in System service (SIN 16) and verify that is has been reverted to user saved (ledControlUserSet)
-  -- 15. Read Continues property (PIN 15) and verify if it has been reverted to value gpsReadInterval
+  -- 15. Read Continues property (PIN 15) and verify if it has been reverted to value GPS_READ_INTERVAL
   -- 16. Read geofence check Interval (PIN 2) and verify if it has been reverted to value A
   -- 17. Read WakeUpInterval property (PIN 11) and verify if it has been set to 5_seconds
   -- 18. Read powerMode property (PIN 10) and verify if it has been reverted to powerModeUserSet
@@ -505,7 +505,7 @@ end
   -- Results:
   --
   -- 1. LedControl set to value ledControlUserSet
-  -- 2. Continues set to to value gpsReadInterval
+  -- 2. Continues set to to value GPS_READ_INTERVAL
   -- 3. Interval set to value A and LpmGeoInterval set to value B
   -- 4. WakeUpInterval set to value C and LpmModemWakeUpInterval set to value D
   -- 5. PowerMode property set to powerModeUserSet
@@ -519,13 +519,13 @@ end
   -- 12. powerMode property set to 2 - MobileBattery
   -- 13. Terminal goes out of LPM
   -- 14. Value of ledControl property (PIN 6, SIN 16) has been reverted to ledControlUserSet (user-saved) when leaving LPM
-  -- 15. Value of Continues property (PIN 15, SIN 20) has been reverted to gpsReadInterval when leaving LPM
+  -- 15. Value of Continues property (PIN 15, SIN 20) has been reverted to GPS_READ_INTERVAL when leaving LPM
   -- 16. Value of Interval property (PIN 2, SIN 21) has been reverted to value A when leaving LPM
   -- 17. Value of WakeUpInterval property (PIN 11, SIN 27) has been set to 5_seconds when leaving LPM
   -- 18. Value of powerMode (PIN 10, SIN 27) has been reverted to powerModeUserSet
 function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChangedwhenEnteringLpmAndRevertedWhenLeavingLpm()
 
-  local gpsReadInterval = 1                           -- seconds
+  local GPS_READ_INTERVAL = 1                           -- seconds
   local lpmEntryDelay = 0                             -- minutes
   local lpmTrigger = 1                                -- 1 is for IgnitionOff
   local ledControlUserSet = 0                         -- enum type property (0 - Terminal, 1 - User)
@@ -559,7 +559,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- sending setProperties to set properties in System, Position, Geofence, IDP and EIO services
 	local message = {SIN = 16, MIN = 9}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=lsfConstants.sins.system},  {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.ledControl},      {Name="value",Type="enum",Value=ledControlUserSet}}}}}}},
-                                           {Index=1,Fields={{Name="sin",Value=lsfConstants.sins.position},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.gpsReadInterval}, {Name="value",Type="unsignedint",Value=gpsReadInterval}}}}}}},
+                                           {Index=1,Fields={{Name="sin",Value=lsfConstants.sins.position},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.gpsReadInterval}, {Name="value",Type="unsignedint",Value=GPS_READ_INTERVAL}}}}}}},
                                            {Index=2,Fields={{Name="sin",Value=lsfConstants.sins.geofence},{Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.geofenceInterval},{Name="value",Type="unsignedint",Value=geofenceInterval}}}}}}},
                                            {Index=3,Fields={{Name="sin",Value=lsfConstants.sins.idp},     {Name="propList",Elements={{Index=0,Fields={{Name="pin",Value=lsfConstants.pins.wakeUpInterval},  {Name="value",Type="enum",Value=wakeUpIntervalEnum}}},
                                                                                                                                     { Index=1,Fields={{Name="pin",Value=lsfConstants.pins.powerMode},       {Name="value",Type="enum",Value=powerModeUserSet}}}}}}},
@@ -586,14 +586,14 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   gateway.submitForwardMessage(getPropertiesMessage)
 
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues),nil,getReturnMessageTimeout)
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues),nil,GATEWAY_TIMEOUT)
   assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   local ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   assert_equal(ledControlUserSet,tonumber(ledControlProperty), "Value of ledControl property has not been correctly set")
 
   local continuesProperty = propertyValuesMessage.Payload.Fields[1].Elements[2].Fields[2].Elements[1].Fields[2].Value
-  assert_equal(gpsReadInterval,tonumber(continuesProperty), "Value of Continues property has not been correctly set")
+  assert_equal(GPS_READ_INTERVAL,tonumber(continuesProperty), "Value of Continues property has not been correctly set")
 
   local geofenceIntervalProperty = propertyValuesMessage.Payload.Fields[1].Elements[3].Fields[2].Elements[1].Fields[2].Value
   assert_equal(geofenceInterval,tonumber(geofenceIntervalProperty), "Value of Interval property in Geofence service has not been correctly set")
@@ -622,7 +622,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- sending getProperties message (SIN 16, MIN 8) to mobile
   gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues,nil,getReturnMessageTimeout)  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues,nil,GATEWAY_TIMEOUT)  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if  ledControl property (PIN 6)  has been set to 1 - Terminal when entering LPM
@@ -662,7 +662,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- sending getProperties message (SIN 16, MIN 8) to mobile
 	gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues),nil,getReturnMessageTimeout)
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues),nil,GATEWAY_TIMEOUT)
   assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
@@ -671,7 +671,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
 
   continuesProperty = propertyValuesMessage.Payload.Fields[1].Elements[2].Fields[2].Elements[1].Fields[2].Value
   -- checking if Continues property has been reverted to user-saved value when leaving LPM
-  assert_equal(gpsReadInterval,tonumber(continuesProperty), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
+  assert_equal(GPS_READ_INTERVAL,tonumber(continuesProperty), "Value of Interval property in Geofence service has not been reverted when leaving LPM")
 
   geofenceIntervalProperty = propertyValuesMessage.Payload.Fields[1].Elements[3].Fields[2].Elements[1].Fields[2].Value
   -- checking if geofence Interval has been reverted to user-saved value when leaving LPM

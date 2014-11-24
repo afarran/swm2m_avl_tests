@@ -60,16 +60,16 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
 --- the setup function puts terminal into the stationary state and checks if that state has been correctly obtained
-  -- it also sets gpsReadInterval (in position service) to the value of gpsReadInterval
+  -- it also sets GPS_READ_INTERVAL (in position service) to the value of GPS_READ_INTERVAL
   -- executed before each unit test
   -- *actions performed:
-  -- setting of the gpsReadInterval (in the position service) is made using global gpsReadInterval variable
+  -- setting of the GPS_READ_INTERVAL (in the position service) is made using global GPS_READ_INTERVAL variable
   -- function sets stationaryDebounceTime to 1 second, stationarySpeedThld to 5 kmh and simulated gps speed to 0 kmh
   -- then function waits until the terminal get the non-moving state and checks the state by reading the avlStatesProperty
   -- by saving deleteData property it deletes Geo-speeding and Geo-dwell limits
@@ -93,7 +93,7 @@ function setup()
                    )
 
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,gpsReadInterval}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode of position service (SIN 20, PIN 15)
                                                }
                     )
 
@@ -146,7 +146,7 @@ end
   -- zone 0); change terminals position to inside of geofence 0 and wait fot time longer than geofenceHisteresis plus geofenceInterval and check
   -- if ZoneEntry message has been sent; verify the fields of the report
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal enters zone 0 and ZoneEntry message has been sent
 function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneEntryMessageSent()
@@ -195,7 +195,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   --- Terminal moving outside geofence 0
   ---------------------------------------------------------------------------------------
   gps.set(gpsSettings[1])     -- applying gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+5)       -- waiting until terminal gets Moving state true
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+5)       -- waiting until terminal gets Moving state true
 
   ---------------------------------------------------------------------------------------
   --- Terminal moving inside geofence 0
@@ -205,7 +205,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   timeOfEventTc = os.time()
   framework.delay(geofenceHisteresis+geofenceInterval)       -- waiting for the ZoneEntry message to be generated
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ZoneEntry message not received")   -- checking if any of ZoneEntry messages has been received
 
   local expectedValues={
@@ -227,7 +227,7 @@ end
   -- geofenceHisteresis to 1 second; simulate terminals position to latitude = 50, longitude = 3 but for time shorter than geofenceHisteresis
   -- and check if ZoneEntry message has not been sent
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal stays in zone 0 shorter than geofenceHisteresis and ZoneEntry message is not sent
 function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanGeofenceHisteresisPeriod_ZoneEntryMessageNotSent()
@@ -306,7 +306,7 @@ end
   -- geofence 0) and speed above stationarySpeedThld (to get moving state true); then change terminals position outside geofence 0
   -- (latitude = 50, longitude = 1) and check if ZoneExit message has been sent and the fields in report have correct values
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal exits goefence 0 and ZoneExit message has been sent
 function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceHisteresisPeriod_ZoneExitMessageSent()
@@ -367,7 +367,7 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
   gps.set(gpsSettings[2])                                    -- applying gps settings of Point#2
   framework.delay(geofenceHisteresis+geofenceInterval+20)   -- terminal enters geofence 128
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ZoneExit message not received")   -- checking if any of ZoneExit messages has been received
 
   local expectedValues={
@@ -391,7 +391,7 @@ end
   -- then change terminals position to inside of the geofence 0 (speed still above geofence0SpeedLimit) and check if speeding message is sent
   -- and reports fields have correct values
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal sends SpeedingStart message in geofence 0 and fields in report have correct values
 function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeedIsAboveThldForPeriodAboveThld_SpeedingStartMessageSent()
@@ -462,7 +462,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
   gps.set(gpsSettings[2])
   framework.delay(speedingTimeOver+geofenceInterval)    -- waiting until terminal enters the zone and the report is generated
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SpeedingStart message not received")   -- checking if any of SpeedingStart messages has been received
 
   local expectedValues={
@@ -487,7 +487,7 @@ end
   -- state; then change terminals position to inside of the geofence 0 (speed is below geofence0SpeedLimit) and check if speedingEnd message is sent
   -- and reports fields have correct values
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal sends SpeedingEnd message in geofence 0 and fields in report have correct values
 function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDefinedSpeedLimitAndSpeedIsBelowThldForPeriodAboveThl_SpeedingEndMessageSent()
@@ -548,7 +548,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   -----------------------------------------------------------------------------------------------------
 
   gps.set(gpsSettings[1])
-  framework.delay(speedingTimeOver+gpsReadInterval+20)  -- to get the speeding state outside geofence 0 (inside 128)
+  framework.delay(speedingTimeOver+GPS_READ_INTERVAL+20)  -- to get the speeding state outside geofence 0 (inside 128)
 
   -- checking the state of terminal, speeding state is expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -563,7 +563,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
   gps.set(gpsSettings[2])
   framework.delay(speedingTimeUnder+geofenceInterval)    -- waiting until terminal enters the zone and the SpeedingEnd report is generated
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingEnd),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingEnd),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SpeedingEnd message not received") -- checking if any of SpeedingEnd messages has been received
 
   local expectedValues={
@@ -590,7 +590,7 @@ end
   -- zone 0); then change terminals position to latitude = 50, longitude = 1 (this is area with no defined geofence) and check
   -- if in ZoneExit message reported CurrentZoneId is 128;
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- ZoneExit message is sent when terminal goes out of the area with defined geofence and reported id of zone is 128
 function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneId128IsReportedInZoneExitMessage()
@@ -638,7 +638,7 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
   -- terminal moving inside geofence 0
   ------------------------------------------------------------------------------------------------
   gps.set(gpsSettings[1])                                   -- applying gps settings of Point#1
-  framework.delay(geofenceInterval+gpsReadInterval+25)      -- waiting until terminal gets moving state inside geofence 0
+  framework.delay(geofenceInterval+GPS_READ_INTERVAL+25)      -- waiting until terminal gets moving state inside geofence 0
 
   ------------------------------------------------------------------------------------------------
   -- terminal goes out of geofence 0 to area with no defined geofence
@@ -648,7 +648,7 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
   timeOfEventTc = os.time()                                 -- to get the correct value for verification
   framework.delay(geofenceInterval+geofenceHisteresis)      -- waiting longer than geofenceHisteresis to get ZoneExit message
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "ZoneExit message not received") -- checking if any of ZoneExit messages has been received
 
   local expectedValues={
@@ -672,7 +672,7 @@ end
   -- event should consider this geofence0SpeedLimit)
   -- and reports fields have correct values
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal sends SpeedingStart message and reported speed limit is the limit defined for geofence 0
 function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefinedByGofenceWithLowerIdAnd_SpeedingMessageIsSent()
@@ -723,7 +723,7 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   gps.set(gpsSettings)                                   -- applying gps settings - speed above geofence0SpeedLimit to get the speeding state
   framework.delay(speedingTimeOver+geofenceInterval)     -- wait until report is generated
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "SpeedingStart message not received") -- checking if SpeedingStart message has been received
 
   local expectedValues={
@@ -748,7 +748,7 @@ end
   -- simulate terminals initial position to latitude = 50.3, longitude = 1 (that is outside geofence 0 and 1) and speed above stationarySpeedThld to get moving state
   -- then simulate terminals position to latitude = 50.3, longitude = 3 (inside geofence 0 and geofence 1) and check if the ZoneEntry report contains CurrentZoneId = 0
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal sends ZoneEntry message and reported CurrentZoneId is correct
 function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeofenceIdIsReported()
@@ -833,7 +833,7 @@ end
   -- simulate terminals initial position to latitude = 50.3, longitude = 3 (that is inside geofence 0 and 1) and speed above stationarySpeedThld to get moving state
   -- then simulate terminals position to latitude = 50.3, longitude = 1 (outside geofence 0 and geofence 1) and check if the ZoneExit report contains PreviousZoneId = 0
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal sends ZoneExit message and reported PreviousZoneId is correct
 function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_LowerGeofenceIdIsReported()
@@ -933,7 +933,7 @@ end
   -- (that is inside zone 2); wait longer than geofence2DwellTime (1 minute) and check if GeoDwellStart message is sent, reports fields
   -- have correct values and Geodwelling is true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values, terminal goes to Geodwelling true
@@ -983,7 +983,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
   gps.set(gpsSettings)                            -- applying gps settings
   framework.delay(geofence2DwellTime*60)       -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1009,7 +1009,7 @@ end
   -- (that is inside zone 2); change fixType to 1 (no valid fix provided) and wait longer than geofence2DwellTime (1 minute) and check if GeoDwellStart message is sent,
   -- eports fields have correct values and Geodwelling is true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values, terminal goes to Geodwelling true
@@ -1056,12 +1056,12 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   gateway.setHighWaterMark()                             -- to get the newest messages
   local timeOfEventTc = os.time()                       -- to get correct value in the report
   gps.set(gpsSettings)                                   -- applying gps settings
-  framework.delay(movingDebounceTime+gpsReadInterval+10)  -- wait until position of terminal is read
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+10)  -- wait until position of terminal is read
   gpsSettings.fixType = 1                                -- no valid fix provided
   gps.set(gpsSettings)                                   -- applying gps settings
   framework.delay(geofence2DwellTime*60)                -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1088,7 +1088,7 @@ end
   -- (that is inside zone 2); wait shorter than geofence2DwellTime (1 minute) and check if GeoDwellStart message is not sent and terminal does not
   -- change Geodwelling state to true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is not sent, Geodwelling state false
@@ -1157,7 +1157,7 @@ end
   -- (that is inside zone 2); wait longer than geofence2DwellTime (1 minute) and check if Geodwelling state is true; then simulate terminals positon
   -- outside the geofence 2 and check if GeoDwellEnd message has been sent, reported fields have correct values and Geodwelling becomes false
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellEnd message is sent after leaving the geofence in which terminal was dwelling, Geodwelling changed to false
@@ -1214,7 +1214,7 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
   local timeOfEventTc = os.time()                -- to get correct value in the report
   gps.set(gpsSettings)                            -- applying gps settings
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellEnd),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellEnd),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellEnd message not received") -- checking if any of GeoDwellEnd messages has been received
 
   local expectedValues={
@@ -1239,7 +1239,7 @@ end
   -- then simulate terminals  position to latitude = 50.3, longitude = 3.1 (that is inside zone 1); wait longer than geofence2DwellTime (1 minute)
   -- and check if GeoDwellStart message is sent, reports fields have correct values and Geodwelling is true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is sent after reaching DefaultGeoDwellTime and report fields have correct values, terminal goes to Geodwelling true
@@ -1278,7 +1278,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
   gps.set(gpsSettings)                            -- applying gps settings
   framework.delay(defaultGeoDwellTime*60)         -- waiting until defaultGeoDwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1304,7 +1304,7 @@ end
   -- (that is inside zone 1); wait longer than AllZonesTime (1 minute) and check if GeoDwellStart message is sent, reports fields
   -- have correct values and Geodwelling state is true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values, terminal goes to Geodwelling true
@@ -1345,7 +1345,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   gps.set(gpsSettings)                           -- applying gps settings
   framework.delay(allZonesDwellTime*60)          -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1370,7 +1370,7 @@ end
   -- longitude = 4.5 (that is inside zone 2); then change terminals position to inside zone 128 (longitude 1, latitude = 1) and wait longer than geofence128DwellTime
   -- (1 minute) and check if GeoDwellStart message is sent, reports fields have correct values and Geodwelling state is true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values, terminal goes to Geodwelling true
@@ -1431,7 +1431,7 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
   local timeOfEventTc = os.time()               -- to get correct value in the report
   framework.delay(geofence128DwellTime*60)       -- waiting until geofence128DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1456,7 +1456,7 @@ end
   -- and defaultGeoDwellTime to 2 minutes; then simulate terminals position to latitude = 50.5, longitude = 4.8 (that is inside zone 2 and zone 3); wait longer than geofence2DwellTime
   -- (1 minute) but shorter than geofence3DwellTime (15 minutes) and check if GeoDwellStart message is sent, reports fields have correct values and Geodwelling state is true
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is sent after reaching dwell limit and report fields have correct values, terminal goes to Geodwelling true
@@ -1509,7 +1509,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
   local timeOfEventTc = os.time()                                -- to get correct value in the report
   framework.delay(geofence2DwellTime*60+geofenceInterval)        -- waiting until geofence2DwellTime time passes and report is generated (multiplied by 60 to convert minutes to seconds)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,getReturnMessageTimeout)
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "GeoDwellStart message not received") -- checking if any of GeoDwellStart messages has been received
 
   local expectedValues={
@@ -1533,7 +1533,7 @@ end
   -- and defaultGeoDwellTime to 2 minutes; then simulate terminals position to latitude = 50.5, longitude = 4.8 (that is inside zone 2 and zone 3); wait longer than geofence3DwellTime
   -- (1 minute) but shorter than geofence2DwellTime (15 minutes) and check if GeoDwellStart message is not sent, Geodwelling state is false
   -- *initial conditions:
-  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of gpsReadInterval
+  -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- position of terminal outside of any of the defined geofences
   -- *expected results:
   -- GeoDwellStart message is not sent after reaching dwell limit for geofence with higher ID

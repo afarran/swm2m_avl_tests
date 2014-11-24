@@ -295,7 +295,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState()
 
   -- set the speed to zero and wait for stationaryDebounceTime
   gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+gpsReadInterval+6) -- 6 seconds are added to make sure terminal changes state
+  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+6) -- 6 seconds are added to make sure terminal changes state
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
   framework.delay(2) -- wait until property is read
@@ -333,7 +333,7 @@ function avlHelperFunctions.putTerminalIntoMovingState()
 
   -- set the speed above stationarySpeedThld and wait longer than movingDebounceTime
   gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(movingDebounceTime+gpsReadInterval+3) -- three seconds are added to make sure terminal changes state
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3) -- three seconds are added to make sure terminal changes state
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
    framework.delay(2) -- wait until property is read
@@ -368,6 +368,33 @@ function avlHelperFunctions.getTerminalHardwareVersion()
   end
 
 
+end
+
+
+---
+-- @tparam table expectedMins array of expected MINs
+-- @tparam ?number timeout in seconds
+-- @treturn table array of messages that match expected MINs of the service under test
+function avlHelperFunctions.matchReturnMessages(expectedMins, timeout)
+  assert_table(expectedMins, "invalid minList")
+  timeout = tonumber(timeout) or GATEWAY_TIMEOUT
+
+  local msgList = {count = 0}
+
+  local function UpdateMsgMatchingList(msg)
+    if msg then   --TODO: why would this function be called with no msg?
+      for idx, min in pairs(expectedMins) do
+        if min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
+          msgList[min] = framework.collapseMessage(msg).Payload
+          msgList.count = msgList.count + 1
+          break
+        end
+      end
+    end
+    return #expectedMins == msgList.count
+  end
+  gateway.getReturnMessage(UpdateMsgMatchingList, nil, timeout)
+  return msgList
 end
 
 
