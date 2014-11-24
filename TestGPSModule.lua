@@ -52,7 +52,7 @@ module("TestGPSModule", package.seeall)
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                             }
+                                               }
                     )
   framework.delay(2)
 
@@ -146,40 +146,42 @@ end
 function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDebounceTime_MovingStartMessageSent()
 
   -- *** Setup
-  local movingDebounceTime = 1                            -- seconds
-  local stationarySpeedThld = 5                           -- kmh
-  local gpsSettings = {}                                  -- table containing gpsSettings used in TC
-  local movingStartMin =  avlConstants.mins.movingStart   --
+  local MOVING_DEBOUNCE_TIME = 1                            -- seconds
+  local STATIONARY_SPEED_THLD = 5                           -- kmh
+  local MOVING_START_MIN =  avlConstants.mins.movingStart   -- movingStart MIN is constant
+  local AVL_SIN = avlConstants.avlAgentSIN
+  local gpsSettings = {}                                    -- table containing gpsSettings used in TC
+
 
   -- Point#1 settings
   gpsSettings[1]={
-              speed = 0,                      -- one kmh above threshold
-              heading = 89,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 0                   -- degrees
-                     }
+                  speed = 0,                      -- one kmh above threshold
+                  heading = 89,                   -- degrees
+                  latitude = 0,                   -- degrees
+                  longitude = 0                   -- degrees
+                 }
 
   -- Point#2 settings
   gpsSettings[2]={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-                     }
+                  speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                  heading = 90,                       -- degrees
+                  latitude = 1,                       -- degrees
+                  longitude = 1,                      -- degrees
+                 }
 
   -- Point#3 settings
   gpsSettings[3]={
-              speed = stationarySpeedThld+10,  -- one kmh above threshold
-              heading = 95,                    -- degrees
-              latitude = 2,                    -- degrees
-              longitude = 2,                   -- degrees
-                     }
+                  speed = STATIONARY_SPEED_THLD + 10,  -- 10 kmh above threshold
+                  heading = 95,                        -- degrees
+                  latitude = 2,                        -- degrees
+                  longitude = 2,                       -- degrees
+                 }
 
   -- applying properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                            }
                    )
 
   -- *** Execute
@@ -199,19 +201,19 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   gps.set(gpsSettings[3])
 
   -- wait for period of movingDebounceTime
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL)
+  framework.delay(MOVING_DEBOUNCE_TIME+GPS_READ_INTERVAL)
 
-  local expectedMins = {avlConstants.mins.movingStart}
+  local expectedMins = {MOVING_START_MIN}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, 30)
 
-  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "Missing MIN " .. tostring(avlConstants.mins.movingStart))
+  assert_not_nil(receivedMessages[MOVING_START_MIN], "Missing MIN " .. tostring(MOVING_START_MIN))
 
-  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[6].Longitude), "MovingStart message has incorrect longitude value")
-  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[6].Latitude), "MovingStart message has incorrect latitude value")
+  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[MOVING_START_MIN].Longitude), "MovingStart message has incorrect longitude value")
+  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[MOVING_START_MIN].Latitude), "MovingStart message has incorrect latitude value")
   assert_equal("MovingStart", receivedMessages[6].Name, "MovingStart message has incorrect message name")
   assert_equal(timeOfEvent, tonumber(receivedMessages[6].EventTime), 5, "MovingStart message has incorrect EventTime value")
-  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[6].Speed), "MovingStart message has incorrect speed value")
-  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[6].Heading), "MovingStart message has incorrect heading value")
+  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[MOVING_START_MIN].Speed), "MovingStart message has incorrect speed value")
+  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[MOVING_START_MIN].Heading), "MovingStart message has incorrect heading value")
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal not in moving state after sending MovingStart message")
