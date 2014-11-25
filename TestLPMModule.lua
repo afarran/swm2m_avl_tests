@@ -156,12 +156,11 @@ end
 end
 -----------------------------------------------------------------------------------------------
 
---[[
-    START OF TEST CASES
 
-    Each test case is a global function whose name begins with "test"
+ --   START OF TEST CASES
 
---]]
+ --   Each test case is a global function whose name begins with "test"
+
 
 
 
@@ -475,6 +474,7 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
 
 end
 
+
 --- TC checks if some specific properties are changing values when terminal enters LPM and are correctly reverted when terminal leaves it .
   -- Initial Conditions:
   --
@@ -622,7 +622,8 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_ValuesOfSomePropertiesAreChange
   -- sending getProperties message (SIN 16, MIN 8) to mobile
   gateway.submitForwardMessage(getPropertiesMessage)
   -- propertyValues message expected in response to getProperties
-  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues,nil,GATEWAY_TIMEOUT)  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
+  propertyValuesMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstants.mins.propertyValues,nil,GATEWAY_TIMEOUT))
+  assert_not_nil(propertyValuesMessage, "PropertyValues message not received")
 
   ledControlProperty = propertyValuesMessage.Payload.Fields[1].Elements[1].Fields[2].Elements[1].Fields[2].Value
   -- checking if  ledControl property (PIN 6)  has been set to 1 - Terminal when entering LPM
@@ -1381,7 +1382,6 @@ function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPu
 
 
 end
-
 
 
 

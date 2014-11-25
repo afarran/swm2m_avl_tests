@@ -845,6 +845,8 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
 end
 
 
+
+
 --- TC checks if digital output associated with GeoDwelling changes state when terminal moves from geofence with defined DwellTime = 0
   -- to geofence with defined DwellTime different than zero
   -- Initial Conditions:
@@ -883,13 +885,13 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
 
 	gateway.submitForwardMessage(message)
 
-  -- gps settings table to be sent to simulator
+  -- gps settings - terminal outside any of the defined geofences
   local gpsSettings={
-              speed = stationarySpeedThld+10,  -- kmh, 10 kmh above stationary threshold
-              heading = 90,                    -- degrees
-              latitude = 1,                    -- degrees, that is outside of any of the defined geofences
-              longitude = 1,                   -- degrees, that is outside of any of the defined geofences
-              simulateLinearMotion = false,
+                      speed = stationarySpeedThld+10,  -- kmh, 10 kmh above stationary threshold
+                      heading = 90,                    -- degrees
+                      latitude = 1,                    -- degrees, that is outside of any of the defined geofences
+                      longitude = 1,                   -- degrees, that is outside of any of the defined geofences
+                      simulateLinearMotion = false,
                      }
 
   --applying properties of geofence service
@@ -902,15 +904,15 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                            {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
-                                        }
+                                          {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
+                                         }
                    )
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
-                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},                 -- moving related
-                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},               -- moving related
+                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},                   -- moving related
+                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},                 -- moving related
                                              }
                    )
   -- activating special output function
@@ -918,21 +920,30 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   framework.delay(2) -- wait until settings are applied
 
   gps.set(gpsSettings)         -- applying gps settings, terminal moving outside any of the defined geofences (DwellTime = 0)
-  framework.delay(GPS_READ_INTERVAL+geofenceInterval+10)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis)  -- wait until settings are applied
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "Terminal is not moving outside of any defined geofence as expected")
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
 
-  -- changing gps settings - terminal outside any of the defined geofences (DwellTime = 0)
+  -- changing gps settings - inside geofence 2 (GeoDwellTime grater than 0)
   gpsSettings={
                latitude = 50.5,     -- degrees, that is inside geofence 2
                longitude = 4.5,     -- degrees, that is inside geofence 2
               }
   gps.set(gpsSettings)         -- applying gps settings, terminal moving inside geofence 2
-  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis+15)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis)  -- wait until settings are applied
+
+  expectedMins = {avlConstants.mins.zoneEntry}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneEntry], "ZoneEntry message was not received after entering geofence ")
 
   -- asserting state of port 1 - high state is expected as terminal is inside geofence 2 (with defined DwellTime)
-  assert_equal(1, device.getIO(1), "Port1 associated with GeoDwelling is not in high state as expected")
+  assert_equal(1, device.getIO(1), "Port associated with GeoDwelling is not in high state after entering geofence with DwellTime greater than 0")
 
   -- changing gps settings - terminal back to area outside any of the defined geofences (DwellTime = 0)
   gpsSettings={
@@ -941,12 +952,15 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
               }
 
   gps.set(gpsSettings)                                                     -- applying gps settings
-  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis+20)  -- wait until settings are applied
+  framework.delay(GPS_READ_INTERVAL+geofenceInterval+geofenceHisteresis)   -- wait until settings are applied
+
+  expectedMins = {avlConstants.mins.zoneExit}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneExit], "ZoneEntry message was not received after entering Geofence 2")
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
-  assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
-
-
+  assert_equal(0, device.getIO(1), "Port associated with GeoDwelling is not in low state after leaving geofence with defined DwellTime")
 
 
 end
