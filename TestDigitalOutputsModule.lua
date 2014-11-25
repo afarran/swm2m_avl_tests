@@ -2034,7 +2034,6 @@ function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSentAndInvertTimeG
 end
 
 
-
 --- TC checks if setDigitalOutputs message sets digital output ports for IDP 800 series terminal and inverts it after set time .
   -- Initial Conditions:
   --
@@ -2068,7 +2067,7 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
   -- This TC only applies to IDP 600 series terminal
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
-  local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
+  local invertTime = 1   -- in minutes, time after which the set digital output state is automatically inverted
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -2085,18 +2084,18 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
                                                  {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 3 ports has been correctly set to high level
   for counter = 1, 3, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(counter))
   end
 
-  framework.delay(invertTime*60+2) -- wait longer than invertTime to let the outputs change its states
+  framework.delay(invertTime*60+10) -- wait longer than invertTime to let the outputs change its states
 
   -- checking if all 3 ports has been correctly automatically inverted to low level
   for counter = 1, 3, 1 do
-  assert_equal(0, device.getIO(counter), "Digital output port has not been automatically inverted to low level after invertTime period")
+  assert_equal(0, device.getIO(counter), "Digital output port has not been automatically inverted to low level after invertTime period. Problem is with line " .. tostring(counter))
   end
 
   -- Sending setDigitalOutputs message setting all 3 ports to low state
@@ -2106,18 +2105,18 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
                                                  {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(2)
+  framework.delay(10)
 
   -- checking if all 3 ports has been correctly set to low level
   for counter = 1, 3, 1 do
-  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message")
+  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message. Problem is with line " .. tostring(counter))
   end
 
-  framework.delay(invertTime*60+2) -- wait longer than invertTime to let the outputs change its states
+  framework.delay(invertTime*60+10) -- wait longer than invertTime to let the outputs change its states
 
   -- checking if all 3 ports has been correctly automatically inverted to high level
   for counter = 1, 3, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been automatically inverted to high level after invertTime period")
+  assert_equal(1, device.getIO(counter), "Digital output port has not been automatically inverted to high level after invertTime period. Problem is with line " .. tostring(counter))
   end
 
 
