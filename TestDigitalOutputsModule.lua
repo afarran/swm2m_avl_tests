@@ -1254,9 +1254,10 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["LowPower"]},    -- digital output line number 1 set for LowPower function
-                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                  -- time of lpmEntryDelay, in minutes
+                                                {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["LowPower"]},          -- digital output line number 1 set for LowPower function
+                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                                -- time of lpmEntryDelay, in minutes
                                                 {avlConstants.pins.lpmTrigger, lpmTrigger},
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp["GeneralPurpose"]},   -- line 13 for GeneralPurpose to get PowerMain and PowerBackup messages
                                              }
                    )
   -- setting digital input bitmap describing when special function outputs are active
@@ -1270,11 +1271,12 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
   local externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
   assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
-  -- asserting state of port 1 - low state is expected - lpmTrigger is false (external power is present)
-  assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
-
   device.setPower(8,0)             -- external not power present (terminal unplugged from external power source)
   framework.delay(2)               -- wait until setting is applied
+
+  local expectedMins = {avlConstants.mins.powerBackup}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.powerBackup], "PowerBackup message not received")
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
@@ -1286,6 +1288,10 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
   -- back to external power present again
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   framework.delay(2)               -- wait until setting is applied
+
+  expectedMins = {avlConstants.mins.powerMain}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.powerMain], "PowerMain message not received")
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
