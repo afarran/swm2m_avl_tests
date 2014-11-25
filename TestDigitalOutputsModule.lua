@@ -1040,8 +1040,8 @@ end
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["GeoDwelling"]},   -- digital output line number 1 set for GeoDwelling function
-                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},                 -- moving related
-                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},               -- moving related
+                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},                   -- moving related
+                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},                 -- moving related
                                              }
                    )
   -- activating special output function
@@ -1112,35 +1112,41 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToIgnitionOffAndTerminalInIgnitio
   framework.delay(2)                 -- wait until settings are applied
 
   device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
-  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+
+  local expectedMins = {avlConstants.mins.ignitionON}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
   -- verification of the state of terminal - IgnitionOn true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
-  -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
-  assert_equal(0, device.getIO(1), "Port1 associated with LowPower is not in low state as expected")
-
   device.setIO(3, 0)                 -- port 3 to low level - that should trigger IgnitionOff (that is lpmTrigger)
-  framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
+
+  expectedMins = {avlConstants.mins.ignitionOFF}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], "IgnitionOFF message not received")
 
   -- verification of the state of terminal - IgnitionOn false expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected - Ignition is off
-  assert_equal(1, device.getIO(1), "Port1 associated with LowPower is not in high state as expected")
+  assert_equal(1, device.getIO(1), "Port associated with LowPower is not in high state as expected after IgnitionOff event")
 
   -- back to IgnitionOn state
   device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
-  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+
+  expectedMins = {avlConstants.mins.ignitionON}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
   -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
   -- asserting state of port 1 - low state is expected - lpmTrigger is false (Ignition is on)
-  assert_equal(0, device.getIO(1), "Port1 associated with LowPower is not in low state as expected")
+  assert_equal(0, device.getIO(1), "Port associated with LowPower is not in low state as expected after IgnitionOn event")
 
 
 end
@@ -2120,8 +2126,8 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
   end
 
 
-
 end
+
 
 
 
