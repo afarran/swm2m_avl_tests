@@ -442,32 +442,31 @@ end
   -- 4. Terminal not in moving state
  function test_Moving_WhenSpeedAboveThldForPeriodBelowThld_MovingStartMessageNotSent()
 
-  local movingDebounceTime = 14      -- seconds
-  local stationarySpeedThld = 5      -- kmh
+  --- *Setup
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-                      speed = stationarySpeedThld+10, -- 10 kmh above threshold
-                     }
+  local MOVING_DEBOUNCE_TIME = 14      -- seconds
+  local STATIONARY_SPEED_THLD = 10      -- kmh
 
-  --applying properties of the service
+  -- setting moving related properties in AVL
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
+                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                            }
                    )
 
+  --- *Execute
   gateway.setHighWaterMark()                                    -- to get the newest messages
-  gps.set(gpsSettings)                                          -- applying gps settings
-  framework.delay(GPS_READ_INTERVAL+1)                            -- waiting for time shorter than movingDebounceTime
 
-  -- Receive all messages sent by terminal
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- look for MovingStart message
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(AVL_SIN, avlConstants.mins.movingStart))
-  assert_false(next(matchingMessages), "MovingSent report not expected")   -- checking if any MovingStart message has been caught
+  gps.set({speed = STATIONARY_SPEED_THLD + 10})                 -- speed set to 10 kmh above threshold
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)         -- waiting for time shorter than MOVING_DEBOUNCE_TIME
+  gps.set({speed = STATIONARY_SPEED_THLD - 4})                  -- speed set to 4 kmh below threshold
 
-  -- check the state of the terminal
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins,30)   -- short timeout
+
+  assert_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not expected")
+
+  -- check if terminal is not in moving state
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal unexpectedly in the moving state") -- terminal should not be moving
 
@@ -2269,5 +2268,6 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   end
 
 end
+
 
 
