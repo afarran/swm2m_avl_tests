@@ -501,6 +501,7 @@ function test_DigitalOutput_WhenServiceMeter1IsON_DigitalOutputPortAssociatedWit
 
 end
 
+
 --- TC checks if digital output line associated with SM2 state is changing according to SM2 state
   -- *actions performed:
   -- configure port 1 as a digital output and associate this port with SM2 function;
@@ -535,20 +536,31 @@ function test_DigitalOutput_WhenServiceMeter2IsON_DigitalOutputPortAssociatedWit
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(2)                 -- wait until settings are applied
 
+  -----------------------------------------------------------------------
+  -- Toggling port 3 to make sure SM2 is not active
+  -----------------------------------------------------------------------
+  device.setIO(3, 1)     -- port 3 to high level
+  framework.delay(3)     -- wait until terminal changes state of port 3
 
   device.setIO(3, 0)     -- port 3 to low level - that should trigger SM2 = OFF
   framework.delay(3)     -- wait until terminal changes state of port 3
 
-
   -- asserting state of port 1 - low state is expected as SM2 is not ON yet
   assert_equal(0, device.getIO(1), "Port1 associated SM2 is not in low state as expected")
 
+  -----------------------------------------------------------------------
+  -- Setting port to high state to activate service meter
+  -----------------------------------------------------------------------
 
   device.setIO(3, 1)     -- port 3 to high level - that should trigger SM2 = ON
   framework.delay(4)     -- wait until terminal changes state of Service Meter 2
 
   -- asserting state of port 1 - high state is expected -  SM2 = ON now
   assert_equal(1, device.getIO(1), "Port1 associated with SM2 is not in high state as expected")
+
+  -----------------------------------------------------------------------
+  -- Setting port to low state to deactivate service meter
+  -----------------------------------------------------------------------
 
   device.setIO(3, 0)     -- port 3 to low level - that should trigger SM2 = OFF
   framework.delay(4)     -- wait until terminal changes state of Service Meter 2
@@ -557,6 +569,7 @@ function test_DigitalOutput_WhenServiceMeter2IsON_DigitalOutputPortAssociatedWit
   assert_equal(0, device.getIO(1), "Port1 associated with SM2 is not in low state as expected")
 
 end
+
 
 
 --- TC checks if digital output line associated with SM3 state is changing according to SM3 state
