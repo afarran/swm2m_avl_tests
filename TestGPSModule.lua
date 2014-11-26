@@ -462,7 +462,7 @@ end
   gps.set({speed = STATIONARY_SPEED_THLD - 4})                  -- speed set to 4 kmh below threshold
 
   local expectedMins = {avlConstants.mins.movingStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins,30)   -- short timeout
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)   -- short timeout
 
   assert_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not expected")
 
@@ -519,7 +519,7 @@ function test_Moving_ForTerminalInMovingStateWhenSpeedBelowThldForPeriodBelowThl
   gps.set({speed = STATIONARY_SPEED_THLD + 2})              -- speed back to value above STATIONARY_SPEED_THLD
 
   local expectedMins = {avlConstants.mins.movingEnd}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, 30)   -- short timeout
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)   -- short timeout
 
   assert_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not expected")
 
@@ -553,30 +553,27 @@ end
   -- 5. Terminal not in moving state
   function test_Moving_WhenSpeedBelowStationarySpeedThldForPeriodAboveMovingDebounceTime_MovingStartMessageNotSent()
 
-  local movingDebounceTime = 1        -- seconds
-  local stationarySpeedThld = 10      -- kmh
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-                      speed = stationarySpeedThld-5,    -- 5 kmh below threshold
-                     }
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 10      -- kmh
 
   --applying properties of the service
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime}
-                                             }
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
+                            }
                    )
 
-  gateway.setHighWaterMark()   -- to get the newest messages
-  gps.set(gpsSettings)         -- applying gps settings
+  -- *** Execute
+  gateway.setHighWaterMark()                                                   -- to get the newest messages
+  gps.set({speed = STATIONARY_SPEED_THLD - 5})                                 -- speed set above 0 but 5 kmh below threshold
 
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+5) -- wait for time longer than movingDebounceTime
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME) -- wait for time longer than MOVING_DEBOUNCE_TIME period
 
-  -- MovingStart Message is not expected
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- look for MovingStart message
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(AVL_SIN, avlConstants.mins.movingStart))
-  assert_false(next(matchingMessages), "MovingSent report not expected")   -- checking if any MovingStart message has been caught
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+
+  assert_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not expected")
 
   -- check the state of the terminal
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
