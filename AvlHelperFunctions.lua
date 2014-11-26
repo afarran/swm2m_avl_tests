@@ -345,6 +345,51 @@ end
 
 
 
+--- Function puts terminal into moving state
+-- @usage
+-- avlHelperFunctions.putTerminalIntoMovingState()
+-- @within AvlhelperFunctions
+function avlHelperFunctions.putTerminalIntoSpeedingState()
+
+  local MOVING_DEBOUNCE_TIME = 1      -- seconds
+  local STATIONARY_SPEED_THLD = 5     -- kmh
+  local DEFAULT_SPEED_LIMIT = 80      -- kmh
+  local SPEEDING_TIME_OVER = 1        -- seconds
+
+  -- setting speeding and moving related properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                              {avlConstants.pins.defaultSpeedLimit, DEFAULT_SPEED_LIMIT},
+                                              {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_OVER},
+                                             }
+                    )
+
+  -- gps settings table
+  local gpsSettings={
+              speed = DEFAULT_SPEED_LIMIT + 5,   -- kmh
+              longitude = 0,                     -- degrees
+              latitude = 0,                      -- degrees
+              fixType= 3,                        -- valid fix provided
+                     }
+
+  -- set the speed above DEFAULT_SPEED_LIMIT and wait longer than SPEEDING_TIME_OVER
+  gps.set(gpsSettings) -- applying settings of gps simulator
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + SPEEDING_TIME_OVER + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.speedingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.speedingStart], "SpeedingStart message not received")
+
+  -- checking if terminal is in speeding state
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
+
+
+end
+
+
+
 
 --- Function reads terminal hardware version
 -- @usage
