@@ -114,7 +114,6 @@ function teardown()
 
 end
 
-
 -------------------------
 -- Test Cases
 -------------------------
@@ -607,46 +606,43 @@ end
   -- 5. Terminal is still in moving state
 function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveStationaryDebounceTime_MovingEndMessageNotSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationaryDebounceTime = 1   -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-                      speed = stationarySpeedThld+10, -- 10 kmh above threshold
-                    }
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_DEBOUNCE_TIME = 1   -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
 
-  --applying properties of the service
+  --applying moving related properties of AVL
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
-                                             }
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                             {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
+                            }
                    )
 
-  -- first terminal is put into moving state
-  gateway.setHighWaterMark()  -- to get the newest messages
-  gps.set(gpsSettings)        -- applying gps settings
 
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
-  -- checking the state of terminal
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state") -- moving state expected
+  gateway.setHighWaterMark()
+  gps.set({speed = STATIONARY_SPEED_THLD + 10})     -- 10 kmh above threshold, terminal enters moving state
 
-  -- when the terminal is in the moving state the speed is reduced to one kmh above stationarySpeedThld for time longer than stationaryDebounceTime
-  gateway.setHighWaterMark()                                 -- to get the newest messages
-  gpsSettings.speed = stationarySpeedThld+1                  -- one kmh above threshold
-  gps.set(gpsSettings)                                       -- applying gps settings
-  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+6)  -- time much longer than stationaryDebounceTime
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  -- MovingEnd message is not expected
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for MovingStart message
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(AVL_SIN, avlConstants.mins.movingEnd))
-  assert_false(next(matchingMessages), "MovingEnd report not expected")   -- checking if any MovingEnd message has been caught
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  -- checking the terminal state
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message received")
+
+  -- *** Execute
+  gateway.setHighWaterMark()                                  -- to get the newest messages
+  gps.set({speed = STATIONARY_SPEED_THLD + 1})                --  speed reduced to 1 kmh above threshold
+  framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+
+  assert_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not expected")
+
+  -- checking if terminal is still in moving state
   avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the stationary state") -- terminal should be in moving state
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the stationary state")
 
 end
 
