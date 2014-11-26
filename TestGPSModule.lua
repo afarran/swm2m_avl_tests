@@ -661,61 +661,82 @@ end
   -- have correct values
 function test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSent()
 
-  local defaultSpeedLimit = 80       -- kmh
-  local speedingTimeOver = 3         -- seconds
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
+  -- *** Setup
+  local DEFAULT_SPEED_LIMIT = 80       -- kmh
+  local SPEEDING_TIME_OVER = 8         -- seconds
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
+  local gpsSettings = {}
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
-
-  --applying properties of the service
+  -- applying moving and speeding related properties of AVl
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.defaultSpeedLimit, defaultSpeedLimit},
-                                                {avlConstants.pins.speedingTimeOver, speedingTimeOver},
-                                             }
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                             {avlConstants.pins.defaultSpeedLimit, DEFAULT_SPEED_LIMIT},
+                             {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_OVER},
+                            }
                    )
 
+  -- Point#1 - terminal moving
+  gpsSettings[1]={
+                      speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above moving threshold
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees
+                      longitude = 1                       -- degrees
+                     }
+
+  -- Point#2 - terminal starts speeding
+  gpsSettings[2]={
+                      speed = DEFAULT_SPEED_LIMIT + 1,     -- one kmh above speeding threshold
+                      heading = 91,                       -- degrees
+                      latitude = 2,                       -- degrees
+                      longitude = 2,                      -- degrees
+                     }
+
+  -- Point#3 - terminal moving
+  gpsSettings[3]={
+                      speed = DEFAULT_SPEED_LIMIT + 1,     -- one kmh above speeding threshold
+                      heading = 92,                       -- degrees
+                      latitude = 3,                       -- degrees
+                      longitude = 3,                      -- degrees
+                     }
+
+
   gateway.setHighWaterMark() -- to get the newest messages
+  gps.set(gpsSettings[1])
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
-  -- checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  -- *** Execute
+  gateway.setHighWaterMark()                             -- to get the newest messages
+  timeOfEvent = os.time()                                -- to get e
+  gps.set(gpsSettings[2])                                -- terminal exceeds speed limit in Point#2
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)  -- wait until GPS position is read
 
-  gateway.setHighWaterMark() -- to get the newest messages
+  gps.set(gpsSettings[3])                                                     -- terminal moving to Point#3 still exceeding speed
+  framework.delay(SPEEDING_TIME_OVER + GPS_READ_INTERVAL + GPS_PROCESS_TIME)  -- wait until GPS position is read
 
-  gpsSettings.speed = defaultSpeedLimit+1  -- one kmh above the speed limit threshold
-  gps.set(gpsSettings)
-  framework.delay(speedingTimeOver+GPS_READ_INTERVAL) -- wait until terminal gets speeding state
+  expectedMins = {avlConstants.mins.speedingStart}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.speedingStart], "SpeedingStart message not received")
 
-  -- SpeedingStart Message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(AVL_SIN, avlConstants.mins.speedingStart),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "SpeedingStart message not received")
-
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "SpeedingStart",
-                  currentTime = os.time(),
-                  speedLimit = defaultSpeedLimit
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.speedingStart].Longitude), "SpeedingStart message has incorrect longitude value")
+  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.speedingStart].Latitude), "SpeedingStart message has incorrect latitude value")
+  assert_equal("SpeedingStart", receivedMessages[avlConstants.mins.speedingStart].Name, "SpeedingStart message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.speedingStart].EventTime), 5, "SpeedingStart message has incorrect EventTime value")
+  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.speedingStart].Speed), "SpeedingStart message has incorrect speed value")
+  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.speedingStart].Heading), "SpeedingStart message has incorrect heading value")
+  assert_equal(DEFAULT_SPEED_LIMIT, tonumber(receivedMessages[avlConstants.mins.speedingStart].SpeedLimit), "SpeedingStart message has incorrect speed limit value")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
 
 end
+
+
 
 --- TC checks if SpeedingEnd message is correctly sent when speed is below defaultSpeedLimit for period above SpeedingTimeUnder
   -- *actions performed:
