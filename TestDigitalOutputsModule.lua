@@ -1278,7 +1278,6 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
   assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
 
   device.setPower(8,0)             -- external not power present (terminal unplugged from external power source)
-  framework.delay(2)               -- wait until setting is applied
 
   local expectedMins = {avlConstants.mins.powerBackup}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
@@ -1358,16 +1357,17 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
+                                                {lsfConstants.pins.portConfig[1], 6},        -- port 1 as digital output
                                                 {lsfConstants.pins.portConfig[3], 3},        -- port 3 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[3], 3},    -- detection for both rising and falling edge
                                 }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["LowPower"]},      -- digital output line number 1 set for LowPower function
-                                                {avlConstants.pins.funcDigInp[3], avlConstants.funcDigInp["IgnitionOn"]},    -- digital input line number 3 set for Ignition function
-                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["LowPower"]},        -- digital output line number 1 set for LowPower function
+                                                {avlConstants.pins.funcDigInp[3], avlConstants.funcDigInp["IgnitionOn"]},      -- digital input line number 3 set for Ignition function
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp["GeneralPurpose"]}, -- to get PowerBackup and PowerMain messages
+                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                              -- time of lpmEntryDelay, in minutes
                                                 {avlConstants.pins.lpmTrigger, lpmTrigger},
                                              }
                    )
@@ -1376,31 +1376,25 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)               -- wait until settings are applied
 
-  -------------------------------------------------------------------------------------------------------------
-  -- None of the triggers is active, output line expected to be in low level
-  -------------------------------------------------------------------------------------------------------------
-  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
-  framework.delay(2)               -- wait until setting is applied
+  -- put terminal into IgnitionOn state
+  device.setIO(3, 1)
 
-  -- check external power property
-  local externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
-  assert_equal("True", externalPowerPresentProperty[1].value, "External power source not present as expected")
-
-  device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
-  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+  expectedMins = {avlConstants.mins.ignitionON}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
   -- verification of the state of terminal - IgnitionOn true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
 
-  -- asserting state of port 1 - low state is expected - both low power mode triggers are false
-  assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
-
   -----------------------------------------------------------------------------------------------------------------
   -- Built-in battery trigger is active, IgnitionOff trigger is inactive, output line expected to be in high level
   -----------------------------------------------------------------------------------------------------------------
   device.setPower(8,0)             -- external not power present (terminal unplugged from external power source)
-  framework.delay(2)               -- wait until setting is applied
+
+  local expectedMins = {avlConstants.mins.powerBackup}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.powerBackup], "PowerBackup message not received")
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
@@ -1409,9 +1403,14 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
   -- asserting state of port 1 - high state is expected - terminal is on Backup power source
   assert_equal(1, device.getIO(1), "Port1 associated with LowPower is not in high state as expected")
 
+  -------------------------------------------------------------------------------------------------------------
+  -- External power present again, output line expected to be in low level
+  -------------------------------------------------------------------------------------------------------------
   -- back to external power present again
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
-  framework.delay(2)               -- wait until setting is applied
+  expectedMins = {avlConstants.mins.powerMain}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.powerMain], "PowerMain message not received")
 
   -- check external power property
   externalPowerPresentProperty = lsf.getProperties(lsfConstants.sins.power,lsfConstants.pins.extPowerPresent)
@@ -1420,21 +1419,30 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
   -- asserting state of port 1 - low state is expected - low power mode trigger is false again (external power is present)
   assert_equal(0, device.getIO(1), "Digital output port associated with LowPower trigger is not in low state as expected")
 
-  ---------------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------------
   -- IgnitionOff trigger is active, Built-in battery trigger is inactive, output line expected to be in high level
   -----------------------------------------------------------------------------------------------------------------
   device.setIO(3, 0)                 -- port 3 to low level - that should trigger IgnitionOn state change to false
-  framework.delay(2)                 -- wait until terminal goes into IgnitionOn false state
 
-  -- verification of the state of terminal - IgnitionOn false expected
+  expectedMins = {avlConstants.mins.ignitionOFF}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], "IgnitionOff message not received")
+
+ -- verification of the state of terminal - IgnitionOn false expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
   -- asserting state of port 1 - high state is expected (Ignition is off)
-  assert_equal(1, device.getIO(1), "Port 1 associated with IgnitionOn is not in low state as expected")
+  assert_equal(1, device.getIO(1), "Digital output port associated with LowPower trigger is not in high state as expected")
+
+  -------------------------------------------------------------------------------------------------------------
+  -- External power present again, output line expected to be in low level
+  -------------------------------------------------------------------------------------------------------------
 
   device.setIO(3, 1)                 -- port 3 to high level - that should trigger IgnitionOn
-  framework.delay(2)                 -- wait until terminal goes into IgnitionOn state
+  expectedMins = {avlConstants.mins.ignitionON}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
   -- verification of the state of terminal - IgnitionOn true expected
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1445,6 +1453,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
 
 
 end
+
 
 
 --- TC checks if digital output line associated with MainPower is changing according to onMainPower state of terminal .
@@ -2094,7 +2103,7 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
 
   -- checking if all 3 ports has been correctly set to high level
   for counter = 1, 3, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(counter))
+    assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(counter))
   end
 
   framework.delay(invertTime*60+10) -- wait longer than invertTime to let the outputs change its states
