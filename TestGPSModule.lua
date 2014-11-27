@@ -1039,14 +1039,15 @@ function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThld_SpeedingEndM
   gps.set({speed = DEFAULT_SPEED_LIMIT + 1})
   framework.delay(SPEEDING_TIME_UNDER + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  local expectedMins = {avlConstants.mins.speedingEnd}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+  expectedMins = {avlConstants.mins.speedingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
   assert_nil(receivedMessages[avlConstants.mins.speedingEnd], "SpeedingEnd message not expected")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly not in the speeding state")
 
 end
+
 
 
 --- TC checks if SpeedingStart message is not sent when speed is above defaultSpeedLimit for period above speedingTimeOver
@@ -1063,45 +1064,33 @@ end
   -- terminal not put in the speeding state, SpeedingStart message not sent
 function test_Speeding_WhenSpeedAboveSpeedingThldForPeriodAboveThldForSpeedingFeatureDisabled_SpeedingStartMessageNotSent()
 
-  local defaultSpeedLimit = 0        -- kmh, for value of 0 the speeding feature should be disabled
-  local speedingTimeOver = 2         -- seconds
-  local movingDebounceTime = 1        -- seconds
-  local stationarySpeedThld = 2      -- kmh
+  -- ** SETUP
+  avlHelperFunctions.putTerminalIntoMovingState()
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = 3, -- stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
+  local DEFAULT_SPEED_LIMIT = 0        -- kmh
+  local SPEEDING_TIME_OVER = 2         -- seconds
+  local SPEEDING_TIME_UNDER = 2        -- seconds
 
-  --applying properties of the service
+  -- setting speeding related properties of AVL
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.defaultSpeedLimit, defaultSpeedLimit},
-                                                {avlConstants.pins.speedingTimeOver, speedingTimeOver},
-                                             }
+                             {avlConstants.pins.defaultSpeedLimit, DEFAULT_SPEED_LIMIT},
+                             {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_OVER},
+                            }
                    )
 
-
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+5) -- one second is added to make sure the gps is read and processed by agent
-
-
+  -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
 
+  gps.set({speed = DEFAULT_SPEED_LIMIT + 50})
+  framework.delay(SPEEDING_TIME_OVER + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  -- SpeedingStart Message is not expected
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for MovingStart message
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(AVL_SIN, avlConstants.mins.speedingStart))
-  assert_false(next(matchingMessages), "SpeedingStart report not expected")   -- checking if any SpeedingStart message has been caught
-
-  --checking the state of terminal, speeding state is not ecpected
+  local expectedMins = {avlConstants.mins.speedingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+  assert_nil(receivedMessages[avlConstants.mins.speedingStart], "SpeedingStart message not expected")
+  -- check if terminal has not entered Speeding state
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal incorrectly in the speeding state")
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "Terminal incorrectly in the speeding state")
+
 
 end
 
