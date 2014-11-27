@@ -345,9 +345,9 @@ end
 
 
 
---- Function puts terminal into moving state
+--- Function puts terminal into speeding state
 -- @usage
--- avlHelperFunctions.putTerminalIntoMovingState()
+-- avlHelperFunctions.putTerminalIntoSpeedingState()
 -- @within AvlhelperFunctions
 function avlHelperFunctions.putTerminalIntoSpeedingState()
 

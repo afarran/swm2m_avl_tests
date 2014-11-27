@@ -22,7 +22,7 @@ local function setup()
   io.output():setvbuf("no")
   -- include the following test suites in the feature tests:
     local expectedMins = {avlConstants.mins.movingEnd}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, 30)   -- short timeout
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   assert_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not expected")
   lunatest.suite("TestGPSModule")

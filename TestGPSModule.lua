@@ -962,64 +962,34 @@ end
   -- have correct values
 function test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessageSentGpsFixAgeReported()
 
-  local defaultSpeedLimit = 80       -- kmh
-  local speedingTimeOver = 7         -- seconds
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
+  -- *** Setup
+  avlHelperFunctions.putTerminalIntoMovingState()
 
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
+  local DEFAULT_SPEED_LIMIT = 80       -- kmh
+  local SPEEDING_TIME_OVER = 7         -- seconds
 
-  --applying properties of the service
+  -- setting speeding related properties of AVL
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.defaultSpeedLimit, defaultSpeedLimit},
-                                                {avlConstants.pins.speedingTimeOver, speedingTimeOver},
-                                             }
+                              {avlConstants.pins.defaultSpeedLimit, DEFAULT_SPEED_LIMIT},
+                              {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_OVER},
+                            }
                    )
 
+  -- ** Execute
   gateway.setHighWaterMark() -- to get the newest messages
+  gps.set({speed = DEFAULT_SPEED_LIMIT + 10}) -- 10 kmh above the speed limit threshold
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   -- to make sure gps has been read
+  gps.set({fixType=1})  -- simulated no fix (gps signal loss)
 
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
-
-
-  -- checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
-
-  gateway.setHighWaterMark() -- to get the newest messages
-
-  gpsSettings.speed = defaultSpeedLimit+10  -- 10 kmh above the speed limit threshold
-  gps.set(gpsSettings)
-
-  framework.delay(2)                                  -- to make sure gps has been read
-  gps.set({fixType=1})                                -- simulated no fix (gps signal loss)
-
-  -- SpeedingStart Message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(AVL_SIN, avlConstants.mins.speedingStart),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "SpeedingStart message not received")
-
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "SpeedingStart",
-                  currentTime = os.time()-20,
-                  speedLimit = defaultSpeedLimit,
-                  GpsFixAge = 6
-
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  local expectedMins = {avlConstants.mins.speedingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.speedingStart], "SpeedingStart message not received")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "terminal not in the speeding state")
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "Terminal incorrectly not in the speeding state")
+
+  assert_equal(6, tonumber(receivedMessages[avlConstants.mins.speedingStart].GpsFixAge), 4 , "SpeedingStart message has incorrect GpsFixAge value")
+
 
 end
 
