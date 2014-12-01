@@ -108,6 +108,7 @@ function setup()
                                                 {lsfConstants.pins.portEdgeDetect[3], 3},  -- detection for both rising and falling edge
                                                 {lsfConstants.pins.portConfig[4], 3},      -- port set as digital input
                                                 {lsfConstants.pins.portEdgeDetect[4], 3},  -- detection for both rising and falling edge
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3}
                                          }
                    )
 
@@ -883,6 +884,8 @@ end
   -- 3. Port 1 changes state back to low state
 function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDifferentThanZero_DigitalOutputPortAssociatedWithGeoDwellingInHighState()
 
+  avlHelperFunctions.putTerminalIntoStationaryState()
+
   local movingDebounceTime = 1      -- seconds
   local stationarySpeedThld = 5     -- kmh
   local geofenceEnabled = true     -- to enable geofence feature
@@ -906,6 +909,12 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
                       longitude = 1,                   -- degrees, that is outside of any of the defined geofences
                       simulateLinearMotion = false,
                      }
+
+  -- setting the continues mode of position service (SIN 20, PIN 15)
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                               }
+                    )
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
@@ -1230,7 +1239,7 @@ end
   -- 6. Check the state of digital output port
   -- 7. Simulate external power source not present
   -- 8. Ckeck the state of digital output port
-  -- 9. Simulate external power source not present
+  -- 9. Simulate external power source present
   -- 10. Check the state of digital output port
   --
   -- Results:
@@ -1256,7 +1265,7 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerS
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
-                                }
+                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -1495,22 +1504,21 @@ end
 function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFunction_DigitalOutputPortChangesAccordingToOnMainPowerState()
 
   -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 600") end
+  if(hardwareVariant~=3) then skip("TC related only to IDP 800") end
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
-                                }
+                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["MainPower"]},    -- digital output line number 1 set for LowPower function
-                                      }
+                                             }
                    )
   -- setting digital input bitmap describing when special function outputs are active
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   framework.delay(5)               -- wait until settings are applied
-
   ---------------------------------------------------------------------------------------------------------------
   -- External power source not present - terminal not in the onMainPower state
   ---------------------------------------------------------------------------------------------------------------
@@ -1627,10 +1635,10 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
   -- Sending setDigitalOutputs message setting all 4 port to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value=4},    {Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(10)
@@ -1642,10 +1650,10 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
   -- Sending setDigitalOutputs message setting all 4 port to low state
   message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value=4},    {Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(10)
@@ -1657,10 +1665,10 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
   -- Sending setDigitalOutputs message setting all 4 port back to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value=4},    {Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(10)
@@ -1717,9 +1725,9 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
   -- Sending setDigitalOutputs message setting all 3 port to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(15)
@@ -1731,9 +1739,9 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
   -- Sending setDigitalOutputs message setting all 3 port to low state
   message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=0},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(15)
@@ -1745,9 +1753,9 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutput
 
   -- Sending setDigitalOutputs message setting all 3 port back to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=1},{Name="InvertTime",Value=0}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(15)
@@ -1904,10 +1912,10 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeG
 
   -- Sending setDigitalOutputs message setting all 4 port to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value=4},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(10)
@@ -1926,10 +1934,10 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeG
 
   -- Sending setDigitalOutputs message setting all 4 port to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=3,Fields={{Name="LineNum",Value="IDP6xxLine4"},    {Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=3,Fields={{Name="LineNum",Value=4},    {Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(2)
@@ -2092,50 +2100,23 @@ function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeG
                                          }
                    )
 
+
   -- Sending setDigitalOutputs message setting all 3 ports to high state
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
+	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value=1},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=1,Fields={{Name="LineNum",Value=2},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}},
+                                                 {Index=2,Fields={{Name="LineNum",Value=3},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
   framework.delay(10)
 
-  -- checking if all 3 ports has been correctly set to high level
-  for counter = 1, 3, 1 do
-    assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(counter))
-  end
-
-  framework.delay(invertTime*60+10) -- wait longer than invertTime to let the outputs change its states
-
-  -- checking if all 3 ports has been correctly automatically inverted to low level
-  for counter = 1, 3, 1 do
-  assert_equal(0, device.getIO(counter), "Digital output port has not been automatically inverted to low level after invertTime period. Problem is with line " .. tostring(counter))
-  end
-
-  -- Sending setDigitalOutputs message setting all 3 ports to low state
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setDigitalOutputs}
-	message.Fields = {{Name="OutputList",Elements={{Index=0,Fields={{Name="LineNum",Value="IDP6xx,8xxLine1"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=1,Fields={{Name="LineNum",Value="IDP6xx,8xxLine2"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}},
-                                                 {Index=2,Fields={{Name="LineNum",Value="IDP6xx,8xxLine3"},{Name="LineState",Value=0},{Name="InvertTime",Value=invertTime}}}}}}
-
-  gateway.submitForwardMessage(message)
-  framework.delay(10)
-
-  -- checking if all 3 ports has been correctly set to low level
-  for counter = 1, 3, 1 do
-  assert_equal(0, device.getIO(counter), "Digital output port has not been correctly set to low level by setDigitalOutputs message. Problem is with line " .. tostring(counter))
-  end
-
-  framework.delay(invertTime*60+10) -- wait longer than invertTime to let the outputs change its states
-
-  -- checking if all 3 ports has been correctly automatically inverted to high level
-  for counter = 1, 3, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been automatically inverted to high level after invertTime period. Problem is with line " .. tostring(counter))
-  end
+  assert_equal(1, device.getIO(1), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(1))
+  assert_equal(1, device.getIO(2), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(2))
+  assert_equal(1, device.getIO(3), "Digital output port has not been correctly set to high level by setDigitalOutputs message. Problem is with line " .. tostring(3))
 
 
 end
+
 
 
 
