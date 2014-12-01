@@ -99,7 +99,7 @@ function setup()
 
   lsf.setProperties(lsfConstants.sins.power,{
                                                   {lsfConstants.pins.extPowerPresentStateDetect, 3}       -- setting detection for Both rising and falling edge
-                                               }
+                                             }
                     )
 
 
@@ -357,21 +357,27 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   gps.set(gpsSettings) -- apply gps settings
   framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2) -- wait until terminal goes to moving state
 
-  -- asserting state of port 1 - low state is expected as terminal is not speeding yet
-  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
-
   -- applying gps settings to simulate terminal moving
-  gpsSettings.speed = defaultSpeedLimit + 100          -- kmh, 10 kmh above speed limit
-  gps.set(gpsSettings)                                 -- applying gps settings
-  framework.delay(speedingTimeOver+15)                 -- wait longer than speedingTimeOver not to put terminal into speeding state
+  gps.set({speed = defaultSpeedLimit + 100})            -- applying gps settings
+  framework.delay(speedingTimeOver + GPS_READ_INTERVAL) -- wait longer than speedingTimeOver not to put terminal into speeding state
+
+  local expectedMins = {avlConstants.mins.speedingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.speedingStart], "SpeedingStart message not received")
+
 
   -- asserting state of port 1 - high state is expected - speed above limit
   assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
 
   -- simulating speed below defaultSpeedLimit again
-  gpsSettings.speed = defaultSpeedLimit - 10   -- 10 kmh below threshold
-  gps.set(gpsSettings)
-  framework.delay(speedingTimeUnder+5)
+  gps.set({speed = defaultSpeedLimit - 10})
+  framework.delay(speedingTimeUnder + GPS_READ_INTERVAL)
+
+  expectedMins = {avlConstants.mins.speedingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.speedingEnd], "SpeedingEnd message not received")
 
   -- asserting state of port 1 - low state is expected - speed below defaultSpeedLimit
   assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
@@ -956,6 +962,9 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
 
+ -- print("configuration applied")
+  --framework.delay(999)
+
   -- changing gps settings - inside geofence 2 (GeoDwellTime grater than 0)
   gpsSettings={
                latitude = 50.5,     -- degrees, that is inside geofence 2
@@ -966,8 +975,8 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
 
   expectedMins = {avlConstants.mins.zoneEntry}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-
   assert_not_nil(receivedMessages[avlConstants.mins.zoneEntry], "ZoneEntry message was not received after entering geofence ")
+  framework.delay(10)
 
   -- asserting state of port 1 - high state is expected as terminal is inside geofence 2 (with defined DwellTime)
   assert_equal(1, device.getIO(1), "Port associated with GeoDwelling is not in high state after entering geofence with DwellTime greater than 0")
@@ -983,8 +992,8 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
 
   expectedMins = {avlConstants.mins.zoneExit}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-
-  assert_not_nil(receivedMessages[avlConstants.mins.zoneExit], "ZoneEntry message was not received after entering Geofence 2")
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneExit], "ZoneExit message was not received after leaving Geofence 2")
+  framework.delay(10)
 
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port associated with GeoDwelling is not in low state after leaving geofence with defined DwellTime")
@@ -994,11 +1003,12 @@ end
 
 
 
+
 --- TC checks if digital output associated with GeoDwelling does not change state when terminal moves between geofences with DwellTime set to 0
   -- Initial Conditions:
   --
   -- * Geofence feature enabled and geozones defined in fences.dat file
-  -- * DwellTime = 0 for one specific geofence and  global geofence (#128)
+  -- * DwellTime = 0 for one specific geofence and global geofence (#128)
   -- * Port 1 configured as digital output and Geodwelling function associated to it
   -- * GPS signal is good
   -- * Air communication not blocked
@@ -1019,12 +1029,12 @@ end
   local geofenceEnabled = true      -- to enable geofence feature
   local geofenceInterval = 10       -- in seconds
   local geofenceHisteresis = 1      -- in seconds
-  local geofence2DwellTime = 0      -- in minutes
+  local geofence0DwellTime = 0      -- in minutes
   local geofence128DwellTime = 0    -- in minutes, for 0 GeoDwelling feature is disabled
 
-  -- setting ZoneDwellTimes for geofence 2
+  -- setting ZoneDwellTimes for geofence 0
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoDwellTimes}
-	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
+	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="DwellTime",Value=geofence0DwellTime}}},
                      {Index=1,Fields={{Name="ZoneId",Value=128},{Name="DwellTime",Value=geofence128DwellTime}}}}},}
 	gateway.submitForwardMessage(message)
 
@@ -1068,13 +1078,18 @@ end
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
 
   gpsSettings={
-                latitude = 50.5,                -- degrees, that is inside geofence 2
-                longitude = 4.5,                -- degrees, that is inside geofence 2
+                latitude = 50,                -- degrees, that is inside geofence 0
+                longitude = 3,                -- degrees, that is inside geofence 0
               }
 
 
-  gps.set(gpsSettings)     -- applying gps settings, terminal moving inside geofence 2
+  gps.set(gpsSettings)     -- applying gps settings, terminal moving inside geofence 0
+
   framework.delay(GPS_READ_INTERVAL+geofenceInterval+10)  -- wait until settings are applied
+
+  expectedMins = {avlConstants.mins.zoneEntry}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneEntry], "ZoneEntry message was not received after entering Geofence 0")
 
   -- asserting state of port 1 - low state is expected - now terminal moving in geofence 2 (DwellTime = 0)
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
