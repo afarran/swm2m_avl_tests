@@ -97,6 +97,12 @@ function setup()
                                                }
                     )
 
+  lsf.setProperties(lsfConstants.sins.power,{
+                                                  {lsfConstants.pins.extPowerPresentStateDetect, 3}       -- setting detection for Both rising and falling edge
+                                               }
+                    )
+
+
   avlHelperFunctions.putTerminalIntoStationaryState()
 
   -- setting the EIO properties
@@ -108,7 +114,6 @@ function setup()
                                                 {lsfConstants.pins.portEdgeDetect[3], 3},  -- detection for both rising and falling edge
                                                 {lsfConstants.pins.portConfig[4], 3},      -- port set as digital input
                                                 {lsfConstants.pins.portEdgeDetect[4], 3},  -- detection for both rising and falling edge
-                                                {lsfConstants.pins.extPowerPresentStateDetect, 3}
                                          }
                    )
 
