@@ -123,10 +123,10 @@ function setup()
                                                 {avlConstants.pins.funcDigInp[2], 0 },    -- disabled
                                                 {avlConstants.pins.funcDigInp[3], 0 },    -- disabled
                                                 {avlConstants.pins.funcDigInp[4], 0 },    -- disabled
-                                                {avlConstants.pins.funcDigOut[1], 0 },    -- output disabled
-                                                {avlConstants.pins.funcDigOut[2], 0 },    -- output disabled
-                                                {avlConstants.pins.funcDigOut[3], 0 },    -- output disabled
-                                                {avlConstants.pins.funcDigOut[4], 0 },    -- output disabled
+                                                {avlConstants.pins.funcDigOut[1], 31},    -- output disabled
+                                                {avlConstants.pins.funcDigOut[2], 31},    -- output disabled
+                                                {avlConstants.pins.funcDigOut[3], 31},    -- output disabled
+                                                {avlConstants.pins.funcDigOut[4], 31},    -- output disabled
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -150,7 +150,8 @@ function setup()
 
   --setting properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                              {avlConstants.pins.digOutActiveBitmap, digOutActiveBitmap}
+                                              {avlConstants.pins.digOutActiveBitmap, digOutActiveBitmap},
+                                              {avlConstants.pins.funcDigInp[1], 0},    -- digital input line number 1 disabled
                                              }
                     )
 
@@ -334,12 +335,12 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 6},      -- port 1 as digital output
+                                                {lsfConstants.pins.portConfig[3], 6},      -- port 1 as digital output
                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["Speeding"]}, -- digital output line number 1 set for Moving function
+                                                {avlConstants.pins.funcDigOut[3], avlConstants.funcDigOut["Speeding"]}, -- digital output line number3 set for Moving function
                                                 {avlConstants.pins.movingDebounceTime,movingDebounceTime},              -- moving related
                                                 {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},            -- moving related
                                                 {avlConstants.pins.stationaryDebounceTime,stationaryDebounceTime},      -- moving related
@@ -349,7 +350,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
                                              }
                    )
   -- activating special output function
-  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut3"})
   framework.delay(3)                 -- wait until settings are applied
 
   avlHelperFunctions.putTerminalIntoStationaryState()
@@ -368,7 +369,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
 
 
   -- asserting state of port 1 - high state is expected - speed above limit
-  assert_equal(1, device.getIO(1), "Port1 associated with digital output line 1 is not in high state as expected")
+  assert_equal(1, device.getIO(3), "Port1 associated with digital output line 1 is not in high state as expected")
 
   -- simulating speed below defaultSpeedLimit again
   gps.set({speed = defaultSpeedLimit - 10})
@@ -380,7 +381,7 @@ function test_DigitalOutput_WhenSpeedAboveDefaultSpeedLimit_DigitalOutputPortAss
   assert_not_nil(receivedMessages[avlConstants.mins.speedingEnd], "SpeedingEnd message not received")
 
   -- asserting state of port 1 - low state is expected - speed below defaultSpeedLimit
-  assert_equal(0, device.getIO(1), "Port1 associated with digital output line 1 is not in low state as expected")
+  assert_equal(0, device.getIO(3), "Port3 associated with digital output line 1 is not in low state as expected")
 
 end
 
@@ -962,9 +963,6 @@ function test_DigitalOutput_WhenTerminalMovingInsideGeofenceWithDwellTimeSetToDi
   -- asserting state of port 1 - low state is expected as terminal is not inside geofence with defined DwellTime
   assert_equal(0, device.getIO(1), "Port1 associated with GeoDwelling is not in low state as expected")
 
- -- print("configuration applied")
-  --framework.delay(999)
-
   -- changing gps settings - inside geofence 2 (GeoDwellTime grater than 0)
   gpsSettings={
                latitude = 50.5,     -- degrees, that is inside geofence 2
@@ -1404,6 +1402,8 @@ function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOf
   avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)               -- wait until settings are applied
+
+  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
 
   -- put terminal into IgnitionOn state
   device.setIO(3, 1)
