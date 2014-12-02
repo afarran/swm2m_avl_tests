@@ -147,7 +147,7 @@ end
 function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDebounceTime_MovingStartMessageSent()
 
   -- *** Setup
-  local MOVING_DEBOUNCE_TIME = 1                            -- seconds
+  local MOVING_DEBOUNCE_TIME = 10                            -- seconds
   local STATIONARY_SPEED_THLD = 5                           -- kmh
   local gpsSettings = {}                                    -- table containing gpsSettings used in TC
 
@@ -405,7 +405,7 @@ function test_Moving_WhenSpeedBelowThldForPeriodAboveThld_MovingEndMessageSent()
   local expectedMins = {avlConstants.mins.movingEnd}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingStart message not received")
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
 
   assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.movingEnd].Longitude), "MovingEnd message has incorrect longitude value")
   assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.movingEnd].Latitude), "MovingEnd message has incorrect latitude value")
@@ -900,14 +900,14 @@ function test_Speeding_WhenSpeedBelowSpeedingThldForPeriodBelowThld_SpeedingEndM
   -- *** Setup
   local DEFAULT_SPEED_LIMIT = 80                         -- kmh
   local SPEEDING_TIME_OVER = 1                           -- seconds
-  local SPEEDING_TIME_UNDER = 15                         -- seconds
+  local SPEEDING_TIME_UNDER = 20                         -- seconds
   local MOVING_DEBOUNCE_TIME = 1                         -- seconds
 
   -- applying moving and speeding related properties of AVl
   lsf.setProperties(AVL_SIN,{
                              {avlConstants.pins.defaultSpeedLimit, DEFAULT_SPEED_LIMIT},
                              {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_OVER},
-                             {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_UNDER},
+                             {avlConstants.pins.speedingTimeUnder, SPEEDING_TIME_UNDER},
                             }
                    )
 
@@ -1355,7 +1355,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTime
   local movingDebounceTime = 1       -- seconds
   local stationarySpeedThld = 5      -- kmh
   local turnThreshold = 10           -- in degrees
-  local turnDebounceTime = 10         -- (feature disabled) in seconds
+  local turnDebounceTime = 1         -- in seconds
 
 
   --applying properties of the service
@@ -1376,23 +1376,24 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTime
                      }
 
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+ GPS_PROCESS_TIME) -- one second is added to make sure the gps is read and processed by agent
 
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  turnDebounceTime = 15         -- in seconds
   --applying properties of the service
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.turnDebounceTime, turnDebounceTime},
-
-                                             }
-                   )
-
+                             {avlConstants.pins.turnDebounceTime, turnDebounceTime},
+                           }
+                    )
 
   gateway.setHighWaterMark() -- to get the newest messages
   gpsSettings.heading = 110                             -- change in heading above turnThreshold
   gps.set(gpsSettings)                                  -- applying gps settings
-  framework.delay(GPS_READ_INTERVAL+2)                    -- waiting shorter than turnDebounceTime
+  framework.delay(GPS_READ_INTERVAL+2)                  -- waiting shorter than turnDebounceTime
   gpsSettings.heading = 90                              -- back to heading before change
   gps.set(gpsSettings)                                  -- applying gps settings
 
