@@ -1367,7 +1367,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsBelowTurnDebounceTime
   gps.set({heading = 90})                               -- back to initial heading
 
   expectedMins = {avlConstants.mins.turn}
-  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
   assert_nil(receivedMessages[avlConstants.mins.turn], "Turn message is not expected")
 
 end
@@ -1386,50 +1386,44 @@ end
   -- Turn message not sent
 function test_Turn_WhenHeadingChangeIsBelowTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageNotSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local turnThreshold = 10           -- in degrees
-  local turnDebounceTime = 2         -- in seconds
-
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
+  local TURN_THRESHOLD = 10             -- degrees
+  local TURN_DEBOUNCE_TIME = 2          -- seconds
 
   --applying properties of the service
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.turnThreshold, turnThreshold},
-                                                {avlConstants.pins.turnDebounceTime, turnDebounceTime},
-
-                                             }
+                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                              {avlConstants.pins.turnThreshold, TURN_THRESHOLD},
+                              {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
+                            }
                    )
 
-  -- gps settings table to be sent to simulator
+  -- initial position of terminal, speed above stationary speed threshold
   local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees
+                      longitude = 1                       -- degrees
                      }
 
-
+  -- *** Execute
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + 1) -- terminal should go to moving state after this time
 
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
-  framework.delay(3) -- to make sure not to receive previous report (generated after movingStart Message)
+  gateway.setHighWaterMark()                                                   -- to get the newest messages
+  gps.set({heading = 99})                                                      -- change in heading below turnThreshold
+  framework.delay(TURN_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   -- waiting longer than turnDebounceTime
 
-  gateway.setHighWaterMark()                            -- to get the newest messages
-  gpsSettings.heading = 99                              -- change in heading below turnThreshold
-  gps.set(gpsSettings)                                  -- applying gps settings
-  framework.delay(turnDebounceTime+GPS_READ_INTERVAL+2)   -- waiting longer than turnDebounceTime
-
-
-  -- Turn message is not expected
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-  -- look for Turn message
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(AVL_SIN, avlConstants.mins.turn))
-  assert_false(next(matchingMessages), "Turn report not expected")    -- assertion fails if any Turn message has been received
+  expectedMins = {avlConstants.mins.turn}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+  assert_nil(receivedMessages[avlConstants.mins.turn], "Turn message is not expected")
 
   -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
   gpsSettings.heading = 90                              -- terminal put back to initial heading
