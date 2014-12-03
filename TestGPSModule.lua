@@ -1270,7 +1270,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                                {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
                              }
                    )
-
+  -- *** Execute
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
   -- waiting until turnDebounceTime passes - in case terminal had some different heading before
@@ -1306,7 +1306,6 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
   gpsSettings[1].heading = 90     -- terminal put back to initial heading
   gps.set(gpsSettings[1])         -- applying gps settings
-
 
 
 end
@@ -1492,8 +1491,6 @@ function test_Turn_ForTurnFeatureDisabledWhenHeadingChangeIsAboveTurnThldAndLast
 end
 
 
-
-
 --- TC checks if Turn message is correctly sent when heading difference is above TurnThreshold and is maintained above TurnDebounceTime
   -- and GpsFixAge is included in the report (for fixes older than 5 seconds related to EventTime)
   -- *actions performed:
@@ -1508,61 +1505,70 @@ end
   -- Turn message sent and report fields have correct values
 function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTimePeriod_TurnMessageSentGpsFixAgeReported()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local turnThreshold = 10           -- degrees
-  local turnDebounceTime = 10         -- seconds
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
+  local TURN_THRESHOLD = 10             -- degrees
+  local TURN_DEBOUNCE_TIME = 1          -- seconds
   local gpsSettings = {}
 
   -- Point#1 gps settings
   gpsSettings[1]={
-                  speed = stationarySpeedThld+1,  -- kmh
-                  heading = 90,                   -- degrees
-                  latitude = 1,                   -- degrees
-                  longitude = 1                   -- degrees
+                  speed = STATIONARY_SPEED_THLD + 1,  -- kmh
+                  heading = 90,                       -- degrees
+                  latitude = 1,                       -- degrees
+                  longitude = 1                       -- degrees
                  }
 
   -- Point#2 gps settings
   gpsSettings[2]={
-                  speed = stationarySpeedThld+10,                         -- kmh
-                  heading = gpsSettings[1].heading + turnThreshold + 1,   -- degrees, 1 degree above turnThreshold
+                  speed = STATIONARY_SPEED_THLD + 10,                     -- kmh
+                  heading = gpsSettings[1].heading + TURN_THRESHOLD + 1,  -- degrees, 1 degree above turnThreshold
                   latitude = 2,                                           -- degrees
                   longitude = 2,                                          -- degrees
                  }
 
   -- Point#3 gps settings
   gpsSettings[3]={
-                  speed = stationarySpeedThld+14,                  -- kmh
-                  heading = gpsSettings[2].heading,                -- degrees
-                  latitude = 3,                                    -- degrees
-                  longitude = 3,                                   -- degrees
-                  fixType = 3,                                     -- valid fix
+                  speed = STATIONARY_SPEED_THLD + 14,                  -- kmh
+                  heading = gpsSettings[2].heading,                    -- degrees
+                  latitude = 3,                                        -- degrees
+                  longitude = 3,                                       -- degrees
                  }
 
 
   -- applying properties of the service
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.turnThreshold, turnThreshold},
-                                                {avlConstants.pins.turnDebounceTime, turnDebounceTime},
-                                             }
+                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                               {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                               {avlConstants.pins.turnThreshold, TURN_THRESHOLD},
+                               {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
+                             }
                    )
 
-  gps.set(gpsSettings[1])                               -- applying gps settings for Point#1
-  -- waiting until turnDebounceTime passes - that is terminal had some different heading before
-  framework.delay(turnDebounceTime+GPS_READ_INTERVAL+5)
+  gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
-  -- checking if terminal is in moving state
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
 
-  timeOfEventTc = os.time()  -- to get exact timestamp
+  -- waiting until turnDebounceTime passes - in case terminal had some different heading before
+  framework.delay(TURN_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  TURN_DEBOUNCE_TIME = 10          -- seconds
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
+                             }
+                   )
+
+  timeOfEvent = os.time()    -- to get exact timestamp
   gateway.setHighWaterMark() -- to get the newest messages
   gps.set(gpsSettings[2])    -- applying gps settings of Point#2
 
   -- waiting shorter than turnDebounceTime and changing position to another point (terminal is moving)
-  framework.delay(GPS_READ_INTERVAL+2)
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
   gps.set(gpsSettings[3])    -- applying gps settings of Point#3
   framework.delay(GPS_READ_INTERVAL)
@@ -1570,20 +1576,13 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   gps.set(gpsSettings[3])    -- applying gps settings of Point#3 with signal loss
 
   -- waiting until turnDebounceTime passes
-  framework.delay(turnDebounceTime+GPS_READ_INTERVAL)
+  framework.delay(TURN_DEBOUNCE_TIME + GPS_READ_INTERVAL)
 
-  -- Turn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(AVL_SIN, avlConstants.mins.turn),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Turn message not received")
+  expectedMins = {avlConstants.mins.turn}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.turn], "Turn message not received")
 
-  -- content of the report should contain Point#2 gps and time information
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "Turn",
-                  currentTime = timeOfEventTc,
-                  GpsFixAge = 9,
-                  }
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  assert_equal(9, tonumber(receivedMessages[avlConstants.mins.turn].GpsFixAge), 3, "Turn message has incorrect GpsFixAge value")
 
   -- in the end of the TC heading should be set back to 90 not to interrupt other TCs
   gpsSettings[1].heading = 90     -- terminal put back to initial heading
