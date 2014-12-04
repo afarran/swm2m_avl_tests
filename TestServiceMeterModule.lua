@@ -248,6 +248,8 @@ end
   -- *expected results:
   -- SetServiceMeter message correctly sets SM0Time and SM0Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+  
+
 
   -- properties values to be used in TC
   local movingDebounceTime = 1          -- seconds
@@ -889,8 +891,8 @@ function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterReque
                     gps = gpsSettings,
                     messageName = "ServiceMeter",
                     currentTime = os.time(),
-                  --  SM4Time = 0,                                   -- zero hours of SM4 is expected, value has been set to 0 a moment ago
-                   -- SM4Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    SM4Time = 0,                                   -- zero hours of SM4 is expected, value has been set to 0 a moment ago
+                    SM4Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                           }
 
     avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
