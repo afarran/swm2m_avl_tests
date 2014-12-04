@@ -1726,7 +1726,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
   gateway.setHighWaterMark()
 
   ----------------------------------------------------------------------------------------------------
-  -- terminal is moving again
+  -- terminal is moving
   ----------------------------------------------------------------------------------------------------
   gps.set(gpsSettings[1])      -- gps settings applied
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
@@ -1749,7 +1749,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
   assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
 
   ----------------------------------------------------------------------------------------------------
-  -- terminal moves again
+  -- terminal is moving again
   ----------------------------------------------------------------------------------------------------
   gps.set({speed = STATIONARY_SPEED_THLD + 1})    -- terminal moves again
 
@@ -1777,6 +1777,7 @@ function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakesS
 end
 
 
+
 --- TC checks if LongDriving message is not sent when terminal is moving longer than maxDrivingTime but breakes together are longer than
   -- minRestTime
   -- *actions performed:
@@ -1790,86 +1791,86 @@ end
   -- LongDriving message sent after exceeeding maxDrivingTime limit with break shorter than minRestTime, report fields have correct values
 function test_LongDriving_WhenTerminalMovingLongerThanMaxDrivingTimeWithBreakLongerThanMinRestTime_LongDrivingMessageNotSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationaryDebounceTime = 1   -- seconds
-  local stationarySpeedThld = 3      -- kmh
-  local maxDrivingTime = 5           -- minutes
-  local minRestTime = 1              -- minutes
-
-
-  --applying properties of the service
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1         -- seconds
+  local STATIONARY_DEBOUNCE_TIME = 1     -- seconds
+  local STATIONARY_SPEED_THLD = 5        -- kmh
+  local MAX_DRIVING_TIME = 5             -- minutes
+  local MIN_REST_TIME = 1                -- minutes
+  local LONG_DRIVING_CHECK_INTERVAL = 60 -- seconds
+  local gpsSettings = {}
+  -- applying properties of the service
   lsf.setProperties(AVL_SIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime},
-                                                {avlConstants.pins.maxDrivingTime, maxDrivingTime},
-                                                {avlConstants.pins.minRestTime, minRestTime}
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME},
+                                                {avlConstants.pins.maxDrivingTime, MAX_DRIVING_TIME},
+                                                {avlConstants.pins.minRestTime, MIN_REST_TIME}
                                              }
                    )
-  -- gps settings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold, to get moving state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
 
-  -- first terminal is put into moving state
-  gps.set(gpsSettings)                                    -- gps settings applied
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1)   -- one second is added to make sure the gps is read and processed by agent
-  --checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
-  -- terminal moving
-  framework.delay(maxDrivingTime*60-200)       -- wait shorter than maxDrivingTime (multiplied by 60 to get seconds from minutes)
+  -- Point#1 - terminal moving
+  gpsSettings[1]={
+                  speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold, to get moving state
+                  heading = 90,                       -- degrees
+                  latitude = 1,                       -- degrees
+                  longitude = 1,                      -- degrees
+                  heading = 91,                       -- degrees
+                 }
 
-  -- gps settings table to be sent to simulator to make terminal stationary
-  local gpsSettings={
-              speed = 0,                      -- break in driving
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
+  -- *** Execute
+  gateway.setHighWaterMark()
 
-  gps.set(gpsSettings)                                        -- gps settings applied
-  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+1)   -- one second is added to make sure the gps is read and processed by agent
-  --checking if terminal is not the moving state
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the stationary state")
-  -- terminal stationary (break in driving)
-  framework.delay(minRestTime*60+15)                          -- wait longer than minRestTime (multiplied by 60 to get minutes from seconds)
+  ----------------------------------------------------------------------------------------------------
+  -- terminal is moving
+  ----------------------------------------------------------------------------------------------------
+  gps.set(gpsSettings[1])      -- gps settings applied
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  -- terminal moving again
-  local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold, to get moving state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
-  gps.set(gpsSettings)                                    -- gps settings applied
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1)   -- one second is added to make sure the gps is read and processed by agent
-  --checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
-  -- terminal moving again
-  gateway.setHighWaterMark()                  -- to get the newest messages
-  -- waiting shorter than maxDrivingTime
-  framework.delay(maxDrivingTime*60-200)   -- maxDrivingTime multiplied by 60 to get seconds from minutes
+  -- wait shorter than maxDrivingTime (multiplied by 60 to get seconds from minutes)
+  framework.delay(MAX_DRIVING_TIME*60 - 200)
 
-  -- LongDriving Message is not expected
-  local receivedMessages = gateway.getReturnMessages()   -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for LongDriving message
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(AVL_SIN, avlConstants.mins.longDriving))
-  assert_false(next(matchingMessages), "LongDriving report not expected")   -- checking if any LongDriving message has been caught
+  ----------------------------------------------------------------------------------------------------
+  -- terminal stops
+  ----------------------------------------------------------------------------------------------------
+  gps.set({speed = 0})                                                    -- terminal stops - break in driving
+  -- wait longer than MIN_REST_TIME (multiplied by 60 to get seconds from minutes)
+  framework.delay(MIN_REST_TIME*60 + LONG_DRIVING_CHECK_INTERVAL + GPS_READ_INTERVAL)
 
-  local maxDrivingTime = 0                                      -- in minutes, 0 not to get more LongDriving reports
+  expectedMins = {avlConstants.mins.movingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
 
-  --applying properties of the service
+  ----------------------------------------------------------------------------------------------------
+  -- terminal moves again
+  ----------------------------------------------------------------------------------------------------
+  gps.set({speed = STATIONARY_SPEED_THLD + 1})    -- terminal moves again
+
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)      -- terminal should go to moving state after this
+
+  expectedMins = {avlConstants.mins.movingStart}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  framework.delay(MAX_DRIVING_TIME*60 - 100 + LONG_DRIVING_CHECK_INTERVAL)
+
+  -- LongDriving message expected
+  expectedMins = {avlConstants.mins.longDriving}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+
+  MAX_DRIVING_TIME = 0                             -- in minutes, 0 not to get more LongDriving reports
   lsf.setProperties(AVL_SIN,{
-                                              {avlConstants.pins.maxDrivingTime, maxDrivingTime},
-                                             }
+                             {avlConstants.pins.maxDrivingTime, MAX_DRIVING_TIME},
+                            }
                    )
+
+  assert_nil(receivedMessages[avlConstants.mins.longDriving], "LongDriving message not expected")
+
+
 
 
 end
