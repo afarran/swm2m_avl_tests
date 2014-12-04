@@ -783,7 +783,15 @@ function run(hooks, opts)
    results.t_pre = now()
 
    -- If it's all in one test file, check its environment, too.
-   local env = getenv(3)
+   -- local env = getenv(3) -- FIX required for debugging test cases
+   -- taken from https://github.com/KINFOO/lunatest/commit/ba897adfd4512668a5fc0a45c698c1b7907552ca?diff=unified
+  local status, env = pcall(getenv, 3)
+  if status and env then
+      suites.main = get_tests(env)
+  else
+      suites.main =  get_tests(getenv())
+  end
+  
    if env then suites.main = get_tests(env) end
 
    if hooks.begin then hooks.begin(results, suites) end
