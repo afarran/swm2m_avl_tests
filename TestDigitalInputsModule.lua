@@ -3239,7 +3239,7 @@ end
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn","SM1Active"})
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   -- Point#1
   local gpsSettings={
