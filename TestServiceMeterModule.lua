@@ -249,67 +249,35 @@ end
   -- SetServiceMeter message correctly sets SM0Time and SM0Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
-
+  -- test configuration
+  
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
-
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
-
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM0Time",Value=SMTimeTC},{Name="SM0Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM0Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM0Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                 }
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.IgnitionAndSM0
+  configuration.bitmap = {"IgnitionOn"}
+  configuration.name_time = "SM0Time"
+  configuration.name_distance = "SM0Distance"
+          
+  -- test implementation (common for every SM)        
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
-
-
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM1Time and SM1Time fields
   -- are populated
@@ -418,64 +386,37 @@ end
   -- *expected results:
   -- SetServiceMeter message correctly sets SM1Time and SM1Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+  
+  -- test configuration
+  
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
-
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
-
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM1Time",Value=SMTimeTC},{Name="SM1Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM1Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM1Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                 }
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM1
+  configuration.bitmap = {"SM1Active"}
+  configuration.name_time = "SM1Time"
+  configuration.name_distance = "SM1Distance"
+          
+  -- test implementation        
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
+
 
 
 
@@ -585,62 +526,34 @@ end
   -- *expected results:
   -- SetServiceMeter message correctly sets SM2Time and SM2Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+  
+    -- test configuration
+  
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
-
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM2Active"})
-
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM2Time",Value=SMTimeTC},{Name="SM2Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM2Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM2Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                 }
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM2
+  configuration.bitmap = {"SM2Active"}
+  configuration.name_time = "SM2Time"
+  configuration.name_distance = "SM2Distance"
+          
+  -- test implementation (common for every SM)        
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
 
@@ -750,61 +663,34 @@ end
   -- *expected results:
   -- SetServiceMeter message correctly sets SM3Time and SM3Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+  
+    -- test configuration
+  
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
-
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM3Active"})
-
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM3Time",Value=SMTimeTC},{Name="SM3Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM3Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM3Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                 }
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM3
+  configuration.bitmap = {"SM3Active"}
+  configuration.name_time = "SM3Time"
+  configuration.name_distance = "SM3Distance"
+          
+  -- test implementation (common for every SM)        
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
 
@@ -915,62 +801,34 @@ end
   -- *expected results:
   -- SetServiceMeter message correctly sets SM4Time and SM4Distance
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+  
+    -- test configuration
+  
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
-
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM4Active"})
-
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  timeOfEventTC = os.time()
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM4Time",Value=SMTimeTC},{Name="SM4Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = timeOfEventTC,
-                  SM4Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM4Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                 }
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM4Active"}
+  configuration.name_time = "SM4Time"
+  configuration.name_distance = "SM4Distance"
+          
+  -- test implementation (common for every SM)        
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
 
@@ -1105,6 +963,59 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
  end
 
 end
+
+
+-- common implemetation for several of test cases
+function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
+  
+  local movingDebounceTime = configuration.movingDebounceTime
+  local stationarySpeedThld = configuration.stationarySpeedThld
+  local SMTimeTC = configuration.SMTimeTC
+  local SMDistanceTC = configuration.SMDistanceTC 
+  local gpsSettings= configuration.gpsSettings
+                  
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[1], configuration.funcDigInp},    -- line number 1 set for SM1
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap(configuration.bitmap)
+  
+  gps.set(gpsSettings) -- applying gps settings
+
+  framework.delay(5)  -- wait until settings are applied
+
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
+	message.Fields = {{Name=configuration.name_time,Value=SMTimeTC},{Name=configuration.name_distance,Value=SMDistanceTC},}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5)  -- wait until message is processed
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+	gateway.submitForwardMessage(getServiceMeterMessage)
+  gpsSettings.heading = 361  -- for stationary state
+  --ServiceMeter message is expected
+  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
+  assert_not_nil(message, "ServiceMeter message not received")
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ServiceMeter",
+                  currentTime = os.time(),
+                  [configuration.name_time] = SMTimeTC,           -- excpected value is SMTimeTC
+                  [configuration.name_distance] =  SMDistanceTC   -- expected value is SMDistanceTC
+                        }
+
+  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+
+end
+
 
 --]]
 
