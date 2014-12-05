@@ -1,0 +1,203 @@
+[ 09:14:33.160 ] Lua Services Framework starting (Version 8.1.2)
+[ 09:14:33.167 ] Starting svcmgr.init
+[ 09:14:33.171 ] Loading core services from /act/svc/svclist.lua
+[ 09:14:33.172 ] Ignoring 'svc.eeio'
+[ 09:14:33.172 ] Ignoring 'svc.cell'
+[ 09:14:33.172 ] Ignoring 'svc.accelerometer'
+[ 09:14:33.245 ] Services loaded in 0 seconds
+[ 09:14:33.246 ] Starting svcmgr.startall
+[ 09:14:33.246 ] svcmgr: calling log.init()
+[ 09:14:33.247 ] svcmgr: calling system.init()
+[ 09:14:33.247 ] svcmgr: calling idp.init()
+[ 09:14:33.247 ] svcmgr: calling message.init()
+[ 09:14:33.247 ] svcmgr: calling serial.init()
+[ 09:14:33.247 ] svcmgr: calling eio.init()
+[ 09:14:33.247 ] svcmgr: calling power.init()
+[ 09:14:33.247 ] svcmgr: calling position.init()
+[ 09:14:33.247 ] svcmgr: calling report.init()
+[ 09:14:33.247 ] svcmgr: calling filesystem.init()
+[ 09:14:33.247 ] svcmgr: calling shell.init()
+[ 09:14:33.248 ] svcmgr: calling geofence.init()
+[ 09:14:33.248 ] svcmgr: calling accel.init()
+[ 09:14:33.248 ] svcmgr: calling campaign.init()
+[ 09:14:33.248 ] svcmgr: calling ip.init()
+[ 09:14:33.248 ] svcmgr: calling AVL.init()
+[ 09:14:33.260 ] log.init() done
+[ 09:14:33.261 ] [16:INFO] Skywave package version: 4.3.5.8338
+[ 09:14:33.261 ] system.init() done
+[ 09:14:33.287 ] message.init() done
+[ 09:14:33.287 ] serial.init() done
+[ 09:14:33.288 ] eio.init() done
+[ 09:14:33.288 ] power.init() done
+[ 09:14:33.288 ] position.init() done
+[ 09:14:33.288 ] report.init() done
+[ 09:14:33.288 ] filesystem.init() done
+[ 09:14:33.288 ] shell.init() done
+[ 09:14:33.289 ] geofence.init() done
+[ 09:14:33.289 ] accel.init() done
+[ 09:14:33.289 ] ip.init() done
+[ 09:14:33.301 ] AVL.init() done
+[ 09:14:33.304 ] campaign.init() done
+[ 09:14:33.322 ] idp.init() done
+[ 09:14:33.324 ] svcmgr: spawning log.entry()
+[ 09:14:33.324 ] svcmgr: spawning system.entry()
+[ 09:14:33.324 ] svcmgr: spawning idp.entry()
+[ 09:14:33.324 ] svcmgr: spawning message.entry()
+[ 09:14:33.325 ] svcmgr: spawning serial.entry()
+[ 09:14:33.325 ] svcmgr: spawning eio.entry()
+[ 09:14:33.325 ] svcmgr: spawning power.entry()
+[ 09:14:33.325 ] svcmgr: spawning position.entry()
+[ 09:14:33.325 ] svcmgr: spawning report.entry()
+[ 09:14:33.325 ] svcmgr: spawning filesystem.entry()
+[ 09:14:33.325 ] svcmgr: spawning shell.entry()
+[ 09:14:33.325 ] svcmgr: spawning geofence.entry()
+[ 09:14:33.325 ] svcmgr: spawning accel.entry()
+[ 09:14:33.325 ] svcmgr: spawning campaign.entry()
+[ 09:14:33.325 ] svcmgr: spawning ip.entry()
+[ 09:14:33.325 ] svcmgr: spawning AVL.entry()
+[ 09:14:33.325 ] Services loaded and initialized in 0 seconds
+[ 09:14:33.327 ] [17:INFO] powerOnReason = External
+[ 09:14:33.327 ] [26:INFO] spawning Shell Cmd Processor
+[ 09:14:33.327 ] [26:INFO] attach
+[ 09:14:33.327 ] [22:INFO] Opening rs232main port @ 9600 baud
+[ 09:14:33.328 ] [26:INFO] spawning Shell CLI
+[ 09:14:33.330 ] [126:INFO] Service started v3.3.1 r1948
+[ 09:14:33.339 ] [16:INFO] Hardware reset reason = SOFTWARE, software cause = CONSOLE, desc= 
+[ 09:14:33.340 ] [18:INFO] queuing log #1 (SIN=16, bits=16)
+[ 09:14:33.342 ] [18:INFO] queuing RL msg #2 (SIN=16, bits=344)
+[ 09:14:33.344 ] [26:INFO] CLI Thread: starting
+[ 09:14:33.345 ] [21:INFO] Setting up DB File
+[ 09:14:33.346 ] [21:INFO] Indexed 4 fences
+[ 09:14:33.348 ] [18:INFO] sending RL msg #2 trn #1 (SIN=16, bits=344)
+[ 09:14:33.358 ] [18:INFO] queuing RL msg #3 (SIN=33, bits=32)
+[ 09:14:33.361 ] [126:INFO] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:14:33.364 ] [18:INFO] queuing RL msg #4 (SIN=126, bits=229)
+[ 09:14:33.364 ] [126:INFO] Starting event AirBlocked debounce timer (1200.0 sec)
+[ 09:14:33.364 ] [126:INFO] TxQ Msg#4 Evnt="Reset" MIN=1 Cell=false
+[ 09:14:33.367 ] [18:INFO] sending RL msg #3 trn #1 (SIN=33, bits=32)
+[ 09:14:33.376 ] [18:INFO] sending RL msg #4 trn #1 (SIN=126, bits=229)
+[ 09:14:38.847 ] [18:INFO] completed RL msg #2 (SIN=16), status=Success
+[ 09:14:38.847 ] [18:INFO] completed RL msg #3 (SIN=33), status=Success
+[ 09:14:38.847 ] [18:INFO] completed RL msg #4 (SIN=126), status=Success
+[ 09:14:46.966 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:14:46.968 ] [18:INFO] queuing RL msg #5 (SIN=16, bits=496)
+[ 09:14:46.968 ] [18:INFO] sending RL msg #5 trn #1 (SIN=16, bits=496)
+[ 09:14:50.032 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:14:50.033 ] [18:INFO] queuing RL msg #6 (SIN=16, bits=496)
+[ 09:14:50.033 ] [18:INFO] sending RL msg #6 trn #1 (SIN=16, bits=496)
+[ 09:14:52.033 ] [18:INFO] completed RL msg #5 (SIN=16), status=Success
+[ 09:14:55.070 ] [18:INFO] completed RL msg #6 (SIN=16), status=Success
+[ 09:14:55.085 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:14:55.085 ] [16:INFO] config changes for service 'AVL'
+[ 09:14:58.100 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:14:58.104 ] [18:INFO] queuing RL msg #7 (SIN=16, bits=85)
+[ 09:14:58.104 ] [18:INFO] sending RL msg #7 trn #1 (SIN=16, bits=85)
+[ 09:15:01.131 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:01.150 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:01.162 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:01.162 ] [16:INFO] config changes for service 'AVL'
+[ 09:15:03.178 ] [18:INFO] completed RL msg #7 (SIN=16), status=Success
+[ 09:15:09.178 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:09.178 ] [18:INFO] queuing RL msg #8 (SIN=16, bits=85)
+[ 09:15:09.178 ] [18:INFO] sending RL msg #8 trn #1 (SIN=16, bits=85)
+[ 09:15:14.207 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:14.223 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:14.223 ] [16:INFO] config changes for service 'AVL'
+[ 09:15:14.237 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:14.237 ] [16:INFO] config changes for service 'AVL'
+[ 09:15:14.261 ] [126:INFO] Starting event Idling debounce timer (600.0 sec)
+[ 09:15:14.265 ] [126:INFO] Evnt="IgnitionOn" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:15:14.267 ] [18:INFO] queuing RL msg #9 (SIN=126, bits=115)
+[ 09:15:14.267 ] [126:INFO] Starting event AirBlocked debounce timer (1200.0 sec)
+[ 09:15:14.267 ] [126:INFO] TxQ Msg#9 Evnt="IgnitionOn" MIN=4 Cell=false
+[ 09:15:14.268 ] [18:INFO] sending RL msg #9 trn #1 (SIN=126, bits=115)
+[ 09:15:14.333 ] [18:INFO] completed RL msg #8 (SIN=16), status=Success
+[ 09:15:15.204 ] [126:INFO] Starting event Moving debounce timer (1.0 sec)
+[ 09:15:16.213 ] [126:INFO] Starting event Speeding debounce timer (3.0 sec)
+[ 09:15:16.217 ] [126:INFO] Evnt="MovingStart" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:15:16.221 ] [18:INFO] queuing RL msg #10 (SIN=126, bits=115)
+[ 09:15:16.222 ] [126:INFO] TxQ Msg#10 Evnt="MovingStart" MIN=6 Cell=false
+[ 09:15:16.222 ] [126:INFO] Debounce timer stopped - Idling
+[ 09:15:16.225 ] [18:INFO] sending RL msg #10 trn #1 (SIN=126, bits=115)
+[ 09:15:19.166 ] [126:INFO] Evnt="SpeedingStart" Cell=false CellIntvl=120sec SatIntvl=900sec
+[ 09:15:19.172 ] [18:INFO] queuing RL msg #11 (SIN=126, bits=123)
+[ 09:15:19.173 ] [126:INFO] TxQ Msg#11 Evnt="SpeedingStart" MIN=8 Cell=false
+[ 09:15:19.176 ] [18:INFO] sending RL msg #11 trn #1 (SIN=126, bits=123)
+[ 09:15:19.404 ] [18:INFO] completed RL msg #9 (SIN=126), status=Success
+[ 09:15:21.430 ] [18:INFO] completed RL msg #10 (SIN=126), status=Success
+[ 09:15:24.480 ] [18:INFO] completed RL msg #11 (SIN=126), status=Success
+[ 09:15:41.160 ] [126:INFO] MIN 15 skipped/disabled
+[ 09:15:41.160 ] [126:INFO] Evnt="LoggedPosition" Cell=false CellIntvl=120sec SatIntvl=900sec
+[ 09:15:41.168 ] [18:INFO] queuing log #12 (SIN=126, bits=157)
+[ 09:15:41.168 ] [126:INFO] MIN 15 skipped/disabled
+[ 09:15:41.168 ] [126:INFO] TxQ Msg#12 Evnt="LoggedPosition" MIN=15 Cell=false
+[ 09:15:42.268 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:42.269 ] [18:INFO] queuing RL msg #13 (SIN=16, bits=85)
+[ 09:15:42.269 ] [18:INFO] sending RL msg #13 trn #1 (SIN=16, bits=85)
+[ 09:15:46.295 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:15:46.298 ] [18:INFO] queuing RL msg #14 (SIN=16, bits=85)
+[ 09:15:46.298 ] [18:INFO] sending RL msg #14 trn #1 (SIN=16, bits=85)
+[ 09:15:47.799 ] [18:INFO] completed RL msg #13 (SIN=16), status=Success
+[ 09:15:49.330 ] [126:INFO] Evnt="SpeedingEnd" Cell=false CellIntvl=120sec SatIntvl=900sec
+[ 09:15:49.333 ] [18:INFO] queuing RL msg #15 (SIN=126, bits=123)
+[ 09:15:49.333 ] [126:INFO] Starting event AirBlocked debounce timer (1200.0 sec)
+[ 09:15:49.334 ] [126:INFO] TxQ Msg#15 Evnt="SpeedingEnd" MIN=9 Cell=false
+[ 09:15:49.337 ] [126:INFO] Evnt="MovingEnd" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:15:49.340 ] [18:INFO] queuing RL msg #16 (SIN=126, bits=115)
+[ 09:15:49.340 ] [126:INFO] TxQ Msg#16 Evnt="MovingEnd" MIN=7 Cell=false
+[ 09:15:49.343 ] [126:INFO] Evnt="IgnitionOff" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:15:49.345 ] [18:INFO] queuing RL msg #17 (SIN=126, bits=115)
+[ 09:15:49.345 ] [126:INFO] TxQ Msg#17 Evnt="IgnitionOff" MIN=5 Cell=false
+[ 09:15:49.346 ] [18:INFO] sending RL msg #15 trn #1 (SIN=126, bits=123)
+[ 09:15:49.355 ] [18:INFO] sending RL msg #16 trn #1 (SIN=126, bits=115)
+[ 09:15:49.357 ] [18:INFO] sending RL msg #17 trn #1 (SIN=126, bits=115)
+[ 09:15:49.472 ] [126:INFO] Starting event Moving debounce timer (1.0 sec)
+[ 09:15:50.492 ] [126:INFO] Evnt="MovingStart" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:15:50.500 ] [18:INFO] queuing RL msg #18 (SIN=126, bits=115)
+[ 09:15:50.500 ] [126:INFO] TxQ Msg#18 Evnt="MovingStart" MIN=6 Cell=false
+[ 09:15:50.504 ] [18:INFO] sending RL msg #18 trn #1 (SIN=126, bits=115)
+[ 09:15:51.857 ] [18:INFO] completed RL msg #14 (SIN=16), status=Success
+[ 09:15:54.899 ] [18:INFO] completed RL msg #15 (SIN=126), status=Success
+[ 09:15:54.900 ] [18:INFO] completed RL msg #16 (SIN=126), status=Success
+[ 09:15:54.900 ] [18:INFO] completed RL msg #17 (SIN=126), status=Success
+[ 09:15:55.911 ] [18:INFO] completed RL msg #18 (SIN=126), status=Success
+[ 09:16:15.428 ] [126:INFO] MIN 15 skipped/disabled
+[ 09:16:15.428 ] [126:INFO] Evnt="LoggedPosition" Cell=false CellIntvl=120sec SatIntvl=900sec
+[ 09:16:15.436 ] [18:INFO] queuing log #19 (SIN=126, bits=157)
+[ 09:16:15.436 ] [126:INFO] MIN 15 skipped/disabled
+[ 09:16:15.436 ] [126:INFO] TxQ Msg#19 Evnt="LoggedPosition" MIN=15 Cell=false
+[ 09:16:18.331 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:16:18.332 ] [18:INFO] queuing RL msg #20 (SIN=16, bits=85)
+[ 09:16:18.332 ] [18:INFO] sending RL msg #20 trn #1 (SIN=16, bits=85)
+[ 09:16:22.372 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:16:22.380 ] [18:INFO] queuing RL msg #21 (SIN=16, bits=85)
+[ 09:16:22.381 ] [18:INFO] sending RL msg #21 trn #1 (SIN=16, bits=85)
+[ 09:16:24.305 ] [18:INFO] completed RL msg #20 (SIN=16), status=Success
+[ 09:16:25.419 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:16:25.419 ] [16:INFO] config changes for service 'AVL'
+[ 09:16:25.431 ] [18:INFO] sending decoded message from transport=1 to SIN=23
+[ 09:16:25.435 ] [18:INFO] queuing RL msg #22 (SIN=23, bits=119)
+[ 09:16:25.436 ] [18:INFO] sending RL msg #22 trn #1 (SIN=23, bits=119)
+[ 09:16:27.460 ] [18:INFO] sending decoded message from transport=1 to SIN=23
+[ 09:16:27.920 ] [18:INFO] queuing RL msg #23 (SIN=23, bits=24)
+[ 09:16:27.920 ] [18:INFO] sending RL msg #23 trn #1 (SIN=23, bits=24)
+[ 09:16:28.359 ] [18:INFO] completed RL msg #21 (SIN=16), status=Success
+[ 09:16:30.495 ] [18:INFO] sending decoded message from transport=1 to SIN=16
+[ 09:16:30.496 ] [16:INFO] restarting AVL.entry()
+[ 09:16:30.496 ] [16:INFO] calling AVL.onTermination()
+[ 09:16:30.496 ] [126:INFO] v3.3.1 Terminated! upT=117 mem=1144.680664
+[ 09:16:30.501 ] [126:INFO] Service started v3.3.1 r1948
+[ 09:16:30.507 ] [126:INFO] Starting event Moving debounce timer (1.0 sec)
+[ 09:16:30.510 ] [126:INFO] Evnt="Reset" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:16:30.513 ] [18:INFO] queuing RL msg #24 (SIN=126, bits=229)
+[ 09:16:30.513 ] [126:INFO] Starting event AirBlocked debounce timer (1200.0 sec)
+[ 09:16:30.513 ] [126:INFO] TxQ Msg#24 Evnt="Reset" MIN=1 Cell=false
+[ 09:16:30.516 ] [18:INFO] sending RL msg #24 trn #1 (SIN=126, bits=229)
+[ 09:16:31.406 ] [18:INFO] completed RL msg #22 (SIN=23), status=Success
+[ 09:16:31.509 ] [126:INFO] Evnt="MovingStart" Cell=false CellIntvl=7200sec SatIntvl=86400sec
+[ 09:16:31.517 ] [18:INFO] queuing RL msg #25 (SIN=126, bits=115)
+[ 09:16:31.518 ] [126:INFO] TxQ Msg#25 Evnt="MovingStart" MIN=6 Cell=false
+[ 09:16:31.525 ] [18:INFO] sending RL msg #25 trn #1 (SIN=126, bits=115)
+[ 09:16:33.431 ] [18:INFO] completed RL msg #23 (SIN=23), status=Success
+[ 09:16:36.472 ] [18:INFO] completed RL msg #24 (SIN=126), status=Success
+[ 09:16:37.485 ] [18:INFO] completed RL msg #25 (SIN=126), status=Success
