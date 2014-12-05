@@ -203,8 +203,9 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   gateway.setHighWaterMark()            -- to get the newest messages
   gps.set(gpsSettings[2])               -- applying gps settings
 
+  local timeOfEvent = os.time()
   framework.delay(GEOFENCE_HISTERESIS + GEOFENCE_INTERVAL)       -- waiting for the ZoneEntry message to be generated
-  timeOfEvent = os.time()
+
 
   -- ZoneEntry message expected
   local expectedMins = {avlConstants.mins.zoneEntry}
@@ -214,7 +215,7 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Longitude), "ZoneEntry message has incorrect longitude value")
   assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Latitude), "ZoneEntry message has incorrect latitude value")
   assert_equal("ZoneEntry", receivedMessages[avlConstants.mins.zoneEntry].Name, "ZoneEntry message has incorrect message name")
-  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.zoneEntry].EventTime), 5, "ZoneEntry message has incorrect EventTime value")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.zoneEntry].EventTime), 60, "ZoneEntry message has incorrect EventTime value")
   assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Speed), "ZoneEntry message has incorrect speed value")
   assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Heading), "ZoneEntry message has incorrect heading value")
   assert_equal(0, tonumber(receivedMessages[avlConstants.mins.zoneEntry].CurrentZoneId), "ZoneEntry message has CurrentZoneId value")
@@ -306,7 +307,6 @@ end
 
 
 
-
 --- TC checks if ZoneExit message is correctly sent when terminal exits defined zone and enters undefined zone
   -- *actions performed:
   -- set movingDebounceTime to 1 second, stationarySpeedThld to 5 kmh; geofenceEnabled to true, geofenceInterval to 10 seconds and
@@ -319,14 +319,15 @@ end
   -- terminal exits goefence 0 and ZoneExit message has been sent
 function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceHisteresisPeriod_ZoneExitMessageSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local gpsSettings = {}             -- gps settings table to be sent to simulator
 
-  -- Point#1 - terminal moving inside geofence 0
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
+  local GEOFENCE_ENABLED = true       -- to enable geofence feature
+  local GEOFENCE_INTERVAL = 10         -- seconds
+  local GEOFENCE_HISTERESIS = 1        -- seconds
+  local gpsSettings = {}               -- gps settings table to be sent to simulator
+
+    -- Point#1 - terminal moving inside geofence 0
   gpsSettings[1]={
                   speed = 5,                       -- one kmh above threshold
                   heading = 90,                    -- degrees
@@ -344,50 +345,51 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
                   simulateLinearMotion = false,
                  }
 
-  --applying properties of AVL service
+  -- applying moving related properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
-  --applying properties of geofence service
+  -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
 
   ---------------------------------------------------------------------------------------
   --- Terminal moving inside geofence 0
   ---------------------------------------------------------------------------------------
+  gps.set(gpsSettings[1])
+  framework.delay(GEOFENCE_HISTERESIS + GEOFENCE_INTERVAL + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  gps.set(gpsSettings[1])                                       -- applying gps settings of Point#1
-  framework.delay(geofenceHisteresis+geofenceInterval+10)       -- wait until terminal enters geofence 0
-
+  --------------------------------------------------------------------------------------
+  --- Terminal goes outside geofence 0 to undefined zone (128)
   ---------------------------------------------------------------------------------------
-  --- Terminal goes outside geofence 0 to undefined zone
-  ---------------------------------------------------------------------------------------
+  gateway.setHighWaterMark()
+  local timeOfEvent = os.time()
+  gps.set(gpsSettings[2])
+  framework.delay(GEOFENCE_HISTERESIS + GEOFENCE_INTERVAL + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  local timeOfEventTc = os.time()
-  gps.set(gpsSettings[2])                                    -- applying gps settings of Point#2
-  framework.delay(geofenceHisteresis+geofenceInterval+20)   -- terminal enters geofence 128
+  -- ZoneExit message expected
+  local expectedMins = {avlConstants.mins.zoneExit}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ZoneExit message not received")   -- checking if any of ZoneExit messages has been received
-
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "ZoneExit",
-                  currentTime = timeOfEventTc,
-                  CurrentZoneId = 128,     -- terminal goes out from geofence 0 to undefined geofence
-                  PreviousZoneId = 0
-                        }
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneExit], "ZoneExit message not received")
+  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneExit].Longitude), "ZoneEntry message has incorrect longitude value")
+  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneExit].Latitude), "ZoneEntry message has incorrect latitude value")
+  assert_equal("ZoneExit", receivedMessages[avlConstants.mins.zoneExit].Name, "ZoneEntry message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.zoneExit].EventTime), 60, "ZoneEntry message has incorrect EventTime value")
+  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.zoneExit].Speed), "ZoneEntry message has incorrect speed value")
+  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.zoneExit].Heading), "ZoneEntry message has incorrect heading value")
+  assert_equal(128, tonumber(receivedMessages[avlConstants.mins.zoneExit].CurrentZoneId), "ZoneEntry message has CurrentZoneId value")
+  assert_equal(0, tonumber(receivedMessages[avlConstants.mins.zoneExit].PreviousZoneId), "ZoneEntry message has PreviousZoneId value")
 
 end
+
 
 
 --- TC checks if SpeedingStart message is correctly sent when terminal moves with the speed above speeding threshold defined in geofence
