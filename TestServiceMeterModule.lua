@@ -89,8 +89,6 @@ function setup()
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
-
-  framework.delay(2)                 -- wait until settings are applied
   device.setIO(1, 0)                 -- that should trigger IgnitionOff
   framework.delay(2)                 -- wait until settings are applied
 
@@ -135,7 +133,7 @@ end
 --]]
 
 
---- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Time fields
+--- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
   -- are populated
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOnAndSM0 line
