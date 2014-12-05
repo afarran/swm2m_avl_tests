@@ -769,8 +769,19 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
                   [configuration.name_time] = SMTimeTC,           -- excpected value is SMTimeTC
                   [configuration.name_distance] =  SMDistanceTC   -- expected value is SMDistanceTC
                         }
-
+  
   avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  
+  -- verify properties
+  propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+  currentProperties = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+  expectedProperties = {[avlConstants.pins[configuration.name_time]] = SMTimeTC*60*60, 
+                              [avlConstants.pins[configuration.name_distance]] = SMDistanceTC*1000}
+                            
+  for index, value in ipairs(currentProperties) do
+    assert_equal(tonumber(value.value), expectedProperties[tonumber(value.pin)], 0,
+                 'Service Meter property ' .. value.pin .. ' value different than expected')
+  end
 
 end
 

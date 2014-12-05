@@ -90,6 +90,11 @@ avlConstants = {
                               funcDigOut5 = 120,
                               funcDigOut = {117, 118, 119, 120},
                               deleteData = 201,
+                              SM0Time = 91, SM0Distance = 92,
+                              SM1Time = 93, SM1Distance = 94,
+                              SM2Time = 95, SM2Distance = 96,
+                              SM3Time = 97, SM3Distance = 98,
+                              SM4Time = 99, SM4Distance = 100,
 
                           },
 
