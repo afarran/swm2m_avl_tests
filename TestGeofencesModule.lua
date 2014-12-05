@@ -79,7 +79,7 @@ end
   -- terminal correctly put in the stationary state, Geo-speeding and geo-dwell limits are removed
 function setup()
 
-  local geofenceEnabled = true       -- to enable geofence feature
+  local geofenceEnabled = true      -- to enable geofence feature
   local geofenceInterval = 10        -- in seconds
   local geofenceHisteresis = 1       -- in seconds
   local stationaryDebounceTime = 1   -- in seconds
@@ -151,16 +151,16 @@ end
   -- terminal enters zone 0 and ZoneEntry message has been sent
 function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneEntryMessageSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local gpsSettings = {}             -- gps settings table to be sent to simulator
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
+  local GEOFENCE_ENABLED = true       -- to enable geofence feature
+  local GEOFENCE_INTERVAL = 10         -- seconds
+  local GEOFENCE_HISTERESIS = 1        -- seconds
+  local gpsSettings = {}               -- gps settings table to be sent to simulator
 
   -- Point#1 - terminal outside geofence 0
   gpsSettings[1]={
-                   speed = stationarySpeedThld + 1,    -- one kmh above threshold
+                   speed = STATIONARY_SPEED_THLD + 1,    -- one kmh above threshold
                    heading = 90,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 2,                      -- degrees, that is outside geofence 0
@@ -169,52 +169,56 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 
   -- Point#2 - terminal inside geofence 0
   gpsSettings[2]={
-                      speed = stationarySpeedThld + 1,    -- one kmh above threshold
-                      heading = 90,                    -- degrees
-                      latitude = 50,                   -- degrees
-                      longitude = 3,                   -- degrees, that is inside geofence 0
-                      simulateLinearMotion = false,
-                     }
+                   speed = STATIONARY_SPEED_THLD + 1,    -- one kmh above threshold
+                   heading = 90,                       -- degrees
+                   latitude = 50,                      -- degrees
+                   longitude = 3,                      -- degrees, that is inside geofence 0
+                   simulateLinearMotion = false,
+                 }
 
-  --applying properties of AVL service
+  -- applying moving related properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
-  --applying properties of geofence service
+  -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
 
   ---------------------------------------------------------------------------------------
   --- Terminal moving outside geofence 0
   ---------------------------------------------------------------------------------------
-  gps.set(gpsSettings[1])     -- applying gps settings
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+5)       -- waiting until terminal gets Moving state true
+  gps.set(gpsSettings[1])
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
   ---------------------------------------------------------------------------------------
   --- Terminal moving inside geofence 0
   ---------------------------------------------------------------------------------------
   gateway.setHighWaterMark()            -- to get the newest messages
   gps.set(gpsSettings[2])               -- applying gps settings
-  timeOfEventTc = os.time()
-  framework.delay(geofenceHisteresis+geofenceInterval)       -- waiting for the ZoneEntry message to be generated
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ZoneEntry message not received")   -- checking if any of ZoneEntry messages has been received
+  framework.delay(GEOFENCE_HISTERESIS + GEOFENCE_INTERVAL)       -- waiting for the ZoneEntry message to be generated
+  timeOfEvent = os.time()
 
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "ZoneEntry",
-                  currentTime = timeOfEventTc,
-                  CurrentZoneId = 0     -- the number of the zone defined in this area
-                        }
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- ZoneEntry message expected
+  local expectedMins = {avlConstants.mins.zoneEntry}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneEntry], "MovingStart message not received")
+  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Longitude), "ZoneEntry message has incorrect longitude value")
+  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Latitude), "ZoneEntry message has incorrect latitude value")
+  assert_equal("ZoneEntry", receivedMessages[avlConstants.mins.zoneEntry].Name, "ZoneEntry message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.zoneEntry].EventTime), 5, "ZoneEntry message has incorrect EventTime value")
+  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Speed), "ZoneEntry message has incorrect speed value")
+  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.zoneEntry].Heading), "ZoneEntry message has incorrect heading value")
+  assert_equal(0, tonumber(receivedMessages[avlConstants.mins.zoneEntry].CurrentZoneId), "ZoneEntry message has CurrentZoneId value")
+
 
 end
 
