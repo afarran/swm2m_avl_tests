@@ -442,7 +442,37 @@ function avlHelperFunctions.matchReturnMessages(expectedMins, timeout)
   return msgList
 end
 
+--- Function waits for specific timeout until given old properties are different than current properties
+-- @tparam oldProperties - list of properties received from getProperties method ({{pin, value}, {pin, value}})
+-- @tparam timeout - timeout in seconds determining how long to wait for property change
+-- @tparam delay - delay in seconds between requesting new parameter list
+-- @treturn table of properties {pin, value}
 
+function avlHelperFunctions.getChangedProperties(oldProperties, timeout, delay)
+  delay = delay or 0.33
+  timeout = timeout or 10
+  local startTime = os.time()
+  local propList = {}
+  local newProperties
+  local result
+  for i=1, #oldProperties do
+    propList[i] = oldProperties[i].pin
+  end
+  
+  while (os.time() - startTime < timeout) do
+    framework.delay(delay)
+    newProperties = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+    
+    for i=1,#newProperties do
+      if newProperties[i].value ~= oldProperties[i].value then
+        result = newProperties
+        break
+      end
+    end
+    if result then break end
+  end
+  return newProperties  
+end
 
 
 
