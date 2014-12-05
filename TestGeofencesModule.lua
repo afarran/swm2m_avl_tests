@@ -379,14 +379,14 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   assert_not_nil(receivedMessages[avlConstants.mins.zoneExit], "ZoneExit message not received")
-  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneExit].Longitude), "ZoneEntry message has incorrect longitude value")
-  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneExit].Latitude), "ZoneEntry message has incorrect latitude value")
-  assert_equal("ZoneExit", receivedMessages[avlConstants.mins.zoneExit].Name, "ZoneEntry message has incorrect message name")
-  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.zoneExit].EventTime), 60, "ZoneEntry message has incorrect EventTime value")
-  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.zoneExit].Speed), "ZoneEntry message has incorrect speed value")
-  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.zoneExit].Heading), "ZoneEntry message has incorrect heading value")
-  assert_equal(128, tonumber(receivedMessages[avlConstants.mins.zoneExit].CurrentZoneId), "ZoneEntry message has CurrentZoneId value")
-  assert_equal(0, tonumber(receivedMessages[avlConstants.mins.zoneExit].PreviousZoneId), "ZoneEntry message has PreviousZoneId value")
+  assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneExit].Longitude), "ZoneExit message has incorrect longitude value")
+  assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.zoneExit].Latitude), "ZoneExit message has incorrect latitude value")
+  assert_equal("ZoneExit", receivedMessages[avlConstants.mins.zoneExit].Name, "ZoneExit message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.zoneExit].EventTime), 60, "ZoneExit message has incorrect EventTime value")
+  assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.zoneExit].Speed), "ZoneExit message has incorrect speed value")
+  assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.zoneExit].Heading), "ZoneExit message has incorrect heading value")
+  assert_equal(128, tonumber(receivedMessages[avlConstants.mins.zoneExit].CurrentZoneId), "ZoneExit message has CurrentZoneId value")
+  assert_equal(0, tonumber(receivedMessages[avlConstants.mins.zoneExit].PreviousZoneId), "ZoneExit message has PreviousZoneId value")
 
 end
 
