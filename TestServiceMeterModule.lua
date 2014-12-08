@@ -149,6 +149,24 @@ function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeter
     end
     
   end
+  
+  function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRandomTimeAndSMRandomDistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    
+    testCase = getRandomSm()
+    
+    if testCase == 0 then 
+      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 1 then 
+      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 2 then 
+      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 3 then 
+      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 4 then 
+      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    end
+    
+  end
     
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
@@ -213,7 +231,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM0Time and SM0Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   
@@ -303,7 +321,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM1Time and SM1Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   
@@ -396,7 +414,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM2Time and SM2Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
     -- test configuration
   
@@ -486,7 +504,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM3Time and SM3Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
     -- test configuration
   
@@ -576,7 +594,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM4Time and SM4Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
     -- test configuration
   
