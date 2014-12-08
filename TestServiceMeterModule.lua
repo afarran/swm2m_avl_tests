@@ -7,7 +7,7 @@ module("TestServiceMeterModule", package.seeall)
 
 -- tests are very similiar for every SM, so sm number is randomized
 -- you can turn it off/on here
-RANDOM_SM = false
+RANDOM_SM = true
 
 -------------------------
 -- Setup and Teardown
@@ -41,13 +41,13 @@ end
 function suite_teardown()
 
   -- restarting AVL agent after running module
-	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
-	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
-	gateway.submitForwardMessage(message)
+	-- local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+	-- message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+	-- gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
+  -- message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
+  -- assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
@@ -728,9 +728,12 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
     -- sending getServiceMeter message
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
+    
+     --ServiceMeter message is expected
+    local expectedMins = {avlConstants.mins.serviceMeter}
+    local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+    assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+ 
     local expectedValues={
                     gps = gpsSettings,
                     messageName = "ServiceMeter",
@@ -744,13 +747,21 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                     SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
                     SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                           }
-    if(hardwareVariant==3) then
+    if(hardwareVariant == 3) then
       expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
       expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
     end
 
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
+    assert_equal(expectedValues.SM1Time,tonumber(colmsg.Payload.SM1Time), "SM1Time value is not correct in the report")
+    assert_equal(expectedValues.SM1Distance,tonumber(colmsg.Payload.SM1Distance), 2, "SM1Distance value is not correct") 
+    assert_equal(expectedValues.SM2Time,tonumber(colmsg.Payload.SM2Time), "SM2Time value is not correct in the report")
+    assert_equal(expectedValues.SM2Distance,tonumber(colmsg.Payload.SM2Distance), 2, "SM2Distance value is not correct")
+    assert_equal(expectedValues.SM3Time,tonumber(colmsg.Payload.SM3Time), "SM3Time value is not correct in the report")
+    assert_equal(expectedValues.SM3Distance,tonumber(colmsg.Payload.SM3Distance), 2, "SM3Distance value is not correct")
+    if(hardwareVariant ~= 3) then
+      assert_equal(expectedValues.SM4Time,tonumber(colmsg.Payload.SM4Time), "SM4Time value is not correct in the report")
+      assert_equal(expectedValues.SM4Distance,tonumber(colmsg.Payload.SM4Distance), 2, "SM4Distance value is not correct") 
+    end
 
  end
 
@@ -791,10 +802,11 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
+  
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
+  local expectedMins = {avlConstants.mins.serviceMeter}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
 
   local expectedValues={
                   gps = gpsSettings,
@@ -802,9 +814,11 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
                   currentTime = os.time(),
                   [configuration.name_time] = SMTimeTC,           -- excpected value is SMTimeTC
                   [configuration.name_distance] =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-  
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                      }
+                      
+  assert_equal(SMTimeTC,tonumber(colmsg.Payload[configuration.name_time]), configuration.name_time .." value is not correct in the report")
+  assert_equal(SMDistanceTC,tonumber(colmsg.Payload[configuration.name_distance]), 2, configuration.name_distance .. " value is not correct") 
+
   
   -- verify properties
   propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
@@ -878,14 +892,15 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
     framework.delay(4)                 -- wait until settings are applied
 
     gateway.setHighWaterMark()         -- to get the newest messages
-
+    
     -- sending getServiceMeter message
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
 
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
+    local expectedMins = {avlConstants.mins.serviceMeter}
+    local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+    assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
 
     local expectedValues={
                     gps = gpsSettings,
@@ -896,7 +911,9 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
                     [configuration.name_distance] = (distanceOfStep*111.12)*counter  
                           }
 
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    assert_equal(expectedValues[configuration.name_time],tonumber(colmsg.Payload[configuration.name_time]), configuration.name_time .." value is not correct in the report")
+    assert_equal(expectedValues[configuration.name_distance],tonumber(colmsg.Payload[configuration.name_distance]), 2, configuration.name_distance .. " value is not correct") 
+
     
     propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
     currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
