@@ -5,6 +5,10 @@
 
 module("TestServiceMeterModule", package.seeall)
 
+-- tests are very similiar for every SM, so sm number is randomized
+-- you can turn it off/on here
+RANDOM_SM = true
+
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -134,19 +138,14 @@ end
 
 function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
     
-    testCase = getRandomSm()
+    local tests = {}
+    tests['SM0'] = random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM1'] = random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM2'] = random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM3'] = random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM4'] = random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
     
-    if testCase == 0 then
-      random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 1 then
-      random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 2 then
-      random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 3 then
-      random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 4 then
-      random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
-    end
+    chooseTest(tests)
     
   end
   
@@ -154,17 +153,14 @@ function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeter
     
     testCase = getRandomSm()
     
-    if testCase == 0 then 
-      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 1 then 
-      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 2 then 
-      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 3 then 
-      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-    elseif testCase == 4 then 
-      random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-    end
+    local tests = {}
+    tests['SM0']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM1']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM2']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM3']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM4']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    
+    chooseTest(tests)
     
   end
     
@@ -934,6 +930,20 @@ function getRandomSm()
   testCase = lunatest.random_int (0, 4)
   print("SM"..testCase.." choosen.")
   return testCase
+end
+
+function chooseTest(tests)
+  if RANDOM_SM == true then
+      testCase = getRandomSm()
+      tests['SM'..testCase]()
+    else 
+      for i, tc in pairs(tests) do
+        print("SM"..i.." choosen.")
+        setup()
+        tc()
+        teardown()
+      end
+    end
 end
 
 --]]
