@@ -747,13 +747,21 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                     SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
                     SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                           }
-    if(hardwareVariant==3) then
+    if(hardwareVariant == 3) then
       expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
       expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
     end
 
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
+    assert_equal(expectedValues.SM1Time,tonumber(colmsg.Payload.SM1Time), "SM1Time value is not correct in the report")
+    assert_equal(expectedValues.SM1Distance,tonumber(colmsg.Payload.SM1Distance), 2, "SM1Distance value is not correct") 
+    assert_equal(expectedValues.SM2Time,tonumber(colmsg.Payload.SM2Time), "SM2Time value is not correct in the report")
+    assert_equal(expectedValues.SM2Distance,tonumber(colmsg.Payload.SM2Distance), 2, "SM2Distance value is not correct")
+    assert_equal(expectedValues.SM3Time,tonumber(colmsg.Payload.SM3Time), "SM3Time value is not correct in the report")
+    assert_equal(expectedValues.SM3Distance,tonumber(colmsg.Payload.SM3Distance), 2, "SM3Distance value is not correct")
+    if(hardwareVariant ~= 3) then
+      assert_equal(expectedValues.SM4Time,tonumber(colmsg.Payload.SM4Time), "SM4Time value is not correct in the report")
+      assert_equal(expectedValues.SM4Distance,tonumber(colmsg.Payload.SM4Distance), 2, "SM4Distance value is not correct") 
+    end
 
  end
 
