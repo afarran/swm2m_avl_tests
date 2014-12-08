@@ -7,7 +7,7 @@ module("TestServiceMeterModule", package.seeall)
 
 -- tests are very similiar for every SM, so sm number is randomized
 -- you can turn it off/on here
-RANDOM_SM = false
+RANDOM_SM = true
 
 -------------------------
 -- Setup and Teardown
@@ -41,13 +41,13 @@ end
 function suite_teardown()
 
   -- restarting AVL agent after running module
-	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
-	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
-	gateway.submitForwardMessage(message)
+	-- local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+	-- message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+	-- gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
+  -- message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
+  -- assert_not_nil(message, "Reset message after reset of AVL not received")
 
 end
 
@@ -791,10 +791,11 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
 	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
+  
   --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
+  local expectedMins = {avlConstants.mins.serviceMeter}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
 
   local expectedValues={
                   gps = gpsSettings,
@@ -804,7 +805,7 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
                   [configuration.name_distance] =  SMDistanceTC   -- expected value is SMDistanceTC
                         }
   
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
   
   -- verify properties
   propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
@@ -878,14 +879,15 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
     framework.delay(4)                 -- wait until settings are applied
 
     gateway.setHighWaterMark()         -- to get the newest messages
-
+    
     -- sending getServiceMeter message
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
 
     --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
+    local expectedMins = {avlConstants.mins.serviceMeter}
+    local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+    assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
 
     local expectedValues={
                     gps = gpsSettings,
@@ -896,7 +898,7 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
                     [configuration.name_distance] = (distanceOfStep*111.12)*counter  
                           }
 
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    -- avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
     
     propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
     currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
