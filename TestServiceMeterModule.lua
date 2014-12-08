@@ -803,9 +803,11 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
                   currentTime = os.time(),
                   [configuration.name_time] = SMTimeTC,           -- excpected value is SMTimeTC
                   [configuration.name_distance] =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-  
-  -- avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+                      }
+                      
+  assert_equal(SMTimeTC,tonumber(colmsg.Payload[configuration.name_time]), configuration.name_time .." value is not correct in the report")
+  assert_equal(SMDistanceTC,tonumber(colmsg.Payload[configuration.name_distance]), 2, configuration.name_distance .. " value is not correct") 
+
   
   -- verify properties
   propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
@@ -898,7 +900,9 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
                     [configuration.name_distance] = (distanceOfStep*111.12)*counter  
                           }
 
-    -- avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    assert_equal(expectedValues[configuration.name_time],tonumber(colmsg.Payload[configuration.name_time]), configuration.name_time .." value is not correct in the report")
+    assert_equal(expectedValues[configuration.name_distance],tonumber(colmsg.Payload[configuration.name_distance]), 2, configuration.name_distance .. " value is not correct") 
+
     
     propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
     currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
