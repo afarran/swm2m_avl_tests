@@ -471,9 +471,20 @@ function avlHelperFunctions.getChangedProperties(oldProperties, timeout, delay)
     end
     if result then break end
   end
-  return newProperties  
+  return result  
 end
 
-
+--- Function converts property list to table
+-- e.g. propList = {{pin = pin1, value = val1}, {pin = pin2, value = val2}}
+-- is converted into result = {pin1 = val1, pin2 = val2}
+-- @tparam propertyList - list of properties received from getProperties method ({{pin, value}, {pin, value}})
+-- @treturn - table of properties where pin determines index and value determines pin value
+function avlHelperFunctions.propertiesToTable(propertyList)
+  result = {}
+  for index, property in ipairs(propertyList) do
+    result[tonumber(property.pin)] = property.value
+  end
+  return result
+end
 
 return function() return avlHelperFunctions end

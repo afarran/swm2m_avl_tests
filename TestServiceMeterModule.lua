@@ -5,6 +5,10 @@
 
 module("TestServiceMeterModule", package.seeall)
 
+-- tests are very similiar for every SM, so sm number is randomized
+-- you can turn it off/on here
+RANDOM_SM = false
+
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -132,6 +136,36 @@ end
 
 --]]
 
+-- Test cases for every SMX are quite the same, so we are randomizing only one 
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    
+    local tests = {}
+    tests['SM0'] = random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM1'] = random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM2'] = random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM3'] = random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM4'] = random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    
+    chooseTest(tests)
+    
+end
+  
+-- Test cases for every SMX are quite the same, so we are randomizing only one 
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRandomTimeAndSMRandomDistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+    
+    local tests = {}
+    tests['SM0']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM1']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM2']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM3']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM4']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    
+    chooseTest(tests)
+    
+end
+    
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
   -- are populated
@@ -147,7 +181,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM0Time and SM0Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
    -- test configuration
   configuration = {}
@@ -195,7 +229,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM0Time and SM0Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   
@@ -241,7 +275,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM1Time and SM1Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   configuration = {}
@@ -285,7 +319,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM1Time and SM1Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   
@@ -334,7 +368,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM2Time and SM2Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   configuration = {}
@@ -378,7 +412,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM2Time and SM2Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
     -- test configuration
   
@@ -425,7 +459,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM3Time and SM3Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   configuration = {}
@@ -468,7 +502,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM3Time and SM3Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
     -- test configuration
   
@@ -515,7 +549,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM4Time and SM4Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
    -- test configuration
   configuration = {}
@@ -558,7 +592,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM4Time and SM4Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
     -- test configuration
   
@@ -774,14 +808,24 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
   
   -- verify properties
   propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
-  currentProperties = lsf.getProperties(avlConstants.avlAgentSIN, propList)
-  expectedProperties = {[avlConstants.pins[configuration.name_time]] = SMTimeTC*60*60, 
-                              [avlConstants.pins[configuration.name_distance]] = SMDistanceTC*1000}
-                            
-  for index, value in ipairs(currentProperties) do
-    assert_equal(tonumber(value.value), expectedProperties[tonumber(value.pin)], 0,
-                 'Service Meter property ' .. value.pin .. ' value different than expected')
-  end
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+  expectedProperties = {[avlConstants.pins[configuration.name_time]] = expectedValues[configuration.name_time], 
+                        [avlConstants.pins[configuration.name_distance]] = expectedValues[configuration.name_distance]}
+
+  local property = {}
+  local expected = {}
+  property.time = tonumber(currentProperties[avlConstants.pins[configuration.name_time]])
+  expected.time = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60
+  
+  -- Check if time is correct
+  assert_equal(expected.time, property.time, 60, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+  
+  -- Check if distance is correct
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance =  expectedProperties[avlConstants.pins[configuration.name_distance]]*1000
+  assert_equal(expected.distance, property.distance, 
+               'Service Meter property ' .. configuration.name_distance .. ' value different than expected')
+  
 
 end
 
@@ -848,15 +892,68 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
                     messageName = "ServiceMeter",
                     currentTime = os.time(),
                     [configuration.name_time] = 0,                             -- zero hours of SM1 is expected, value has been set to 0 a moment ago
-                    [configuration.name_distance] = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    [configuration.name_distance] = (distanceOfStep*111.12)*counter  
                           }
 
     avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    
+    propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+    expectedProperties = {[avlConstants.pins[configuration.name_time]] = expectedValues[configuration.name_time], 
+                          [avlConstants.pins[configuration.name_distance]] = expectedValues[configuration.name_distance]}
+                            
+    -- Check if time is correct (expected value is given in [hours], property value is given in [seconds]
+    -- expected value is converted from hours to seconds, 
+    -- reported value is expecte to be in range Expected Seconds <= Reported Seconds < Expected Seconds + some tolerance (300s)
+    
+    local tolerance = 300
+    local property = {}
+    local expected = {}
+    property.time = tonumber(currentProperties[avlConstants.pins[configuration.name_time]])
+    expected.timeLower = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60
+    expected.timeUpper = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60 + tolerance
+    
+    -- Check if time is correct
+    assert_gte(expected.timeLower, property.time, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+    assert_lt(expected.timeUpper, property.time, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+    
+    -- Check if distance is correct
+    property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+    expected.distance =  expectedProperties[avlConstants.pins[configuration.name_distance]]*1000
+    assert_equal(expected.distance, property.distance, 500, 
+                 'Service Meter property ' .. configuration.name_distance .. ' value different than expected')
     
   end
   
 end
 
+
+-- 
+-- Stuff for randomizing tests
+-- 
+
+-- Randomizing SM test case (0 - 4)
+function getRandomSm()
+  testCase = lunatest.random_int (0, 4)
+  print("SM"..testCase.." choosen.")
+  return testCase
+end
+
+-- Choosing tc or firing all.
+function chooseTest(tests)
+  if RANDOM_SM == true then
+    testCase = getRandomSm()
+    tests['SM'..testCase]()
+  else 
+    for i, tc in pairs(tests) do
+        print(i.." choosen.")
+        setup()
+        tc()
+        teardown()
+    end
+  end
+end
 
 --]]
 
