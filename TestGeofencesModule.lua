@@ -79,16 +79,16 @@ end
   -- terminal correctly put in the stationary state, Geo-speeding and geo-dwell limits are removed
 function setup()
 
-  local geofenceEnabled = true      -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local stationaryDebounceTime = 1   -- in seconds
+  local GEOFENCE_ENABLED = true       -- to enable geofence feature
+  local GEOFENCE_INTERVAL = 10         -- in seconds
+  local GEOFENCE_HISTERESIS = 1        -- in seconds
+  local STATIONARY_DEBOUNCE_TIME = 1   -- in seconds
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
 
@@ -97,33 +97,34 @@ function setup()
                                                }
                     )
 
-  -- setting properties of the AVL service
+  -- setting deleteData property to delte geo-speeding limits
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.deleteData, 3},      -- delete Geo-speeding limits
                                              }
 
                     )
- framework.delay(1)   -- wait until message is processed
+  framework.delay(1)   -- wait until message is processed
 
-  -- setting properties of the AVL service
+  -- setting deleteData property to delte geo-geodwell times
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                              {avlConstants.pins.deleteData, 2},      -- delete Geo-dwell time limits
+                                              {avlConstants.pins.deleteData, 2},                                     -- delete Geo-dwell time limits
+                                              {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME},
                                             }
                    )
 
   -- gps settings table
   local gpsSettings={
-              longitude = 0,                -- degrees, outside any of the defined geofences
-              latitude = 0,                 -- degrees, outside any of the defined geofences
-              heading = 90,                 -- degrees
-              speed = 0,                    -- to get stationary state
-              fixType= 3,                   -- valid 3D gps fix
-              simulateLinearMotion = false, -- terminal not moving
+                      longitude = 0,                -- degrees, outside any of the defined geofences
+                      latitude = 0,                 -- degrees, outside any of the defined geofences
+                      heading = 90,                 -- degrees
+                      speed = 0,                    -- to get stationary state
+                      fixType= 3,                   -- valid 3D gps fix
+                      simulateLinearMotion = false, -- terminal not moving
                      }
 
   -- put terminal outside of any of the defined geozones
   gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(geofenceInterval+geofenceHisteresis+stationaryDebounceTime)
+  framework.delay(GEOFENCE_INTERVAL + GEOFENCE_HISTERESIS + STATIONARY_DEBOUNCE_TIME)
 
 end
 -----------------------------------------------------------------------------------------------
@@ -153,9 +154,9 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 
   local MOVING_DEBOUNCE_TIME = 1       -- seconds
   local STATIONARY_SPEED_THLD = 5      -- kmh
-  local GEOFENCE_ENABLED = true       -- to enable geofence feature
+  local GEOFENCE_ENABLED = true        -- to enable geofence feature
   local GEOFENCE_INTERVAL = 10         -- seconds
-  local GEOFENCE_HISTERESIS = 1        -- seconds
+  local GEOFENCE_HISTERESIS = 30       -- seconds
   local gpsSettings = {}               -- gps settings table to be sent to simulator
 
   -- Point#1 - terminal outside geofence 0
@@ -171,6 +172,15 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   gpsSettings[2]={
                    speed = STATIONARY_SPEED_THLD + 1,    -- one kmh above threshold
                    heading = 90,                       -- degrees
+                   latitude = 50,                      -- degrees
+                   longitude = 3,                      -- degrees, that is inside geofence 0
+                   simulateLinearMotion = false,
+                 }
+
+  -- Point#3 - terminal inside geofence 0
+  gpsSettings[3]={
+                   speed = STATIONARY_SPEED_THLD + 2,    -- one kmh above threshold
+                   heading = 91,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 3,                      -- degrees, that is inside geofence 0
                    simulateLinearMotion = false,
@@ -198,14 +208,20 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
   ---------------------------------------------------------------------------------------
-  --- Terminal moving inside geofence 0
+  --- Terminal moves in Point#2 inside geofence 0
   ---------------------------------------------------------------------------------------
   gateway.setHighWaterMark()            -- to get the newest messages
-  gps.set(gpsSettings[2])               -- applying gps settings
+  gps.set(gpsSettings[2])
+  -- entering geozone should be detected
+  framework.delay(GEOFENCE_INTERVAL + GPS_PROCESS_TIME)
+
+  ---------------------------------------------------------------------------------------
+  --- Terminal moves in Point#3 inside geofence 0
+  ---------------------------------------------------------------------------------------
+  gps.set(gpsSettings[3])
+  framework.delay(GEOFENCE_HISTERESIS + GPS_PROCESS_TIME) -- waiting for the ZoneEntry message to be generated
 
   local timeOfEvent = os.time()
-  framework.delay(GEOFENCE_HISTERESIS + GEOFENCE_INTERVAL)       -- waiting for the ZoneEntry message to be generated
-
 
   -- ZoneEntry message expected
   local expectedMins = {avlConstants.mins.zoneEntry}

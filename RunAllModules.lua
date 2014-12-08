@@ -1,4 +1,3 @@
-
 cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
 avlConstants =  require("AvlAgentConstants")
@@ -21,13 +20,13 @@ local function setup()
   math.randomseed(os.time())
   io.output():setvbuf("no")
   --include the following test suites in the feature tests:
-  --lunatest.suite("TestGPSModule")
-  --lunatest.suite("TestLPMModule")
-  --lunatest.suite("TestDigitalInputsModule")
+  lunatest.suite("TestGPSModule")
+  lunatest.suite("TestLPMModule")
+  lunatest.suite("TestDigitalInputsModule")
   lunatest.suite("TestServiceMeterModule")
-  --lunatest.suite("TestDigitalOutputsModule")
-  --lunatest.suite("TestGeofencesModule")
-  --lunatest.suite("TestPeriodicReportsModule")
+  lunatest.suite("TestDigitalOutputsModule")
+  lunatest.suite("TestGeofencesModule")
+  lunatest.suite("TestPeriodicReportsModule")
 
 end
 
