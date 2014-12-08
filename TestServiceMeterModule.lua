@@ -774,14 +774,24 @@ function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX
   
   -- verify properties
   propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
-  currentProperties = lsf.getProperties(avlConstants.avlAgentSIN, propList)
-  expectedProperties = {[avlConstants.pins[configuration.name_time]] = SMTimeTC*60*60, 
-                              [avlConstants.pins[configuration.name_distance]] = SMDistanceTC*1000}
-                            
-  for index, value in ipairs(currentProperties) do
-    assert_equal(tonumber(value.value), expectedProperties[tonumber(value.pin)], 0,
-                 'Service Meter property ' .. value.pin .. ' value different than expected')
-  end
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+  expectedProperties = {[avlConstants.pins[configuration.name_time]] = expectedValues[configuration.name_time], 
+                        [avlConstants.pins[configuration.name_distance]] = expectedValues[configuration.name_distance]}
+
+  local property = {}
+  local expected = {}
+  property.time = tonumber(currentProperties[avlConstants.pins[configuration.name_time]])
+  expected.time = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60
+  
+  -- Check if time is correct
+  assert_equal(expected.time, property.time, 60, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+  
+  -- Check if distance is correct
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance =  expectedProperties[avlConstants.pins[configuration.name_distance]]*1000
+  assert_equal(expected.distance, property.distance, 
+               'Service Meter property ' .. configuration.name_distance .. ' value different than expected')
+  
 
 end
 
@@ -848,10 +858,37 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
                     messageName = "ServiceMeter",
                     currentTime = os.time(),
                     [configuration.name_time] = 0,                             -- zero hours of SM1 is expected, value has been set to 0 a moment ago
-                    [configuration.name_distance] = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    [configuration.name_distance] = (distanceOfStep*111.12)*counter  
                           }
 
     avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+    
+    propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+    expectedProperties = {[avlConstants.pins[configuration.name_time]] = expectedValues[configuration.name_time], 
+                          [avlConstants.pins[configuration.name_distance]] = expectedValues[configuration.name_distance]}
+                            
+    -- Check if time is correct (expected value is given in [hours], property value is given in [seconds]
+    -- expected value is converted from hours to seconds, 
+    -- reported value is expecte to be in range Expected Seconds <= Reported Seconds < Expected Seconds + some tolerance (300s)
+    
+    local tolerance = 300
+    local property = {}
+    local expected = {}
+    property.time = tonumber(currentProperties[avlConstants.pins[configuration.name_time]])
+    expected.timeLower = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60
+    expected.timeUpper = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60 + tolerance
+    
+    -- Check if time is correct
+    assert_gte(expected.timeLower, property.time, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+    assert_lt(expected.timeUpper, property.time, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+    
+    -- Check if distance is correct
+    property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+    expected.distance =  expectedProperties[avlConstants.pins[configuration.name_distance]]*1000
+    assert_equal(expected.distance, property.distance, 500, 
+                 'Service Meter property ' .. configuration.name_distance .. ' value different than expected')
     
   end
   
