@@ -132,6 +132,24 @@ end
 
 --]]
 
+function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    
+    testCase = getRandomSm()
+    
+    if testCase == 0 then
+      random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 1 then
+      random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 2 then
+      random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 3 then
+      random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    elseif testCase == 4 then
+      random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+    end
+    
+  end
+    
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
   -- are populated
@@ -147,7 +165,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM0Time and SM0Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
    -- test configuration
   configuration = {}
@@ -241,7 +259,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM1Time and SM1Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   configuration = {}
@@ -334,7 +352,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM2Time and SM2Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   configuration = {}
@@ -425,7 +443,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM3Time and SM3Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
   -- test configuration
   configuration = {}
@@ -515,7 +533,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM4Time and SM4Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
   
    -- test configuration
   configuration = {}
@@ -894,6 +912,11 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
   
 end
 
+function getRandomSm()
+  testCase = lunatest.random_int (0, 4)
+  print("SM"..testCase.." choosen.")
+  return testCase
+end
 
 --]]
 
