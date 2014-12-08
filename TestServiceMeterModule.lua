@@ -7,7 +7,7 @@ module("TestServiceMeterModule", package.seeall)
 
 -- tests are very similiar for every SM, so sm number is randomized
 -- you can turn it off/on here
-RANDOM_SM = true
+RANDOM_SM = false
 
 -------------------------
 -- Setup and Teardown
@@ -154,8 +154,6 @@ end
 -- Test cases for every SMX are quite the same, so we are randomizing only one 
 -- You can force firing every test by changing constant RANDOM_SM
 function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRandomTimeAndSMRandomDistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-    
-    testCase = getRandomSm()
     
     local tests = {}
     tests['SM0']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
@@ -949,7 +947,7 @@ function chooseTest(tests)
     tests['SM'..testCase]()
   else 
     for i, tc in pairs(tests) do
-        print("SM"..i.." choosen.")
+        print(i.." choosen.")
         setup()
         tc()
         teardown()
