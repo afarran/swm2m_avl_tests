@@ -129,6 +129,8 @@ end
 -- Test Cases
 -------------------------
 
+
+
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
   -- Initial Conditions:
   --
@@ -141,7 +143,7 @@ end
   -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
   -- 2. Simulate terminal in Point#1 with speed equal to 0 (stationary)
   -- 3. Change terminals position to Point#2 with speed above stationarySpeedThld (PIN 1)
-  -- 4. Wait shorter than stationarySpeedThld (PIN 1) and change terminals position to Point#3
+  -- 4. Wait shorter than movingDebounceTime and change terminals position to Point#3
   -- 5. Wait until movingDebounceTime (PIN 1) passes and receive MovingStart message (MIN 6)
   -- 6. Check the content of the received message
   --
@@ -226,6 +228,96 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal not in moving state after sending MovingStart message")
 
 end
+
+
+--- TC checks if MovingStart message requests new fix when continues reading of GPS position is disabled .
+  -- Initial Conditions:
+  --
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
+  -- 2. Simulate terminal in Point#1 with speed equal to above stationarySpeedThld
+  -- 3. Set continues property (PIN 15) in position service to zero
+  -- 4. Change terminals position to Point#2 with speed above stationarySpeedThld (PIN 1)
+  -- 6. Wait until movingDebounceTime (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 7. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. Properties movingDebounceTime and stationarySpeedThld correctly set
+  -- 2. Terminal in stationary state in Point#1
+  -- 3. Continues reading of GPS is disabled
+  -- 4. Terminal in Point#2 and speed above stationarySpeedThld
+  -- 5. MovingStart message sent from terminal after movingDebounceTime (PIN 3)
+  -- 6. Report fields contain Point#1 GPS and time information and GpsFixAge is not included
+function test_Moving_WhenMovingStartEventDetected_NewFixRequestedByMovingStartMessage()
+
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 30                           -- seconds
+  local STATIONARY_SPEED_THLD = 5                           -- kmh
+  local gpsSettings = {}
+
+  -- Point#1 settings
+  gpsSettings[1]={
+                  speed = STATIONARY_SPEED_THLD + 1,  -- kmh, above threshold
+                  heading = 89,                       -- degrees
+                  latitude = 0,                       -- degrees
+                  longitude = 0                       -- degrees
+                 }
+
+  -- Point#2 settings
+  gpsSettings[2]={
+                  speed = STATIONARY_SPEED_THLD + 10,  -- one kmh above threshold
+                  heading = 91,                       -- degrees
+                  latitude = 2,                       -- degrees
+                  longitude = 2,                      -- degrees
+                 }
+
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                            }
+                   )
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- terminal starts moving in Point#1
+  gps.set(gpsSettings[1])
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                {lsfConstants.pins.gpsReadInterval, 0}     -- disabling the continues mode of position service (SIN 20, PIN 15)
+                                               }
+                    )
+
+  -- terminal moves to Point#2, continues reading of GPS is disabled
+  gps.set(gpsSettings[2])
+
+  framework.delay(MOVING_DEBOUNCE_TIME)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  -- Point#1 is expected in report (with no fixAge in the report)
+  assert_equal(gpsSettings[1].longitude*60000, tonumber(receivedMessages[avlConstants.mins.movingStart].Longitude), "MovingStart message has incorrect longitude value")
+  assert_equal(gpsSettings[1].latitude*60000, tonumber(receivedMessages[avlConstants.mins.movingStart].Latitude), "MovingStart message has incorrect latitude value")
+  assert_equal(gpsSettings[1].speed, tonumber(receivedMessages[avlConstants.mins.movingStart].Speed), "MovingStart message has incorrect speed value")
+  assert_equal(gpsSettings[1].heading, tonumber(receivedMessages[avlConstants.mins.movingStart].Heading), "MovingStart message has incorrect heading value")
+
+  assert_nil(tonumber(receivedMessages[avlConstants.mins.movingStart].GpsFixAge), "New GPS fix has not been requested by MovingStart message")
+
+
+end
+
 
 
 
@@ -320,7 +412,7 @@ function test_Moving_WhenSpeedAboveThldForPeriodAboveThld_MovingStartMessageSent
 
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
-  assert_equal(47, tonumber(receivedMessages[avlConstants.mins.movingStart].GpsFixAge), 10, "MovingStart message has GpsFixAge longitude value")
+  assert_equal(47, tonumber(receivedMessages[avlConstants.mins.movingStart].GpsFixAge), 10, "MovingStart message has wrong GpsFixAge value")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
