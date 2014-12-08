@@ -471,9 +471,15 @@ function avlHelperFunctions.getChangedProperties(oldProperties, timeout, delay)
     end
     if result then break end
   end
-  return newProperties  
+  return result  
 end
 
-
+function avlHelperFunctions.propertiesToTable(propertyList)
+  result = {}
+  for index, property in ipairs(propertyList) do
+    result[tonumber(property.pin)] = property.value
+  end
+  return result
+end
 
 return function() return avlHelperFunctions end
