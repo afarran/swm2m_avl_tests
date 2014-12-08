@@ -728,9 +728,12 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
     -- sending getServiceMeter message
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
+    
+     --ServiceMeter message is expected
+    local expectedMins = {avlConstants.mins.serviceMeter}
+    local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+    assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+ 
     local expectedValues={
                     gps = gpsSettings,
                     messageName = "ServiceMeter",
