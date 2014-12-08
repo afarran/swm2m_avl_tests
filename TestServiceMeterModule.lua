@@ -136,6 +136,8 @@ end
 
 --]]
 
+-- Test cases for every SMX are quite the same, so we are randomizing only one 
+-- You can force firing every test by changing constant RANDOM_SM
 function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
     
     local tests = {}
@@ -147,9 +149,11 @@ function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeter
     
     chooseTest(tests)
     
-  end
+end
   
-  function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRandomTimeAndSMRandomDistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+-- Test cases for every SMX are quite the same, so we are randomizing only one 
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRandomTimeAndSMRandomDistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
     
     testCase = getRandomSm()
     
@@ -162,7 +166,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeter
     
     chooseTest(tests)
     
-  end
+end
     
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
@@ -926,24 +930,31 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
   
 end
 
+
+-- 
+-- Stuff for randomizing tests
+-- 
+
+-- Randomizing SM test case (0 - 4)
 function getRandomSm()
   testCase = lunatest.random_int (0, 4)
   print("SM"..testCase.." choosen.")
   return testCase
 end
 
+-- Choosing tc or firing all.
 function chooseTest(tests)
   if RANDOM_SM == true then
-      testCase = getRandomSm()
-      tests['SM'..testCase]()
-    else 
-      for i, tc in pairs(tests) do
+    testCase = getRandomSm()
+    tests['SM'..testCase]()
+  else 
+    for i, tc in pairs(tests) do
         print("SM"..i.." choosen.")
         setup()
         tc()
         teardown()
-      end
     end
+  end
 end
 
 --]]
