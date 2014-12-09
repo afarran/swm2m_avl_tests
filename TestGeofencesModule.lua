@@ -422,53 +422,54 @@ end
   -- terminal sends SpeedingStart message in geofence 0 and fields in report have correct values
 function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeedIsAboveThldForPeriodAboveThld_SpeedingStartMessageSent()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true      -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local geofence0SpeedLimit = 30     -- in kmh
-  local geofence128SpeedLimit = 100  -- in kmh
-  local speedingTimeOver = 1         -- in seconds
-  local gpsSettings = {}             -- gps settings table to be sent to simulator
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
+  local GEOFENCE_ENABLED = true         -- to enable geofence feature
+  local GEOFENCE_INTERVAL = 10          -- in seconds
+  local GEOFENCE_HISTERESIS = 1         -- in seconds
+  local GEOFENCE_0_SPEED_LIMIT = 30     -- in kmh
+  local GEOFENCE_128_SPEED_LIMIT = 100  -- in kmh
+  local SPEEDING_TIME_OVER = 1          -- in seconds
+  local gpsSettings = {}                -- gps settings table to be sent to simulator
 
 
   -- Point#1 - terminal outside geofence 0 moving with speed above geofence0SpeedLimit threshold but below geofence128SpeedLimit
   gpsSettings[1]={
-                  speed = geofence0SpeedLimit+1,   -- one kmh above threshold
-                  heading = 90,                    -- degrees
-                  latitude = 50,                   -- degrees
-                  longitude = 2,                   -- degrees, outside any of the defined geozones (zone 128)
+                  speed = GEOFENCE_0_SPEED_LIMIT + 1,   -- one kmh above threshold
+                  heading = 90,                         -- degrees
+                  latitude = 50,                        -- degrees
+                  longitude = 2,                        -- degrees, outside any of the defined geozones (zone 128)
                   simulateLinearMotion = false,
                  }
 
   -- Point#2 - terminal inside geofence 0 moving with speed above geofence0SpeedLimit threshold
   gpsSettings[2]={
-                    speed = geofence0SpeedLimit+1 ,  -- kmh, above speeding threshold
-                    heading = 90,                    -- degrees
-                    latitude = 50,                   -- degrees
-                    longitude = 3,                   -- degrees, inside geofence 0
+                    speed = GEOFENCE_128_SPEED_LIMIT + 1 ,  -- kmh, above speeding threshold
+                    heading = 90,                           -- degrees
+                    latitude = 50,                          -- degrees
+                    longitude = 3,                          -- degrees, inside geofence 0
                     simulateLinearMotion = false,
                  }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 128
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoSpeedLimits}
-	message.Fields = {{Name="ZoneSpeedLimits",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="SpeedLimit",Value=geofence0SpeedLimit}}},{Index=1,Fields={{Name="ZoneId",Value=128},{Name="SpeedLimit",Value=geofence128SpeedLimit}}}}},}
+	message.Fields = {{Name="ZoneSpeedLimits",Elements={{Index=0,Fields={{Name="ZoneId",Value=0},{Name="SpeedLimit",Value=GEOFENCE_0_SPEED_LIMIT}}},
+                                                      {Index=1,Fields={{Name="ZoneId",Value=128},{Name="SpeedLimit",Value=GEOFENCE_128_SPEED_LIMIT}}}}},}
 	gateway.submitForwardMessage(message)
 
-  --applying properties of AVL service
+  -- applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.speedingTimeOver, speedingTimeOver},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.speedingTimeOver, SPEEDING_TIME_OVER},
                                              }
                    )
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
 
@@ -477,7 +478,7 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
   ---------------------------------------------------------------------------------------------------------------
 
   gps.set(gpsSettings[1])
-  framework.delay(movingDebounceTime+geofenceInterval+15)  -- to get the moving state outside geofence 0
+  framework.delay(MOVING_DEBOUNCE_TIME + GEOFENCE_INTERVAL + 15)  -- to get the moving state outside geofence 0
 
   ---------------------------------------------------------------------------------------------------------------
   --- Terminal enters geofence 0 with speed exceedeing speed limit defined for this zone
@@ -486,19 +487,15 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
   gateway.setHighWaterMark()                            -- to get the newest messages
   timeOfEventTc = os.time()                             -- to get the correct value in the report
   gps.set(gpsSettings[2])
-  framework.delay(speedingTimeOver+geofenceInterval)    -- waiting until terminal enters the zone and the report is generated
+  framework.delay(SPEEDING_TIME_OVER + GEOFENCE_INTERVAL)    -- waiting until terminal enters the zone and the report is generated
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.speedingStart),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "SpeedingStart message not received")   -- checking if any of SpeedingStart messages has been received
+  -- waiting for SpeedingStart message
+  local expectedMins = {avlConstants.mins.speedingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.speedingStart], "SpeedingStart message not received")
 
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "SpeedingStart",
-                  currentTime = timeOfEventTc,
-                  SpeedLimit = geofence0SpeedLimit,   -- speed limit of detected Speeding event should be the one defined in the geofence
-
-                       }
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- checking if correct speed limit is reported
+  assert_equal(GEOFENCE_128_SPEED_LIMIT, tonumber(receivedMessages[avlConstants.mins.speedingStart].SpeedLimit))
 
 
 end

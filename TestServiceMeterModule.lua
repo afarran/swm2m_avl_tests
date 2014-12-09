@@ -262,8 +262,8 @@ function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSet
   configuration = {}
 
   -- properties values to be used in TC
-  configuration.movingDebounceTime = 1          -- seconds
-  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.movingDebounceTime = 1         -- seconds
+  configuration.stationarySpeedThld = 5        -- kmh
   configuration.SMTimeTC = 10                  -- hours
   configuration.SMDistanceTC = 500             -- kilometers
 
