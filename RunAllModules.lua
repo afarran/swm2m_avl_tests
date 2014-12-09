@@ -1,4 +1,3 @@
-
 cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
 avlConstants =  require("AvlAgentConstants")

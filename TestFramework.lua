@@ -701,7 +701,7 @@ function gateway.getReturnMessage(
 			checkFunction(nil, checkParam)
 			break;
 		end
-		tf.delay(3)
+		tf.delay(0.1)
 	end
 	return nil
 end

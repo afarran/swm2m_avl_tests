@@ -166,6 +166,20 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRand
     
 end
     
+-- Test cases for every SMX are quite the same, so we are randomizing only one 
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXCDistanceTestProperties()
+    
+    local tests = {}
+    tests['SM0']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM0TimeAndSM0DistanceTestProperties
+    tests['SM1']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM1TimeAndSM1DistanceTestProperties
+    tests['SM2']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM2TimeAndSM2DistanceTestProperties
+    tests['SM3']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM3TimeAndSM3DistanceTestProperties
+    tests['SM4']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM4TimeAndSM4DistanceTestProperties
+    
+    chooseTest(tests)
+    
+end
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
   -- are populated
@@ -594,7 +608,7 @@ end
   -- SetServiceMeter message correctly sets SM4Time and SM4Distance
 function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
   
-    -- test configuration
+  -- test configuration
   
   configuration = {}
 
@@ -767,6 +781,107 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
 
 end
 
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM0TimeAndSM0DistanceTestProperties()
+  assert_false(true, 'SM0 Test not implemented')
+end
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM1TimeAndSM1DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM1Active"}
+  configuration.name_time = "SM1Time"
+  configuration.name_distance = "SM1Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+  
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM2TimeAndSM2DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM2Active"}
+  configuration.name_time = "SM2Time"
+  configuration.name_distance = "SM2Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+  
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM3TimeAndSM3DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM3Active"}
+  configuration.name_time = "SM3Time"
+  configuration.name_distance = "SM3Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+  
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
+
+
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM4TimeAndSM4DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+                 
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM4Active"}
+  configuration.name_time = "SM4Time"
+  configuration.name_distance = "SM4Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+  
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
 
 -- common implemetation for several of test cases
 function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
@@ -945,6 +1060,64 @@ function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
   
 end
 
+-- test cases for Service Meter with small GPS movements - reading from properties
+function generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+  local movingDebounceTime = configuration.movingDebounceTime
+  local stationarySpeedThld = configuration.stationarySpeedThld
+  local SMTimeTC = configuration.SMTimeTC
+  local SMDistanceTC = configuration.SMDistanceTC 
+  local gpsSettings= configuration.gpsSettings
+  
+  gps.set(gpsSettings[1]) -- applying initial gps settings
+  framework.delay(3)
+  
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                          {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                         })
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], configuration.funcDigInp},    -- line number 1 set for SM1
+                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                              {avlConstants.pins.movingDebounceTime, movingDebounceTime}, 
+                                              {avlConstants.pins.odometerDistanceIncrement, configuration.odometerDistanceIncrement}})
+                                          
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap(configuration.bitmap)
+  
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
+  
+  -- reset the Service Meter values
+	message.Fields = {{Name = configuration.name_time, Value = configuration.SMTimeTC},
+                    {Name=configuration.name_distance,Value = configuration.SMDistanceTC}}
+	gateway.submitForwardMessage(message)
+  gateway.setHighWaterMark()         -- to get the newest messages
+  
+  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM = ON
+  framework.delay(2)  -- wait until IgnitionOn message
+    
+  propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+  
+  property = {}
+  expected = {}
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance = configuration.SMDistanceTC * 1000
+  -- check initial state
+  assert_equal(expected.distance, property.distance, 0, 
+               "Service meter distance property should match distance given by message")
+  
+  gps.set(gpsSettings[2]) -- applying gps settings
+  framework.delay(5)
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance = configuration.expected_distance
+  -- check new state
+  assert_equal(expected.distance, property.distance, 1000, 
+               "Service meter distance property incorrect")
+  
+end
+
 
 -- 
 -- Stuff for randomizing tests
@@ -971,7 +1144,4 @@ function chooseTest(tests)
     end
   end
 end
-
---]]
-
 
