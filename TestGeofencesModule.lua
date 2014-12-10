@@ -79,15 +79,14 @@ end
   -- terminal correctly put in the stationary state, Geo-speeding and geo-dwell limits are removed
 function setup()
 
-  local GEOFENCE_ENABLED = true       -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10         -- in seconds
+  local GEOFENCE_ENABLED = true        -- to enable geofence feature
   local GEOFENCE_HISTERESIS = 1        -- in seconds
   local STATIONARY_DEBOUNCE_TIME = 1   -- in seconds
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},         -- global variable
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -101,7 +100,6 @@ function setup()
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.deleteData, 3},      -- delete Geo-speeding limits
                                              }
-
                     )
   framework.delay(1)   -- wait until message is processed
 
@@ -154,7 +152,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 
   local MOVING_DEBOUNCE_TIME = 1       -- seconds
   local STATIONARY_SPEED_THLD = 5      -- kmh
-  local GEOFENCE_ENABLED = true        -- to enable geofence feature
   local GEOFENCE_INTERVAL = 10         -- seconds
   local GEOFENCE_HISTERESIS = 30       -- seconds
   local gpsSettings = {}               -- gps settings table to be sent to simulator
@@ -165,7 +162,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                    heading = 90,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 2,                      -- degrees, that is outside geofence 0
-                   simulateLinearMotion = false,
                   }
 
   -- Point#2 - terminal inside geofence 0
@@ -174,7 +170,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                    heading = 90,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 3,                      -- degrees, that is inside geofence 0
-                   simulateLinearMotion = false,
                  }
 
   -- Point#3 - terminal inside geofence 0
@@ -183,7 +178,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
                    heading = 91,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 3,                      -- degrees, that is inside geofence 0
-                   simulateLinearMotion = false,
                  }
 
   -- applying moving related properties of AVL service
@@ -195,8 +189,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 
   -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -255,8 +247,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
 
   local MOVING_DEBOUNCE_TIME = 1       -- seconds
   local STATIONARY_SPEED_THLD = 5      -- kmh
-  local GEOFENCE_ENABLED = true       -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10         -- seconds
   local GEOFENCE_HISTERESIS = 100      -- seconds
   local gpsSettings = {}               -- gps settings table to be sent to simulator
 
@@ -266,7 +256,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
                    heading = 90,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 2,                      -- degrees, that is outside geofence 0
-                   simulateLinearMotion = false,
                   }
 
   -- Point#2 - terminal inside geofence 0
@@ -275,7 +264,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
                    heading = 90,                       -- degrees
                    latitude = 50,                      -- degrees
                    longitude = 3,                      -- degrees, that is inside geofence 0
-                   simulateLinearMotion = false,
                  }
 
   -- applying moving related properties of AVL service
@@ -287,8 +275,6 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanG
 
   -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -335,11 +321,9 @@ end
   -- terminal exits goefence 0 and ZoneExit message has been sent
 function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceHisteresisPeriod_ZoneExitMessageSent()
 
-
+  -- *** Setup
   local MOVING_DEBOUNCE_TIME = 1       -- seconds
   local STATIONARY_SPEED_THLD = 5      -- kmh
-  local GEOFENCE_ENABLED = true       -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10         -- seconds
   local GEOFENCE_HISTERESIS = 1        -- seconds
   local gpsSettings = {}               -- gps settings table to be sent to simulator
 
@@ -349,7 +333,6 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
                   heading = 90,                    -- degrees
                   latitude = 50,                   -- degrees
                   longitude = 3,                   -- degrees, that is inside geofence 0
-                  simulateLinearMotion = false,
                  }
 
   -- Point#2 - terminal goes outside geofence 0 and enters undefined geofence (128)
@@ -358,8 +341,7 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
                   heading = 90,                    -- degrees
                   latitude = 50,                   -- degrees
                   longitude = 1,                   -- degrees, that is outside geofence 0
-                  simulateLinearMotion = false,
-                 }
+                  }
 
   -- applying moving related properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -370,12 +352,10 @@ function test_Geofence_WhenTerminalExitsDefinedGeozoneForTimeLongerThanGeofenceH
 
   -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
-
+  -- *** Execute
   ---------------------------------------------------------------------------------------
   --- Terminal moving inside geofence 0
   ---------------------------------------------------------------------------------------
@@ -424,7 +404,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
 
   local MOVING_DEBOUNCE_TIME = 1        -- seconds
   local STATIONARY_SPEED_THLD = 5       -- kmh
-  local GEOFENCE_ENABLED = true         -- to enable geofence feature
   local GEOFENCE_INTERVAL = 10          -- in seconds
   local GEOFENCE_HISTERESIS = 1         -- in seconds
   local GEOFENCE_0_SPEED_LIMIT = 30     -- in kmh
@@ -439,7 +418,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
                   heading = 90,                         -- degrees
                   latitude = 50,                        -- degrees
                   longitude = 2,                        -- degrees, outside any of the defined geozones (zone 128)
-                  simulateLinearMotion = false,
                  }
 
   -- Point#2 - terminal inside geofence 0 moving with speed above geofence0SpeedLimit threshold
@@ -448,7 +426,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
                     heading = 90,                           -- degrees
                     latitude = 50,                          -- degrees
                     longitude = 3,                          -- degrees, inside geofence 0
-                    simulateLinearMotion = false,
                  }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 128
@@ -467,8 +444,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInZoneWithDefinedSpeedLimitAndSpeed
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -517,8 +492,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
 
   local MOVING_DEBOUNCE_TIME = 1        -- seconds
   local STATIONARY_SPEED_THLD = 5       -- kmh
-  local GEOFENCE_ENABLED = true         -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10          -- in seconds
   local GEOFENCE_HISTERESIS = 1         -- in seconds
   local GEOFENCE_0_SPEED_LIMIT = 90     -- in kmh
   local GEOFENCE_128_SPEED_LIMIT = 60   -- in kmh
@@ -533,7 +506,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
                     heading = 90,                            -- degrees
                     latitude = 50,                           -- degrees
                     longitude = 2,                           -- degrees, outside geofence 0 (inside 128)
-                    simulateLinearMotion = false,
                  }
 
   -- Point#2: terminal inside geofence 0 moving with speed above geofence128SpeedLimit but below geofence0SpeedLimit
@@ -542,7 +514,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
                       heading = 90,                              -- degrees
                       latitude = 50,                             -- degrees
                       longitude = 3,                             -- degrees, iniside geofence 0
-                      simulateLinearMotion = false,
                      }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 128
@@ -562,8 +533,6 @@ function test_GeofenceSpeeding_WhenTerminalIsInSpeedingStateAndEntersZoneWithDef
 
   -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -618,28 +587,24 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
 
   local MOVING_DEBOUNCE_TIME = 1        -- seconds
   local STATIONARY_SPEED_THLD = 5       -- kmh
-  local GEOFENCE_ENABLED = true         -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10          -- in seconds
   local GEOFENCE_HISTERESIS = 1         -- in seconds
   local gpsSettings = {}                -- gps settings table to be sent to simulator
 
   -- Point#1 gps settings - terminal moving inside geofence 0
   gpsSettings[1]={
-                        speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
-                        heading = 90,                       -- degrees
-                        latitude = 50,                      -- degrees
-                        longitude = 3,                      -- degrees, that is inside geofence 0
-                        simulateLinearMotion = false,
-                       }
+                  speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                  heading = 90,                       -- degrees
+                  latitude = 50,                      -- degrees
+                  longitude = 3,                      -- degrees, that is inside geofence 0
+                 }
 
   -- Point#1 gps settings - terminal moving outisde geofence 0 in area with no defined geofence
   gpsSettings[2]={
-                        speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold,
-                        heading = 90,                       -- degrees
-                        latitude = 50,                      -- degrees
-                        longitude = 1,                      -- degrees, that is outside geofence 0, no defined geozone
-                        simulateLinearMotion = false,
-                       }
+                  speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold,
+                  heading = 90,                       -- degrees
+                  latitude = 50,                      -- degrees
+                  longitude = 1,                      -- degrees, that is outside geofence 0, no defined geozone
+                 }
 
   --applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -650,8 +615,6 @@ function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLo
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -698,8 +661,6 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
   -- *** Setup
   local MOVING_DEBOUNCE_TIME = 1        -- seconds
   local STATIONARY_SPEED_THLD = 5       -- kmh
-  local GEOFENCE_ENABLED = true         -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10          -- in seconds
   local GEOFENCE_HISTERESIS = 1         -- in seconds
   local GEOFENCE_0_SPEED_LIMIT = 60     -- in kmh
   local GEOFENCE_1_SPEED_LIMIT = 90     -- in kmh
@@ -712,7 +673,6 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
                         heading = 90,                            -- degrees
                         latitude = 50.3,                         -- degrees, this is are of two overlapping geofences (0 and 1)
                         longitude = 3,                           -- degrees, this is are of two overlapping geofences (0 and 1)
-                        simulateLinearMotion = false,
                        }
 
   -- sending setGeoSpeedLimits message to define speed limit in geofence 0 and 1
@@ -732,8 +692,6 @@ function test_GeofenceSpeeding_WhenTwoGeofencesAreOverlappingSpeedlimitIsDefined
 
   -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
@@ -769,10 +727,8 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
   -- *** Setup
   local MOVING_DEBOUNCE_TIME = 1        -- seconds
   local STATIONARY_SPEED_THLD = 5       -- kmh
-  local GEOFENCE_ENABLED = true        -- to enable geofence feature
-  local GEOFENCE_INTERVAL = 10          -- in seconds
   local GEOFENCE_HISTERESIS = 1         -- in seconds
-  local gpsSettings = {}             -- gps settings table to be sent to simulator
+  local gpsSettings = {}                -- gps settings table to be sent to simulator
 
 
   -- Point#1 - terminal moving outside geofence 0 and 1
@@ -781,7 +737,6 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
                   heading = 90,                           -- degrees
                   latitude = 50.3,                        -- degrees, this is outside geofence 0 and 1
                   longitude = 1,                          -- degrees, this is outside geofence 0 and 1
-                  simulateLinearMotion = false,
                  }
 
   -- Point#1 - terminal inside geofence 0 and 1
@@ -790,7 +745,6 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
                   heading = 90,                           -- degrees
                   latitude = 50.3,                        -- degrees, this is inside of two overlapping geofences (0 and 1)
                   longitude = 3,                          -- degrees, this is inside of two overlapping geofences (0 and 1)
-                  simulateLinearMotion = false,
                  }
 
 
@@ -803,8 +757,6 @@ function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeof
 
   -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
                                                 {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                                }
                    )
@@ -849,91 +801,69 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- terminal sends ZoneExit message and reported PreviousZoneId is correct
-function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_LowerGeofenceIdIsReported()
+function test_Geofence_WhenTerminalExitsAreaOfTwoOverlappingGeofences_TwoGeofenceIdsAreReported()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local gpsSettings = {}             -- gps settings table to be sent to simulator
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
+  local GEOFENCE_HISTERESIS = 1         -- in seconds
+  local gpsSettings = {}                -- gps settings table to be sent to simulator
 
 
   -- Point#1 - terminal moving inside two overlapping geofences: 0 and 1
   gpsSettings[1]={
-                    speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-                    heading = 90,                       -- degrees
-                    latitude = 50.3,                    -- degrees, this is inside geofence 0 and 1
-                    longitude = 3,                      -- degrees, this is inside geofence 0 and 1
-                    simulateLinearMotion = false,
+                  speed = STATIONARY_SPEED_THLD + 10,     -- 10 kmh above moving threshold
+                  heading = 90,                           -- degrees
+                  latitude = 50.3,                        -- degrees, this is inside geofence 0 and 1
+                  longitude = 3,                          -- degrees, this is inside geofence 0 and 1
                  }
 
   -- Point#2 - terminal moving in area outside geofence 0 and 1
   gpsSettings[2]={
-                    speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-                    heading = 90,                       -- degrees
-                    latitude = 50.3,                    -- degrees, this is outside of two overlapping geofences (0 and 1)
-                    longitude = 1,                      -- degrees, this is outside of two overlapping geofences (0 and 1)
-                    simulateLinearMotion = false,
+                    speed = STATIONARY_SPEED_THLD +10,     -- 10 kmh above moving threshold
+                    heading = 90,                          -- degrees
+                    latitude = 50.3,                       -- degrees, this is outside of two overlapping geofences (0 and 1)
+                    longitude = 1,                         -- degrees, this is outside of two overlapping geofences (0 and 1)
                   }
-
-  --applying properties of AVL service
+  -- applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
-                                              }
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
+                                               }
                    )
 
   ----------------------------------------------------------------------------------------
   -- Terminal moving inside two overlapping geofences (geofence 0 and geofence 1)
   ----------------------------------------------------------------------------------------
-  gps.set(gpsSettings[1])               -- applying gps settings
-  framework.delay(geofenceInterval+25)  -- wait until terminal is in moving state inside two overlapping geofences
+  gps.set(gpsSettings[1])                 -- applying gps settings
+  framework.delay(GEOFENCE_INTERVAL + 25)  -- wait until terminal is in moving state inside two overlapping geofences
 
   ----------------------------------------------------------------------------------------
   -- Terminal moves outside two overlapping geofences
   ----------------------------------------------------------------------------------------
 
   timeOfEventTc = os.time()
-  gateway.setHighWaterMark()                      -- to get the newest messages
-  gps.set(gpsSettings[2])                         -- applying gps settings
-  framework.delay(geofenceInterval+20)            -- wait until report is generated
+  gateway.setHighWaterMark()                                    -- to get the newest messages
+  gps.set(gpsSettings[2])                                       -- applying gps settings
+  framework.delay(GEOFENCE_INTERVAL + GEOFENCE_HISTERESIS + 20) -- wait until report is generated
 
-  -- receiving all messages
+  -- receiving all messages - usage of getReturnMessages in this case is done on purpose (two reports are expected)
   local receivedMessages = gateway.getReturnMessages()
   -- look for zoneExit messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit))
-
   assert_not_nil(next(matchingMessages), "No ZoneExit message received") -- checking if any ZoneExit message has been received
 
   ----------------------------------------------------------------------------------------
   -- Verification of two received ZoneExit messages
   ----------------------------------------------------------------------------------------
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "ZoneExit",
-                  currentTime = timeOfEventTc,
-                  PreviousZoneId = 0,
-                       }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
-
-
-  expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "ZoneExit",
-                  currentTime = timeOfEventTc,
-                  PreviousZoneId = 1,         -- lower Id should be reported
-                       }
-  avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues ) -- verification of the report fields
-
+  assert_equal(0, tonumber(matchingMessages[1].Payload.PreviousZoneId), "Wrong PreviousZoneId in 1st ZoneEntry report")
+  assert_equal(1, tonumber(matchingMessages[2].Payload.PreviousZoneId), "Wrong PreviousZoneId in 2nd ZoneEntry report")
 
 end
 
@@ -981,7 +911,6 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerrThanD
               heading = 90,                    -- degrees
               latitude = 50.5,                 -- degrees, that is inside geofence 2
               longitude = 4.5,                 -- degrees, that is inside geofence 2
-              simulateLinearMotion = false,
                      }
 
   --applying properties of geofence service
@@ -1056,7 +985,6 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
               heading = 90,                    -- degrees
               latitude = 50.5,                 -- degrees, that is inside geofence 2
               longitude = 4.5,                 -- degrees, that is inside geofence 2
-              simulateLinearMotion = false,
                      }
 
   --applying properties of geofence service
@@ -1127,8 +1055,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
               heading = 90,                    -- degrees
               latitude = 50.5,                 -- degrees, that is inside geofence 2
               longitude = 4.5,                 -- degrees, that is inside geofence 2
-              simulateLinearMotion = false,
-                     }
+                    }
  --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
@@ -1148,8 +1075,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanD
               heading = 90,                    -- degrees
               latitude = 1,                    -- degrees, outside geofence 2
               longitude = 1,                   -- degrees, outside geofence 2
-              simulateLinearMotion = false,
-                     }
+                    }
 
   local receivedMessages = gateway.getReturnMessages()
   -- look for GeoDwellStart messages
@@ -1196,7 +1122,6 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
               heading = 90,                    -- degrees
               latitude = 50.5,                 -- degrees, that is inside geofence 2
               longitude = 4.5,                 -- degrees, that is inside geofence 2
-              simulateLinearMotion = false,
                      }
 
   --applying properties of geofence service
@@ -1220,7 +1145,6 @@ function test_Geodwell_WhenTerminalInGeodwellingStateTrueExitsDefinedGeozone_Geo
               heading = 90,                    -- degrees
               latitude = 1,                    -- degrees, that is outside geofence 2
               longitude = 1,                   -- degrees, that is outside geofence 2
-              simulateLinearMotion = false,
                      }
 
   gateway.setHighWaterMark()                      -- to get the newest messages
@@ -1269,7 +1193,6 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDe
               heading = 90,                    -- degrees
               latitude = 50.3,                 -- degrees, that is inside geofence 1
               longitude = 3.1,                 -- degrees, that is inside geofence 1
-              simulateLinearMotion = false,
                      }
 
   --applying properties of geofence service
@@ -1343,7 +1266,6 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
               heading = 90,                    -- degrees
               latitude = 50.3,                 -- degrees, that is inside geofence 1, it has allZonesDwellTime limit
               longitude = 3.1,                 -- degrees, that is inside geofence 1, it has allZonesDwellTime limit
-              simulateLinearMotion = false,
                      }
 
   --applying properties of geofence service
@@ -1409,7 +1331,6 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
               heading = 90,                   -- degrees
               latitude = 50.5,                -- degrees, that is outside geofence 128
               longitude = 4.5,                -- degrees, that is outside geofence 128
-              simulateLinearMotion = false,
                      }
 
   --applying properties of AVL service
@@ -1436,7 +1357,6 @@ function test_Geodwell_WhenTerminalEntersAreaWithNoDefinedGeozoneAndDwellsThereF
               heading = 90,                   -- degrees
               latitude = 1,                   -- degrees, that is inside geofence 128
               longitude = 1,                  -- degrees, that is inside geofence 128
-              simulateLinearMotion = false,
                      }
   gps.set(gpsSettings)                           -- applying gps settings
 
@@ -1498,8 +1418,7 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodL
               heading = 90,                   -- degrees
               latitude = 50.3,                -- degrees, that is inside geofence 2 and 3
               longitude = 4.8,                -- degrees, that is inside geofence 2 and 3
-              simulateLinearMotion = false,
-                     }
+                      }
 
   --applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -1575,7 +1494,6 @@ function test_Geodwell_WhenTerminalStaysInAreaOfTwoOverlappingGeozonesForPeriodS
               heading = 90,                   -- degrees
               latitude = 50.3,                -- degrees, that is inside geofence 2 and 3
               longitude = 4.8,                -- degrees, that is inside geofence 2 and 3
-              simulateLinearMotion = false,
                      }
 
   --applying properties of AVL service
