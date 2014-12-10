@@ -766,75 +766,75 @@ end
   -- terminal sends ZoneEntry message and reported CurrentZoneId is correct
 function test_Geofence_WhenTerminalEntersAreaOfTwoOverlappingGeofences_LowerGeofenceIdIsReported()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
+  local GEOFENCE_ENABLED = true        -- to enable geofence feature
+  local GEOFENCE_INTERVAL = 10          -- in seconds
+  local GEOFENCE_HISTERESIS = 1         -- in seconds
   local gpsSettings = {}             -- gps settings table to be sent to simulator
 
 
   -- Point#1 - terminal moving outside geofence 0 and 1
   gpsSettings[1]={
-                  speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-                  heading = 90,                       -- degrees
-                  latitude = 50.3,                    -- degrees, this is outside geofence 0 and 1
-                  longitude = 1,                      -- degrees, this is outside geofence 0 and 1
+                  speed = STATIONARY_SPEED_THLD + 10,     -- 10 kmh above moving threshold
+                  heading = 90,                           -- degrees
+                  latitude = 50.3,                        -- degrees, this is outside geofence 0 and 1
+                  longitude = 1,                          -- degrees, this is outside geofence 0 and 1
                   simulateLinearMotion = false,
                  }
 
   -- Point#1 - terminal inside geofence 0 and 1
   gpsSettings[2]={
-                  speed = stationarySpeedThld+10,     -- 10 kmh above moving threshold
-                  heading = 90,                       -- degrees
-                  latitude = 50.3,                    -- degrees, this is inside of two overlapping geofences (0 and 1)
-                  longitude = 3,                      -- degrees, this is inside of two overlapping geofences (0 and 1)
+                  speed = STATIONARY_SPEED_THLD + 10,     -- 10 kmh above moving threshold
+                  heading = 90,                           -- degrees
+                  latitude = 50.3,                        -- degrees, this is inside of two overlapping geofences (0 and 1)
+                  longitude = 3,                          -- degrees, this is inside of two overlapping geofences (0 and 1)
                   simulateLinearMotion = false,
                  }
 
-  --applying properties of AVL service
+
+  -- applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
-  --applying properties of geofence service
+  -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
-                                              }
+                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
+                                               }
                    )
 
+  -- *** Execute
   ------------------------------------------------------------------------------------------------
   -- terminal moving outside geofence 0 and 1
   ------------------------------------------------------------------------------------------------
 
-  gps.set(gpsSettings[1])                                  -- applying gps settings of Point#1
-  framework.delay(geofenceInterval+movingDebounceTime+15)  -- to make sure terminal goes to moving state outside geofence 0 and 1
+  gps.set(gpsSettings[1])                                       -- applying gps settings of Point#1
+  -- wait until terminal goes to moving state outside geofence 0 and 1
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GEOFENCE_INTERVAL + GEOFENCE_HISTERESIS + 15)
 
   ------------------------------------------------------------------------------------------------
   -- terminal enters two overlapping geofences: 0 and 1
   ------------------------------------------------------------------------------------------------
 
   timeOfEventTc = os.time()
-  gps.set(gpsSettings[2])                                  -- applying gps settings of Point#2
-  framework.delay(geofenceInterval+geofenceHisteresis+20)  -- wait until report is generated
+  gps.set(gpsSettings[2])                                                      -- applying gps settings of Point#2
+  framework.delay(GPS_READ_INTERVAL + GEOFENCE_INTERVAL + GEOFENCE_HISTERESIS)  -- wait until report is generated
 
-  -- receiving all messages
+  -- receiving all messages - usage of getReturnMessages in this case is done on purpose (two reports are expected)
   local receivedMessages = gateway.getReturnMessages()
-  -- look for ZoneEntry messages
+  -- search for ZoneEntry messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneEntry))
   assert_not_nil(next(matchingMessages), "ZoneEntry message not received") -- checking if any ZoneEntry message has been received
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "ZoneEntry",
-                  currentTime = timeOfEventTc,
-                  CurrentZoneId = 0,         -- lower Id should be reported
-                       }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the 1st report fields
-  avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues ) -- verification of the 2nd report fields
+
+  assert_equal(0, tonumber(matchingMessages[1].Payload.CurrentZoneId), "Wrong CurrentZoneId in 1st ZoneEntry report")
+  assert_equal(0, tonumber(matchingMessages[2].Payload.CurrentZoneId), "Wrong CurrentZoneId in 2nd ZoneEntry report")
+
 
 end
 
