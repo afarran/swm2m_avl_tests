@@ -616,71 +616,69 @@ end
   -- ZoneExit message is sent when terminal goes out of the area with defined geofence and reported id of zone is 128
 function test_Geofence_WhenTerminalEntersAreaWithNoDefinedGeozoneAndStaysThereLongerThanGeofenceHisteresisPeriod_ZoneId128IsReportedInZoneExitMessage()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local geofenceEnabled = true       -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local gpsSettings = {}             -- table containing gps settings to be sent to simulator
+
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
+  local GEOFENCE_ENABLED = true         -- to enable geofence feature
+  local GEOFENCE_INTERVAL = 10          -- in seconds
+  local GEOFENCE_HISTERESIS = 1         -- in seconds
+  local gpsSettings = {}                -- gps settings table to be sent to simulator
 
   -- Point#1 gps settings - terminal moving inside geofence 0
   gpsSettings[1]={
-                        speed = stationarySpeedThld+ 1,  -- one kmh above threshold
-                        heading = 90,                    -- degrees
-                        latitude = 50,                   -- degrees
-                        longitude = 3,                   -- degrees, that is inside geofence 0
+                        speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                        heading = 90,                       -- degrees
+                        latitude = 50,                      -- degrees
+                        longitude = 3,                      -- degrees, that is inside geofence 0
                         simulateLinearMotion = false,
                        }
 
   -- Point#1 gps settings - terminal moving outisde geofence 0 in area with no defined geofence
   gpsSettings[2]={
-                        speed = stationarySpeedThld+ 1,  -- one kmh above threshold,
-                        heading = 90,                    -- degrees
-                        latitude = 50,                   -- degrees
-                        longitude = 1,                   -- degrees, that is outside geofence 0, no defined geozone
+                        speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold,
+                        heading = 90,                       -- degrees
+                        latitude = 50,                      -- degrees
+                        longitude = 1,                      -- degrees, that is outside geofence 0, no defined geozone
                         simulateLinearMotion = false,
                        }
 
   --applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceEnabled, GEOFENCE_ENABLED, "boolean"},
+                                                {lsfConstants.pins.geofenceInterval, GEOFENCE_INTERVAL},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
   ------------------------------------------------------------------------------------------------
   -- terminal moving inside geofence 0
   ------------------------------------------------------------------------------------------------
-  gps.set(gpsSettings[1])                                   -- applying gps settings of Point#1
-  framework.delay(geofenceInterval+GPS_READ_INTERVAL+25)      -- waiting until terminal gets moving state inside geofence 0
+  gps.set(gpsSettings[1])                                                    -- applying gps settings of Point#1
+  framework.delay(GEOFENCE_INTERVAL + GPS_READ_INTERVAL + GPS_PROCESS_TIME)  -- waiting until terminal gets moving state inside geofence 0
 
   ------------------------------------------------------------------------------------------------
   -- terminal goes out of geofence 0 to area with no defined geofence
   ------------------------------------------------------------------------------------------------
-  gateway.setHighWaterMark()                                -- to get the newest messages
-  gps.set(gpsSettings[2])                                   -- applying gps settings of Point#2
-  timeOfEventTc = os.time()                                 -- to get the correct value for verification
-  framework.delay(geofenceInterval+geofenceHisteresis)      -- waiting longer than geofenceHisteresis to get ZoneExit message
+  gateway.setHighWaterMark()                                    -- to get the newest messages
+  gps.set(gpsSettings[2])                                       -- applying gps settings of Point#2
+  timeOfEventTc = os.time()                                     -- to get the correct value for verification
+  framework.delay(GEOFENCE_INTERVAL + GEOFENCE_HISTERESIS)      -- waiting longer than geofenceHisteresis to get ZoneExit message
 
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.zoneExit),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ZoneExit message not received") -- checking if any of ZoneExit messages has been received
+  -- waiting for zoneExit message
+  local expectedMins = {avlConstants.mins.zoneExit}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.zoneExit], "ZoneExit message not received")
 
-  local expectedValues={
-                  gps = gpsSettings[2],
-                  messageName = "ZoneExit",
-                  currentTime = timeOfEventTc,
-                  CurrentZoneId = 128,       -- no geofence defined in this area - expected ID 128
-                  PreviousZoneId = 0         -- for latitude 50 and longitude 3 geofence ID is 0
+  -- checking if correct zone ids are reported
+  assert_equal(128 , tonumber(receivedMessages[avlConstants.mins.zoneExit].CurrentZoneId))
+  assert_equal(0 , tonumber(receivedMessages[avlConstants.mins.zoneExit].PreviousZoneId))
 
-                        }
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
 
 end
 
