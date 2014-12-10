@@ -967,7 +967,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
   local MOVING_DEBOUNCE_TIME = 1        -- seconds
   local STATIONARY_SPEED_THLD = 5       -- kmh
 
-  --applying properties of AVL service
+  -- applying properties of AVL service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
@@ -1027,52 +1027,58 @@ end
   -- GeoDwellStart message is not sent, Geodwelling state false
 function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereShorterThanDwellTimeLimitPeriod_GeoDwellStartMessageNotSent()
 
-  local geofenceEnabled = true      -- to enable geofence feature
-  local geofenceInterval = 10        -- in seconds
-  local geofenceHisteresis = 1       -- in seconds
-  local geofence2DwellTime = 1       -- in minutes
-  local geofence3DwellTime = 15      -- in minutes
-  local allZonesDwellTime = 240      -- in minutes
+  -- *** Setup
+  local GEOFENCE_HISTERESIS = 1         -- in seconds
+  local GEOFENCE_2_DWELL_TIME = 2       -- in minutes
+  local GEOFENCE_3_DWELL_TIME = 15      -- in minutes
+  local ALL_ZONES_DWELL_TIME = 240      -- in minutes
+  local MOVING_DEBOUNCE_TIME = 1        -- seconds
+  local STATIONARY_SPEED_THLD = 5       -- kmh
 
   -- setting ZoneDwellTimes for geofences
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setGeoDwellTimes}
-	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=geofence2DwellTime}}},
-                                                    {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=geofence3DwellTime}}}}},
-                                                    {Name="AllZonesTime",Value=allZonesDwellTime}}
+	message.Fields = {{Name="ZoneDwellTimes",Elements={{Index=0,Fields={{Name="ZoneId",Value=2},{Name="DwellTime",Value=GEOFENCE_2_DWELL_TIME}}},
+                                                    {Index=1,Fields={{Name="ZoneId",Value=3},{Name="DwellTime",Value=GEOFENCE_3_DWELL_TIME}}}}},
+                                                    {Name="AllZonesTime",Value=ALL_ZONES_DWELL_TIME}}
 	gateway.submitForwardMessage(message)
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 5,                       -- kmh
-              heading = 90,                    -- degrees
-              latitude = 50.5,                 -- degrees, that is inside geofence 2
-              longitude = 4.5,                 -- degrees, that is inside geofence 2
+              speed = STATIONARY_SPEED_THLD + 5, -- kmh
+              heading = 90,                      -- degrees
+              latitude = 50.5,                   -- degrees, that is inside geofence 2
+              longitude = 4.5,                   -- degrees, that is inside geofence 2
                     }
- --applying properties of geofence service
+
+  -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
-                                                {lsfConstants.pins.geofenceInterval, geofenceInterval},
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                               }
                    )
 
+  -- applying properties of AVL service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                             }
+                   )
 
-  gateway.setHighWaterMark()                      -- to get the newest messages
-  local timeOfEventTc = os.time()                -- to get correct value in the report
-  gps.set(gpsSettings)                            -- applying gps settings
-  framework.delay(geofence2DwellTime*60-15)       -- waiting shorter than geofence2DwellTime (multiplied by 60 to convert minutes to seconds)
+  -- *** Execute
+  gateway.setHighWaterMark()                         -- to get the newest messages
+  gps.set(gpsSettings)                               -- applying gps settings
+  framework.delay(GEOFENCE_2_DWELL_TIME*60-80)       -- waiting shorter than geofence2DwellTime (multiplied by 60 to convert minutes to seconds)
 
   local gpsSettings={
-              speed = 5,                       -- kmh
-              heading = 90,                    -- degrees
-              latitude = 1,                    -- degrees, outside geofence 2
-              longitude = 1,                   -- degrees, outside geofence 2
+                      speed = STATIONARY_SPEED_THLD +5,   -- kmh
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees, outside geofence 2
+                      longitude = 1,                      -- degrees, outside geofence 2
                     }
 
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for GeoDwellStart messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.geoDwellStart))
-  assert_false(next(matchingMessages), "GeoDwellStart message not expected")  -- checking if any of GeoDwellStart messages has been received
+  --  GeoDwellStart message is not expected
+  local expectedMins = {avlConstants.mins.geoDwellStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+  assert_nil(receivedMessages[avlConstants.mins.geoDwellStart], "GeoDwellStart message not received")
 
   -- checking the terminal state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
