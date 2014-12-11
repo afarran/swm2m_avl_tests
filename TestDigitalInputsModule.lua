@@ -923,7 +923,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
   -- *** Setup
   local MAX_IDLING_TIME = 1          -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
   local STATIONARY_DEBOUNCE_TIME = 1 -- seconds
-  local MOVING_DEOBUNCE_TIME  = 1    -- seconds
+  local MOVING_DEBOUNCE_TIME  = 1    -- seconds
   local STATIONARY_SPEED_THLD = 5    -- kmh
 
   -- Point#1 gps settings
@@ -947,7 +947,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
                                                 {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},      -- line set for Ignition function
                                                 {avlConstants.pins.maxIdlingTime, MAX_IDLING_TIME},                                           -- maximum idling time allowed without sending idling report
                                                 {avlConstants.pins.stationaryDebounceTime,STATIONARY_DEBOUNCE_TIME},
-                                                {avlConstants.pins.movingDebounceTime,MOVING_DEOBUNCE_TIME},
+                                                {avlConstants.pins.movingDebounceTime,MOVING_DEBOUNCE_TIME},
                                                 {avlConstants.pins.stationarySpeedThld,STATIONARY_SPEED_THLD},
                                              }
                    )
@@ -968,7 +968,7 @@ function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesT
 
   -- *** Execute
   gps.set({speed = STATIONARY_SPEED_THLD + 10})   -- terminal starts moving
-  framework.delay(GPS_READ_INTERVAL + MOVING_DEOBUNCE_TIME + GPS_PROCESS_TIME)
+  framework.delay(GPS_READ_INTERVAL + MOVING_DEBOUNCE_TIME + GPS_PROCESS_TIME)
 
   -- IdlingEnd message expected
   local expectedMins = {avlConstants.mins.idlingEnd}
@@ -1063,76 +1063,60 @@ end
 
 function test_Ignition_WhenTerminalInMovingStateAndIgnitionOffEventOccurs_MovingEndMessageSent()
 
-  local movingDebounceTime = 20       -- seconds
-  local stationarySpeedThld = 5       -- kmh
+  -- *** Setup
+  local MAX_IDLING_TIME = 1          -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local STATIONARY_DEBOUNCE_TIME = 1 -- seconds
+  local MOVING_DEBOUNCE_TIME  = 1    -- seconds
+  local STATIONARY_SPEED_THLD = 5    -- kmh
 
-  -- gps settings table to be sent to simulator
+  -- Point#1 gps settings
   local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = STATIONARY_SPEED_THLD +10 ,    -- terminal in stationary state
+                      latitude = 13,                         -- degrees
+                      longitude = 11,                        -- degrees
+                      fixType = 3,                           -- valid fix provided, good quality of gps signal
+                      heading = 71,                          -- degrees
                      }
 
-  --applying properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.funcDigInp[1], 2},              -- line number 1 set for Ignition function
-                                                {avlConstants.pins.digStatesDefBitmap, 3},       -- high state is expected to trigger Ignition on
-                                             }
-                   )
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[randomPortNumber], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
-                  )
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},      -- line set for Ignition function
+                                                {avlConstants.pins.maxIdlingTime, MAX_IDLING_TIME},                                           -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.stationaryDebounceTime,STATIONARY_DEBOUNCE_TIME},
+                                                {avlConstants.pins.movingDebounceTime,MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.stationarySpeedThld,STATIONARY_SPEED_THLD},
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
-  -- first terminal is put into moving state
-  gateway.setHighWaterMark()                              -- to get the newest messages
-  gps.set(gpsSettings)                                    -- gps settings applied
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1)   -- one second is added to make sure the gps is read and processed by agent
-  --checking if terminal is in the moving state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  -- terminal put into ignitonOn and moving state
+  gateway.setHighWaterMark()
+  device.setIO(randomPortNumber, 1)    -- port set to high level - that should trigger IgnitionOn
+  gps.set(gpsSettings)                 -- applying gps settings
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + MOVING_DEBOUNCE_TIME)
 
-  -- then terminal is put into IgnitionOn state
-  device.setIO(1, 1)                          -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(3)                          -- delay to let the event to be generated
+  -- MovingStart and IgnitionOn messages expected
+  local expectedMins = {avlConstants.mins.ignitionON, avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionON message not received")
 
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+  -- *** Execute
+  device.setIO(randomPortNumber, 0)    -- port set to low level - that should trigger IgnitionOff
 
-
-  -- when the terminal is in the moving state IgnitionOff event is genarated
-  gateway.setHighWaterMark()                  -- to get the newest messages
-  device.setIO(1, 0)                          -- port 1 to low level - that should trigger IgnitionOff
-  framework.delay(3)                          -- delay to let the event to be generated
-
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
-
-  -- looking for MovingEnd and SpeedingEnd messages
-  local movingEndMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingEnd))
-  local ignitionOffMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF))
-
-  -- checking if expected messages has been received
-  assert_not_nil(next(movingEndMessage), "MovingEnd message not received")              -- if MovingEnd message not received assertion fails
-  assert_not_nil(next(ignitionOffMessage), "IgnitionOff message not received")          -- if IgnitionOff message not received assertion fails
-
-  -- comparison of Timestamps in IgnitionOffMessage and MovingEndMessage - those are expected to be the same
-  assert_equal(tonumber(ignitionOffMessage[1].Payload.EventTime), tonumber(movingEndMessage[1].Payload.EventTime), 1, "Timestamps of IgnitionOff and MovingEnd messages expected to be equal with 1 second tolerance")
-
-  -- TODO:
-  -- in the future this TC should check the exact times of receiving messages of IgnitionOff and MovingEnd to verify if SpeedingEnd message is sent
-  -- before Moving End, in eg.: MovingEnd ReceiveUTC = "2014-09-03 07:56:37" and IgnitionOff MessageUTC = "2014-09-03 07:56:42" - that is correct
-
-  -- checking the state of terminal, speeding state is not ecpected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
-  -- checking the state of terminal, moving state is not ecpected
-   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
+  -- IdlingEnd message expected
+  local expectedMins = {avlConstants.mins.movingEnd, avlConstants.mins.ignitionOFF}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], "IgnitionOff message not received")
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
 
 
 end
