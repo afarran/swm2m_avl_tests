@@ -997,37 +997,46 @@ end
 
 function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodBelowMaxIdlingTime_IdlingMessageNotSent()
 
-  local maxIdlingTime = 15  -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  -- *** Setup
+  local MAX_IDLING_TIME = 60         -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local STATIONARY_DEBOUNCE_TIME = 1 -- seconds
+
+  -- Point#1 gps settings
+  local gpsSettings={
+                      speed = 0,                     -- terminal in stationary state
+                      latitude = 13,                 -- degrees
+                      longitude = 11,                -- degrees
+                      fixType = 3,                   -- valid fix provided, good quality of gps signal
+                     }
+
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[randomPortNumber], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
-
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlConstants.pins.maxIdlingTime, maxIdlingTime}                          -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},      -- line set for Ignition function
+                                                {avlConstants.pins.maxIdlingTime, MAX_IDLING_TIME},                                           -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.stationaryDebounceTime,STATIONARY_DEBOUNCE_TIME}
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
+  gps.set(gpsSettings)                        -- applying gps settings
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + STATIONARY_DEBOUNCE_TIME)
 
-  gateway.setHighWaterMark()         -- to get all messages after changing port state from low to high
-  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(6)                 -- IgnitionOn report generated, terminal in IgnitionOn state only for about 6 seconds (shorter than defined maxIdlingTime)
-  device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOff
+  -- *** Execute
+  gateway.setHighWaterMark()
+  device.setIO(randomPortNumber, 1)    -- port set to high level - that should trigger IgnitionOn
 
-  receivedMessages = gateway.getReturnMessages()            -- receiving all the messages
-
-  -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingStart))
-
-  --IdlingStart message not expected
-  assert_false(next(filteredMessages), "IdlingStart message not expected")  -- checking if IdlingEnd message was received, if not that is not correct
+  -- IdlingStart message expected
+  local expectedMins = {avlConstants.mins.idlingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+  assert_nil(receivedMessages[avlConstants.mins.idlingStart], "IdlingStart message not expected")
 
   -- checking if terminal has not entered EngineIdling state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
