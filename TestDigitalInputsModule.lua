@@ -211,7 +211,7 @@ end
 
 
 
---- TC checks if IgnitionOn message is sent when port associated with IgnitionOn functon changes state to high .
+--- TC checks if IgnitionOn message is sent when port associated with IgnitionOn function changes state to high .
   -- Initial Conditions:
   --
   -- * Terminal not in LPM
@@ -267,7 +267,7 @@ end
   local timeOfEvent = os.time()   -- to get exact timestamp
   device.setIO(randomPortNumber, 1)  -- port  to high level - that should trigger IgnitionOn
 
-  -- ZoneEntry message expected
+  -- IgnitionOn message expected
   local expectedMins = {avlConstants.mins.ignitionON}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
@@ -344,23 +344,12 @@ end
   device.setIO(1, 1)                 -- port 1 to high level
   framework.delay(2)
   device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOn
-  local timeOfEventTC = os.time()   -- to get exact timestamp
 
-  --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "IgnitionOn message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  -- IgnitionOn message expected
+  local expectedMins = {avlConstants.mins.ignitionON}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOn",
-                  currentTime = timeOfEventTC,
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-  -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
   -- following code is only not to make problems with setup function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})  -- setting bitmap to make high state the trigger of ignitionON
@@ -402,19 +391,19 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
 
   -- gps signal is good at this point
   local gpsSettings={
-              speed = 0,                      -- terminal in stationary state
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided at this point
+                      speed = 0,                      -- terminal in stationary state
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      fixType = 3,                    -- valid fix provided at this point
                      }
   gps.set(gpsSettings)
-  framework.delay(GPS_READ_INTERVAL+2)          -- wait until terminal reads the gps position
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)          -- wait until terminal reads the gps position
 
-  -- gps signal loss is simulated at this moment
-  gpsSettings["fixType"] = 1              -- no valid fix provided, gps signal loss
+  -- gps signal loss is simulated at this moment, no valid fix provided
+  gpsSettings["fixType"] = 1
 
   gps.set(gpsSettings)
-  framework.delay(7)          -- to make sure gpsFix age is above 5 seconds
+  framework.delay(7)          -- wait to make sure gpsFix age is above 5 seconds
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -434,22 +423,12 @@ function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSentGpsFixAge
   local timeOfEventTC = os.time()   -- to get exact timestamp
   device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOn
 
-  --IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "IgnitionOn message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  -- IgnitionOn message expected
+  local expectedMins = {avlConstants.mins.ignitionON}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOn",
-                  currentTime = timeOfEventTC,
-                  GpsFixAge = 8
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-  -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
+  assert_equal(8, tonumber(receivedMessages[avlConstants.mins.ignitionON].GpsFixAge), 3 ,  "IgnitionOn message has incorrect GpsFixAge value")
 
 
 end
