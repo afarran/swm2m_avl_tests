@@ -174,10 +174,10 @@ function test_Geofence_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanGe
 
   -- Point#3 - terminal inside geofence 0
   gpsSettings[3]={
-                   speed = STATIONARY_SPEED_THLD + 2,    -- one kmh above threshold
-                   heading = 91,                       -- degrees
-                   latitude = 50,                      -- degrees
-                   longitude = 3,                      -- degrees, that is inside geofence 0
+                   speed = STATIONARY_SPEED_THLD + 2,     -- one kmh above threshold
+                   heading = 91,                          -- degrees
+                   latitude = 50,                         -- degrees
+                   longitude = 3,                         -- degrees, that is inside geofence 0
                  }
 
   -- applying moving related properties of AVL service
@@ -1272,7 +1272,7 @@ function test_Geodwell_WhenTerminalEntersDefinedGeozoneAndStaysThereLongerThanDw
 
   --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
-                                                {lsfConstants.pins.geofenceHisteresis, geofenceHisteresis},
+                                                {lsfConstants.pins.geofenceHisteresis, GEOFENCE_HISTERESIS},
                                                }
                    )
   -- *** Execute
