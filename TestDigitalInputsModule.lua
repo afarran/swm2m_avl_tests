@@ -920,76 +920,61 @@ end
   -- have correct values
 function test_EngineIdling_WhenTerminalInEngineIdlingStateAndMovingStateBecomesTrue_IdlingEndMessageSent()
 
-  local maxIdlingTime = 5           -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
-  local movingDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5     -- kmh
+  -- *** Setup
+  local MAX_IDLING_TIME = 1          -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local STATIONARY_DEBOUNCE_TIME = 1 -- seconds
+  local MOVING_DEOBUNCE_TIME  = 1    -- seconds
+  local STATIONARY_SPEED_THLD = 5    -- kmh
 
-  -- gpsSettings are configured and used in the TC
+  -- Point#1 gps settings
   local gpsSettings={
-              speed = 0,                      -- terminal in stationary state
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType=3
+                      speed = 0,                     -- terminal in stationary state
+                      latitude = 13,                 -- degrees
+                      longitude = 11,                -- degrees
+                      fixType = 3,                   -- valid fix provided, good quality of gps signal
+                      heading = 71,                  -- degrees
                      }
 
-  gps.set(gpsSettings)
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[randomPortNumber], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[randomPortNumber], 3}  -- detection for both rising and falling edge
                                         }
                    )
-
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},    -- line number 1 set for Ignition function
-                                                {avlConstants.pins.maxIdlingTime, maxIdlingTime},                          -- maximum idling time allowed without sending idling report
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},              -- stationary speed threshold
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},                -- moving debounce time
+                                                {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},      -- line set for Ignition function
+                                                {avlConstants.pins.maxIdlingTime, MAX_IDLING_TIME},                                           -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.stationaryDebounceTime,STATIONARY_DEBOUNCE_TIME},
+                                                {avlConstants.pins.movingDebounceTime,MOVING_DEOBUNCE_TIME},
+                                                {avlConstants.pins.stationarySpeedThld,STATIONARY_SPEED_THLD},
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
-  device.setIO(1, 1)                       -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime+3)         -- wait longer than maxIdlingTime to trigger the IdlingStart event
+  gps.set(gpsSettings)                        -- applying gps settings
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + STATIONARY_DEBOUNCE_TIME)
 
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal not in the EngineIdling state")
+  gateway.setHighWaterMark()
+  device.setIO(randomPortNumber, 1)    -- port set to high level - that should trigger IgnitionOn
+  framework.delay(MAX_IDLING_TIME)     -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  -- now moving start should be simulated, gps settings are changed
-  local gpsSettings={
-              speed = stationarySpeedThld+10, -- above stationarySpeedThld
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType=3,                      -- valid fix
-              heading = 90                    -- degrees
-                     }
+  -- IdlingStart message expected
+  local expectedMins = {avlConstants.mins.idlingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.idlingStart], "IdlingStart message not received")
 
-  gateway.setHighWaterMark()         -- to get the newest messages from moment when terminal start movement
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+5) -- wait until MovingStart and IdlingEnd messages are genarated
+  -- *** Execute
+  gps.set({speed = STATIONARY_SPEED_THLD + 10})   -- terminal starts moving
+  framework.delay(GPS_READ_INTERVAL + MOVING_DEOBUNCE_TIME + GPS_PROCESS_TIME)
 
-  -- MovingStart and IdlingEnd messages expected
-  receivedMessages = gateway.getReturnMessages()            -- receiving all the messages
+  -- IdlingEnd message expected
+  local expectedMins = {avlConstants.mins.idlingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.idlingEnd], "IdlingEnd message not received")
 
-  -- flitering received messages to find IdlingEnd message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingEnd))
-  local idlingEndMessage = filteredMessages[1]                            -- that is performed because of the structure of the filteredMessages
-
-  -- TODO: this need to be done in different way
-  assert_not_nil(idlingEndMessage, "IdlingEnd message not received")    -- checking if IdlingEnd message was received, if not that is not correct
-
-  if((next(idlingEndMessage))) then                    -- if IdlingEnd message has been received it is verified
-  local expectedValues={                               -- expected values of the fields in the report
-                  gps = gpsSettings,
-                  messageName = "IdlingEnd",
-                  currentTime = os.time()
-                        }
-  avlHelperFunctions.reportVerification(idlingEndMessage, expectedValues ) -- verification of the all report fields
-
-  end
   -- checking if terminal correctly goes out of EngineIdling state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).EngineIdling, "terminal incorrectly in the EngineIdling state")
