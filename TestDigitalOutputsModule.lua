@@ -93,14 +93,17 @@ function setup()
                    )
 
   lsf.setProperties(lsfConstants.sins.position,{
-                                                  {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode of position service (SIN 20, PIN 15)
+                                                {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode of position service (SIN 20, PIN 15)
                                                }
                     )
 
-  lsf.setProperties(lsfConstants.sins.power,{
-                                                  {lsfConstants.pins.extPowerPresentStateDetect, 3}       -- setting detection for Both rising and falling edge
-                                             }
-                    )
+  -- power service is specific to IDP 800
+  if(hardwareVariant == 3) then
+    lsf.setProperties(lsfConstants.sins.power,{
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3}       -- setting detection for Both rising and falling edge
+                                              }
+                      )
+  end
 
 
   avlHelperFunctions.putTerminalIntoStationaryState()
