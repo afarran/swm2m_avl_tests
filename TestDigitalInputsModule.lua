@@ -114,6 +114,10 @@ end
   -- put terminal into stationary state
   avlHelperFunctions.putTerminalIntoStationaryState()
 
+  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
+  device.setIO(1, 1)
+  framework.delay(2)
+
   ----------------------------------------------------------------------
   -- Putting terminal in IgnitionOn = false state
   ----------------------------------------------------------------------
@@ -123,7 +127,6 @@ end
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
                                          }
                    )
-
 
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
@@ -137,36 +140,58 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)
 
-  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
-  device.setIO(1, 1)
-  framework.delay(2)
+  ----------------------------------------------------------------------
+  -- For IDP 800
+  ----------------------------------------------------------------------
+  if(hardwareVariant==3) then
+     for counter = 1, 3, 1 do
+       device.setIO(counter, 0) -- setting all 3 ports to low state
+     end
 
-  -- setting all 4 ports to low state, including port 1 that should trigger IgnitionOff
-  for counter = 1, 4, 1 do
-    device.setIO(counter, 0)
+    -- setting the IO properties - disabling all 3 I/O ports
+    lsf.setProperties(lsfConstants.sins.io,{
+                                              {lsfConstants.pins.portConfig[1], 0},      -- port disabled
+                                              {lsfConstants.pins.portConfig[2], 0},      -- port disabled
+                                              {lsfConstants.pins.portConfig[3], 0},      -- port disabled
+                                          }
+                      )
+
   end
-  framework.delay(3)
 
-  -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
-  framework.delay(4)
+  ----------------------------------------------------------------------
+  -- For IDP 680
+  ----------------------------------------------------------------------
+  if(hardwareVariant==1) then
+    for counter = 1, 4, 1 do
+       device.setIO(counter, 0) -- setting all 4 ports to low state
+    end
 
-  -- setting the IO properties - disabling all 4 I/O ports
-  lsf.setProperties(lsfConstants.sins.io,{
-                                            {lsfConstants.pins.portConfig[1], 0},      -- port disabled
-                                            {lsfConstants.pins.portConfig[2], 0},      -- port disabled
-                                            {lsfConstants.pins.portConfig[3], 0},      -- port disabled
-                                            {lsfConstants.pins.portConfig[4], 0},      -- port disabled
-                                        }
-                    )
+    -- setting the IO properties - disabling all 4 I/O ports
+    lsf.setProperties(lsfConstants.sins.io,{
+                                              {lsfConstants.pins.portConfig[1], 0},      -- port disabled
+                                              {lsfConstants.pins.portConfig[2], 0},      -- port disabled
+                                              {lsfConstants.pins.portConfig[3], 0},      -- port disabled
+                                              {lsfConstants.pins.portConfig[4], 0},      -- port disabled
+                                          }
+                      )
+  end
 
+  ----------------------------------------------------------------------
+  -- For IDP 780
+  ----------------------------------------------------------------------
+  if(hardwareVariant==2) then
+    -- TODO
+  end
 
-  -- disabling all digital input lines in AVL
+  -- disabling line number 1
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], 0},   -- 0 is for line disabled
                                              }
                    )
+
+  -- checking IgnitionOn state - terminal is expected not be in the IgnitionON state
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal incorrectly in the IgnitionOn state")
 
 
 end
