@@ -629,17 +629,16 @@ end
   -- 7. IdlingStart message fields contain Point#1 GPS and time information
   -- 8. EngineIdling state is true
 function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxIdlingTime_IdlingStartMessageSent()
-
-  local maxIdlingTime = 10         -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
-  local stationaryDebounceTime = 1 -- seconds
-
+  -- *** Setup
+  local MAX_IDLING_TIME = 10         -- in seconds, time for which terminal can be in IgnitionOn state without sending IdlingStart message
+  local STATIONARY_DEBOUNCE_TIME = 1 -- seconds
 
   -- Point#1 gps settings
   local gpsSettings={
-              speed = 0,                      -- terminal in stationary state
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided, good quality of gps signal
+                      speed = 0,                     -- terminal in stationary state
+                      latitude = 13,                -- degrees
+                      longitude = 11,                -- degrees
+                      fixType = 3,                   -- valid fix provided, good quality of gps signal
                      }
 
 
@@ -651,41 +650,34 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},   -- line set for Ignition function
-                                                {avlConstants.pins.maxIdlingTime, maxIdlingTime},                                           -- maximum idling time allowed without sending idling report
-                                                {avlConstants.pins.stationaryDebounceTime,stationaryDebounceTime}
+                                                {avlConstants.pins.funcDigInp[randomPortNumber], avlConstants.funcDigInp["IgnitionOn"]},      -- line set for Ignition function
+                                                {avlConstants.pins.maxIdlingTime, MAX_IDLING_TIME},                                           -- maximum idling time allowed without sending idling report
+                                                {avlConstants.pins.stationaryDebounceTime,STATIONARY_DEBOUNCE_TIME}
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gps.set(gpsSettings)                        -- applying gps settings
-  framework.delay(GPS_READ_INTERVAL+2)
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
+  -- *** Execute
   gateway.setHighWaterMark()
-  timeOfEventTC = os.time()
+  timeOfEvent = os.time()
   device.setIO(randomPortNumber, 1)    -- port set to high level - that should trigger IgnitionOn
-  framework.delay(maxIdlingTime + 10)   -- wait longer than maxIdlingTime to trigger the IdlingStart event
+  framework.delay(MAX_IDLING_TIME)     -- wait longer than maxIdlingTime to trigger the IdlingStart event
 
-  local receivedMessages = gateway.getReturnMessages()          -- receiving all the messages
+  -- IdlingStart message expected
+  local expectedMins = {avlConstants.mins.idlingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  -- IgnitionOn state expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
-
-  -- flitering received messages to find IdlingStart message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.idlingStart))
-
-  -- IdlingStart message not expected
-  assert_true(next(filteredMessages), "IdlingStart message not received")  -- checking if IdlingStart message was received, if not that is not correct
-
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IdlingStart",
-                  currentTime = timeOfEventTC,
-                        }
-  avlHelperFunctions.reportVerification(filteredMessages[1], expectedValues ) -- verification of the report fields
+  assert_not_nil(receivedMessages[avlConstants.mins.idlingStart], "IdlingStart message not received")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.idlingStart].Longitude), "IdlingStart message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.idlingStart].Latitude), "IdlingStart message has incorrect latitude value")
+  assert_equal("IdlingStart", receivedMessages[avlConstants.mins.idlingStart].Name, "IdlingStart message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.idlingStart].EventTime), 4, "IdlingStart message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.idlingStart].Speed), "IdlingStart message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.idlingStart].Heading), "IdlingStart message has incorrect heading value")
 
   -- checking if terminal has entered EngineIdling state
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
