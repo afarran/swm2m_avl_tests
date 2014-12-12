@@ -1258,8 +1258,6 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 end
 
 
-
-
 --- TC checks if SeatbeltViolationStart message is correctly sent when terminal is moving and SeatbeltOFF line
   -- becomes active and stays active for time longer than seatbeltDebounceTime (driver unfastens belt during the ride)
   -- *actions performed:
@@ -1366,9 +1364,9 @@ end
 function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActiveForPeriodAboveThld_SeatbeltViolationStartMessageSent()
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local seatbeltDebounceTime = 10       -- seconds
+  local MOVING_DEBOUNCE_TIME = 1          -- seconds
+  local STATIONARY_SPEED_THLD = 5         -- kmh
+  local SEATBELT_DEBOUNCE_TIME = 10       -- seconds
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1382,51 +1380,43 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
                                                 {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
-                                                {avlConstants.pins.seatbeltDebounceTime,seatbeltDebounceTime}, -- seatbeltDebounceTime set
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},  -- stationarySpeedThld - moving related
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},    -- movingDebounceTime - moving related
+                                                {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
                                              }
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
 
-
-  device.setIO(2, 1)                         -- port 2 to high level - that triggers SeatbeltOff true
-
   -- terminal should be put in the moving state
   local gpsSettings={
-                      speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
-                      latitude = 1,                   -- degrees
-                      longitude = 1,                  -- degrees
-                      fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
-                      heading = 90                    -- deegres
+                      speed = STATIONARY_SPEED_THLD + 10, -- speed above stationarySpeedThld
+                      latitude = 1,                       -- degrees
+                      longitude = 1,                      -- degrees
+                      fixType = 3,                        -- valid fix provided, no GpsFixAge expected in the report
+                      heading = 90,                       -- deegres
                      }
 
+  -- *** Execute
+  gateway.setHighWaterMark()                -- to get the newest messages
+  device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+3)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  -- verification of the state of terminal - IgnitionOn true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the Moving state")
-  gateway.setHighWaterMark()            -- to get the newest messages
-  local timeOfEventTC = os.time()      -- to get exact timestamp
-  framework.delay(seatbeltDebounceTime) -- to make sure seatbeltDebounceTime passes
+  -- MovingStart message expected
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  gateway.setHighWaterMark()                -- to get the newest messages
+  local timeOfEvent = os.time()            -- to get exact timestamp
+  framework.delay(seatbeltDebounceTime)     -- wait for seatbeltDebounceTime
 
   -- SeatbeltViolationStart message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "SeatbeltViolationStart message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "SeatbeltViolationStart",
-                  currentTime = timeOfEventTC,
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-  -- verification of the state of terminal - SeatbeltViolation true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "terminal not in the seatbeltViolation state")
+  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
 
 end
