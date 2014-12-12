@@ -2415,20 +2415,10 @@ end
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "IgnitionOn message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  local expectedMins = {avlConstants.mins.ignitionON}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOn",
-                  currentTime = timeOfEventTC,
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
-  -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
 
 end
 
@@ -2495,20 +2485,10 @@ end
   device.setPower(8,0)                    -- external power becomes not present (line 13 changes state to 0)
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "IgnitionOff message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  local expectedMins = {avlConstants.mins.ignitionOFF}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], "IgnitionOff message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOff",
-                  currentTime = timeOfEventTC,
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
-  -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is incorrectly true")
 
 end
 
@@ -2554,38 +2534,18 @@ end
 
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
-  local seatbeltDebounceTime = 10       -- seconds
-
-  local movingDebounceTime = 1   -- seconds
-  local stationarySpeedThld = 10 -- kmh
+  local SEATBELT_DEBOUNCE_TIME = 1       -- seconds
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.SeatbeltOff}, -- digital input line 13 associated with SeatbeltOff function
-                                                {avlConstants.pins.seatbeltDebounceTime, seatbeltDebounceTime},          -- setting seatbeltDebounceTime
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- moving related
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- moving related
+                                                {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},          -- setting seatbeltDebounceTime
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
-  -- in this TC gpsSettings are configured only to check if these are correctly reported in message
-  -- Point#1 GPS Settings
-  local gpsSettings={
-              speed = 50,                     -- terminal moving
-              latitude = 0,                   -- degrees
-              longitude = 0,                  -- degrees
-              fixType = 3,                    -- valid fix provided
-              heading = 90,
-                     }
-
-  gps.set(gpsSettings)                                  -- applying gps settings
-  framework.delay(GPS_READ_INTERVAL+movingDebounceTime+3) -- wait until terminal goes to moving state
-
-  -- verification of the state of terminal - Moving state true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal is not moving as expected")
+  avlHelperFunctions.putTerminalIntoMovingState()
 
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
@@ -2595,55 +2555,22 @@ end
   -- setting external power source
   device.setPower(8,1)                     -- external power present (terminal plugged to external power source - line 13 changes state to high)
   local timeOfEventTC = os.time()         -- to get exact timestamp
-  framework.delay(seatbeltDebounceTime)    -- wait for period seatbeltDebounceTime to get seatbeltViolationStart message
+  framework.delay(SEATBELT_DEBOUNCE_TIME)  -- wait for period seatbeltDebounceTime to get seatbeltViolationStart message
 
-  -- seatbeltViolationStart message expected
-  local message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationStart),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "SeatbeltViolationStart message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "SeatbeltViolationStart",
-                  currentTime = timeOfEventTC,
-                        }
-
-  -- verification of the report fields
-  avlHelperFunctions.reportVerification(message, expectedValues)
-
-  -- verification of the state of terminal - SeatbeltViolation true expected
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is not true")
-
-  -- Point#2 GPS Settings
-  gpsSettings={
-                speed = 51,                     -- terminal moving
-                latitude = 2,                   -- degrees
-                longitude = 2,                  -- degrees
-                fixType = 3,                    -- valid fix provided
-                heading = 90,
-              }
-
-  gps.set(gpsSettings)                        -- applying gps settings
-  framework.delay(3)
+  -- SeatbeltViolationStart message expected
+  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
   gateway.setHighWaterMark()              -- to get the newest messages
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
   timeOfEventTC = os.time()               -- to get exact timestamp
 
-  -- seatbeltViolationEnd message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.seatbeltViolationEnd),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "SeatbeltViolationEnd message not received")
-  expectedValues={
-                  gps = gpsSettings,
-                  messageName = "SeatbeltViolationEnd",
-                  currentTime = timeOfEventTC,
-                        }
-  -- verification of the report fields
-  avlHelperFunctions.reportVerification(message, expectedValues)
-
-  -- verification of the state of terminal - SeatbeltViolation false expected
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).SeatbeltViolation, "SeatbeltViolation state is incorrectly true")
+  -- SeatbeltViolationEnd message expected
+  local expectedMins = {avlConstants.mins.seatbeltViolationEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationEnd], "SeatbeltViolationEnd message not received")
 
 
 end
@@ -2703,9 +2630,9 @@ end
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
-  local odometerDistanceIncrement = 10  -- meters
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  local ODOMETER_DISTANCE_INCREMENT = 10  -- meters
+  local MOVING_DEBOUNCE_TIME = 1          -- seconds
+  local STATIONARY_SPEED_THLD = 5         -- kmh
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -2717,9 +2644,9 @@ end
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.IgnitionAndSM0}, -- digital input line 13 associated with IgnitionOn and SM0 functions
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.odometerDistanceIncrement, ODOMETER_DISTANCE_INCREMENT},
+                                                {avlConstants.pins.stationarySpeedThld, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -2727,15 +2654,15 @@ end
 
   -- Point#1
   local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in stationary state
-              latitude = 1,                     -- degrees
-              longitude = 1,                    -- degrees
-              fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
-              heading = 90,
+                      speed = STATIONARY_SPEED_THLD + 10,   -- terminal in moving state
+                      latitude = 1,                         -- degrees
+                      longitude = 1,                        -- degrees
+                      fixType = 3,                          -- valid fix provided, no GpsFixAge expected in the report
+                      heading = 90,
                      }
 
-  gps.set(gpsSettings)                                     -- applying gps settings
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- waiting until terminal gets moving state in Point#1
+  gps.set(gpsSettings)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)    -- waiting until terminal gets moving state in Point#1
 
   -- setting external power source
   device.setPower(8,0)                    -- external power not present (terminal unplugged to external power source)
@@ -2747,29 +2674,17 @@ end
 	gateway.submitForwardMessage(message)
   framework.delay(2)
 
-
   ------------------------------------------------------------------------------------
   -- external power present - Igniton is on ans SM0 is active
   ------------------------------------------------------------------------------------
   gateway.setHighWaterMark()              -- to get the newest messages
-  local timeOfEventTC = os.time()        -- to get correct timestamp
   -- setting external power source
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source and line 13 changes state to 1)
 
   -- IgnitionOn message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionON),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "IgnitionOn message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "IgnitionOn",
-                  currentTime = timeOfEventTC,
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
-  -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not true")
+  local expectedMins = {avlConstants.mins.ignitionON}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
 
   -- Point#2 -- 111,12 kilometres away from Point#1
   gpsSettings.heading = 90
@@ -2781,17 +2696,11 @@ end
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
   gateway.submitForwardMessage(getServiceMeterMessage)
 
-  -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-  expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM0Time = 0,                             -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
-                  SM0Distance = 111.12                     -- 1 degree of travel is 111.12 kilometers and number iteration
-                        }
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- ServiceMeter message expected
+  local expectedMins = {avlConstants.mins.serviceMeter}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+  assert_equal(111.12, tonumber(receivedMessages[avlConstants.mins.serviceMeter].SM0Distance), 2, "SM0Distance value is wrong in ServiceMeter message")
 
   ------------------------------------------------------------------------------------
   -- external power not present - Igniton is off ans SM0 is not active
@@ -2800,44 +2709,34 @@ end
   gateway.setHighWaterMark()              -- to get the newest messages
   -- setting external power source
   device.setPower(8,0)             -- external power not present (terminal unplugged to external power source)
-  timeOfEventTC = os.time()        -- to get correct timestamp
 
   -- IgnitionOff message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.ignitionOFF),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "IgnitionOff message not received")
-
-  -- verification of the state of terminal - IgnitionON true expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "IgnitionOn state is not false as expected")
+  local expectedMins = {avlConstants.mins.ignitionOFF}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], "IgnitionOff message not received")
 
   -- Terminal moving in Point#3 -- 111,12 kilometres away from Point#2
   local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in stationary state
-              latitude = 3,                     -- degrees
-              longitude = 1,                    -- degrees
-              fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
+              speed = STATIONARY_SPEED_THLD + 10,   -- terminal in moving state
+              latitude = 3,                         -- degrees
+              longitude = 1,                        -- degrees
+              fixType = 3,                          -- valid fix provided, no GpsFixAge expected in the report
               heading = 90,
                      }
 
-  gps.set(gpsSettings)                                     -- applying gps settings
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- waiting until terminal gets moving state in Point#3
+  gps.set(gpsSettings)
+  framework.delay(MOVING_DEBOUNCE_TIME +GPS_READ_INTERVAL+ GPS_PROCESS_TIME)    -- waiting until terminal gets moving state in Point#3
 
   gateway.setHighWaterMark()              -- to get the newest messages
   -- sending getServiceMeter message
   local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
   gateway.submitForwardMessage(getServiceMeterMessage)
 
-  -- ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM0Time = 0,                             -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
-                  SM0Distance = 111.12                     -- no increase in SM0Distance is expected is it has been disabled after travelling to Point#2
-                        }
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- ServiceMeter message expected
+  local expectedMins = {avlConstants.mins.serviceMeter}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+  assert_equal(111.12, tonumber(receivedMessages[avlConstants.mins.serviceMeter].SM0Distance), 2, "SM0Distance value is wrong in ServiceMeter message")
 
 
 
