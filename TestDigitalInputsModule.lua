@@ -7,7 +7,7 @@ module("TestDigitalInputsModule", package.seeall)
 
 -- tests are very similiar for every SM, so sm number is randomized
 -- you can turn it off/on here
-RANDOM_SM = true
+RANDOM_SM = false
 
 -------------------------
 -- Setup and Teardown
@@ -3116,30 +3116,28 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLow
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[configuration.no], avlConstants.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, configuration.stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, configuration.movingDebounceTime},              -- movingDebounceTime
+                                                {avlConstants.pins.funcDigInp[configuration.no], avlConstants.funcDigInp.GeneralPurpose}, -- line set for General Purpose function
+                                                {avlConstants.pins.stationarySpeedThld, configuration.stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, configuration.movingDebounceTime},
 
                                              }
                    )
-  gps.set(configuration.gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(configuration.no, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
-  framework.delay(3)                                       -- wait until message is processed
+  gps.set(configuration.gpsSettings)                                                      -- applying gps settings to make terminal moving
+  framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL + GPS_PROCESS_TIME)  -- wait terminal gets moving state and MovingStart message is processed
+  gateway.setHighWaterMark()                                                              -- to get the newest messages
+  device.setIO(configuration.no, 1)                                                       -- set port 1 to high level - that should trigger DigInp1Hi
 
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp1Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, configuration.min))
-  assert_true(next(filteredMessages), configuration.name.." report not received")   -- checking if digitalInp1Hi message has been caught, if not assertion fails
-  digitalInpMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = configuration.gpsSettings,
-                  messageName = configuration.name,
-                  currentTime = os.time(),
-                         }
+  -- DigInpHi message expected
+  local expectedMins = {configuration.min}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  avlHelperFunctions.reportVerification(digitalInpMessage, expectedValues) -- verification of the report fields
+  assert_not_nil(receivedMessages[configuration.min], "DigInpHi message not received")
+  assert_equal(configuration.gpsSettings.longitude*60000, tonumber(receivedMessages[configuration.min].Longitude), "DigInpHi message has incorrect longitude value")
+  assert_equal(configuration.gpsSettings.latitude*60000, tonumber(receivedMessages[configuration.min].Latitude), "DigInpHi message has incorrect latitude value")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[configuration.min].EventTime), 4, "DigInpHi message has incorrect EventTime value")
+  assert_equal(configuration.gpsSettings.speed, tonumber(receivedMessages[configuration.min].Speed), "DigInpHi message has incorrect speed value")
+  assert_equal(configuration.gpsSettings.heading, tonumber(receivedMessages[configuration.min].Heading), "DigInpHi message has incorrect heading value")
+
 end
 
 -- xxx
@@ -3154,9 +3152,9 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHig
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[configuration.no], avlConstants.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, configuration.stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, configuration.movingDebounceTime},              -- movingDebounceTime
+                                                {avlConstants.pins.funcDigInp[configuration.no], avlConstants.funcDigInp.GeneralPurpose}, -- line set for General Purpose function
+                                                {avlConstants.pins.stationarySpeedThld, configuration.stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, configuration.movingDebounceTime},
 
                                              }
                    )
@@ -3165,22 +3163,20 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHig
   gateway.setHighWaterMark()                               -- to get the newest messages
   device.setIO(configuration.no, 1)                        -- set port 1 to high level - that should trigger DigInpXHi
   framework.delay(3)                                       -- wait until message is processed
-
+  timeOfEvent = os.time()
   device.setIO(configuration.no, 0)                        -- set port 1 to low level - that should trigger DigInpLo
-  framework.delay(3)                                       -- wait until message is processed
 
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp1Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, configuration.min))
-  assert_true(next(filteredMessages), configuration.name .. " report not received")   -- checking if digitalInp1Lo message has been caught, if not assertion fails
-  digitalInp1LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = configuration.gpsSettings,
-                  messageName = configuration.name,
-                  currentTime = os.time(),
-                         }
+  -- DigInpLo message expected
+  local expectedMins = {configuration.min}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  avlHelperFunctions.reportVerification(digitalInp1LoMessage, expectedValues) -- verification of the report fields
+  assert_not_nil(receivedMessages[configuration.min], "DigInpLo message not received")
+  assert_equal(configuration.gpsSettings.longitude*60000, tonumber(receivedMessages[configuration.min].Longitude), "DigInpLo message has incorrect longitude value")
+  assert_equal(configuration.gpsSettings.latitude*60000, tonumber(receivedMessages[configuration.min].Latitude), "DigInpLo message has incorrect latitude value")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[configuration.min].EventTime), 4, "DigInpLo message has incorrect EventTime value")
+  assert_equal(configuration.gpsSettings.speed, tonumber(receivedMessages[configuration.min].Speed), "DigInpLo message has incorrect speed value")
+  assert_equal(configuration.gpsSettings.heading, tonumber(receivedMessages[configuration.min].Heading), "DigInpLo message has incorrect heading value")
+
 
 end
 
