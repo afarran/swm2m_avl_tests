@@ -1762,7 +1762,6 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   local expectedMins = {avlConstants.mins.seatbeltViolationEnd}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationEnd], "SeatbeltViolationEnd message not received")
-  assert_equal(7, receivedMessages[avlConstants.mins.seatbeltViolationEnd], 4, "SeatbeltViolationEnd conatins wrong GpsFixAge value")
 
 
 end
@@ -1776,7 +1775,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
     tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
-    
+
     chooseTest(tests)
 
 end
@@ -1859,7 +1858,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
   local expectedMins = {avlConstants.mins.seatbeltViolationEnd}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationEnd], "SeatbeltViolationEnd message not received")
-  assert_equal(7, receivedMessages[avlConstants.mins.seatbeltViolationEnd], 4, "SeatbeltViolationEnd conatins wrong GpsFixAge value")
+  assert_equal(7, tonumber(receivedMessages[avlConstants.mins.seatbeltViolationEnd].GpsFixAge), 4, "SeatbeltViolationEnd conatins wrong GpsFixAge value")
 
 end
 
@@ -1876,9 +1875,9 @@ end
   -- *expected results:
   -- DigInp1Hi message sent when port changes state from low to high
 function random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent()
-  
+
   local configuration = {}
-  
+
   configuration.movingDebounceTime = 1          -- seconds
   configuration.stationarySpeedThld = 5         -- kmh
 
@@ -1891,7 +1890,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowT
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-                   
+
   configuration.no = 1
   configuration.min = avlConstants.mins.digitalInp1Hi
   configuration.name = "DigInp1Hi"
@@ -1911,7 +1910,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
     tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
-    
+
     chooseTest(tests)
 
 end
@@ -1944,7 +1943,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHigh
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-        
+
   configuration.no = 1
   configuration.min = avlConstants.mins.digitalInp1Lo
   configuration.name = "DigInp1Lo"
@@ -1965,9 +1964,9 @@ end
   -- *expected results:
   -- DigInp2Hi message sent when port changes state from low to high
 function random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent()
-  
+
    local configuration = {}
-  
+
   configuration.movingDebounceTime = 1          -- seconds
   configuration.stationarySpeedThld = 5         -- kmh
 
@@ -1980,7 +1979,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowT
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-                   
+
   configuration.no = 2
   configuration.min = avlConstants.mins.digitalInp2Hi
   configuration.name = "DigInp2Hi"
@@ -2002,7 +2001,7 @@ end
   -- *expected results:
   -- DigInp2Lo message sent when port changes state from high to low
 function random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent()
-  
+
   local configuration = {}
 
   -- properties values to be used in TC
@@ -2018,7 +2017,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHigh
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-        
+
   configuration.no = 2
   configuration.min = avlConstants.mins.digitalInp2Lo
   configuration.name = "DigInp2Lo"
@@ -2040,9 +2039,9 @@ end
   -- *expected results:
   -- DigInp2Hi message sent when port changes state from low to high
 function random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent()
-  
+
   local configuration = {}
-  
+
   configuration.movingDebounceTime = 1          -- seconds
   configuration.stationarySpeedThld = 5         -- kmh
 
@@ -2055,7 +2054,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowT
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-                   
+
   configuration.no = 3
   configuration.min = avlConstants.mins.digitalInp3Hi
   configuration.name = "DigInp3Hi"
@@ -2078,7 +2077,7 @@ end
   -- *expected results:
   -- DigInp3Lo message sent when port changes state from high to low
 function random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent()
-  
+
   local configuration = {}
 
   -- properties values to be used in TC
@@ -2094,7 +2093,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHigh
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-        
+
   configuration.no = 3
   configuration.min = avlConstants.mins.digitalInp3Lo
   configuration.name = "DigInp3Lo"
@@ -2121,7 +2120,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowT
   if(hardwareVariant==3) then skip("TC related only to IDP 600 and 700s") end
 
    local configuration = {}
-  
+
   configuration.movingDebounceTime = 1          -- seconds
   configuration.stationarySpeedThld = 5         -- kmh
 
@@ -2133,7 +2132,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowT
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-                   
+
   configuration.no = 4
   configuration.min = avlConstants.mins.digitalInp4Hi
   configuration.name = "DigInp4Hi"
@@ -2158,7 +2157,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHigh
 
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant==3) then skip("TC related only to IDP 600s and 700s") end
-  
+
   local configuration = {}
 
   -- properties values to be used in TC
@@ -2174,7 +2173,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHigh
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
                    }
-        
+
   configuration.no = 4
   configuration.min = avlConstants.mins.digitalInp4Lo
   configuration.name = "DigInp4Lo"
@@ -3108,7 +3107,7 @@ end
 
 
 function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
-  
+
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[configuration.no], 3},     -- port 1 as digital input
@@ -3145,8 +3144,8 @@ end
 
 -- xxx
 function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
-  
-  
+
+
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[configuration.no], 3},     -- port 1 as digital input
@@ -3161,13 +3160,13 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHig
 
                                              }
                    )
-  gps.set(configuration.gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
+  gps.set(configuration.gpsSettings)                                                        -- applying gps settings to make terminal moving
+  framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL + GPS_PROCESS_TIME)    -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(configuration.no, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
+  device.setIO(configuration.no, 1)                        -- set port 1 to high level - that should trigger DigInpXHi
   framework.delay(3)                                       -- wait until message is processed
 
-  device.setIO(configuration.no, 0)                                       -- set port 1 to low level - that should trigger DigInp1Lo
+  device.setIO(configuration.no, 0)                        -- set port 1 to low level - that should trigger DigInpLo
   framework.delay(3)                                       -- wait until message is processed
 
   receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
@@ -3182,7 +3181,7 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHig
                          }
 
   avlHelperFunctions.reportVerification(digitalInp1LoMessage, expectedValues) -- verification of the report fields
-  
+
 end
 
 --
