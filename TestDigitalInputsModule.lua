@@ -2310,7 +2310,7 @@ end
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
-  local inputVoltageTC = 180      -- tenths of volts, external power voltage value
+  local INPUT_VOLTAGE = 180      -- tenths of volts, external power voltage value
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
@@ -2327,26 +2327,26 @@ end
   device.setPower(8,1)                    -- external power present (terminal plugged to external power source
   framework.delay(2)
 
-  device.setPower(3,inputVoltageTC*100)  -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
+  device.setPower(3,INPUT_VOLTAGE*100)  -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
   framework.delay(2)
 
   -- setting external power source
   device.setPower(8,0)            -- external power not present (terminal unplugged from external power source)
-  timeOfEventTC = os.time()
+  timeOfEvent = os.time()
 
-  -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerBackup),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "PowerBackup message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  -- PowerBackup message expected
+  local expectedMins = {avlConstants.mins.powerBackup}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.powerBackup], "PowerBackup message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "PowerBackup",
-                  currentTime = timeOfEventTC,
-                  inputVoltage = inputVoltageTC
-                        }
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.powerBackup].Longitude), "PowerBackup message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.powerBackup].Latitude), "PowerBackup message has incorrect latitude value")
+  assert_equal("PowerBackup", receivedMessages[avlConstants.mins.powerBackup].Name, "PowerBackup message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.powerBackup].EventTime), 5, "PowerBackup message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.powerBackup].Speed), "PowerBackup message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.powerBackup].Heading), "PowerBackup message has incorrect heading value")
+  assert_equal(INPUT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.powerBackup].InputVoltage), "PowerBackup message has incorrect InputVoltage value")
 
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - onMainPower false expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "onMainPower state is incorrectly true")
