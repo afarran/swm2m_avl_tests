@@ -88,6 +88,7 @@ function suite_teardown()
   -- wait until service is up and running again and sends Reset message
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
+  
 
 end
 
@@ -2737,6 +2738,14 @@ end
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
   assert_equal(111.12, tonumber(receivedMessages[avlConstants.mins.serviceMeter].SM0Distance), 2, "SM0Distance value is wrong in ServiceMeter message")
+
+  avlHelperFunctions.putTerminalIntoStationaryState()
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.GeneralPurpose}, -- digital input line 13 associated with GeneralPurpose
+                                             }
+                   )
 
 
 
