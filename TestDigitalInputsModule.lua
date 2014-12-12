@@ -88,7 +88,7 @@ function suite_teardown()
   -- wait until service is up and running again and sends Reset message
   message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
   assert_not_nil(message, "Reset message after reset of AVL not received")
-  
+
 
 end
 
@@ -3048,6 +3048,7 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLow
   gps.set(configuration.gpsSettings)                                                      -- applying gps settings to make terminal moving
   framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL + GPS_PROCESS_TIME)  -- wait terminal gets moving state and MovingStart message is processed
   gateway.setHighWaterMark()                                                              -- to get the newest messages
+  timeOfEvent = os.time()
   device.setIO(configuration.no, 1)                                                       -- set port 1 to high level - that should trigger DigInp1Hi
 
   -- DigInpHi message expected
