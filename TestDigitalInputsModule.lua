@@ -52,6 +52,12 @@ RANDOM_SM = false
                                                     {avlConstants.pins.lpmTrigger, 0},
                                                   }
                     )
+  -- setting the power properties
+  lsf.setProperties(lsfConstants.sins.power,{
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
+                                         }
+                   )
+
   framework.delay(2)
   -- checking the state of terminal
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -137,7 +143,7 @@ end
                                                 {avlConstants.pins.funcDigInp[2], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[3], 0},  -- disabled
                                                 {avlConstants.pins.funcDigInp[4], 0},  -- disabled
-                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.GeneralPurpose}, -- digital input line 13 associated with IgnitionOn and SM0 functions
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.GeneralPurpose}, -- digital input line 13 associated with GeneralPurpose
                                              }
                     )
   -- activating special input function
@@ -1774,10 +1780,10 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
-    if hardwareVariant ~= 3 then 
+    if hardwareVariant ~= 3 then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
-    
+
     chooseTest(tests)
 
 end
@@ -1911,10 +1917,10 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
-    if hardwareVariant ~= 3  then 
+    if hardwareVariant ~= 3  then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
     end
-    
+
     chooseTest(tests)
 
 end
@@ -2220,48 +2226,54 @@ end
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
-  local inputVoltageTC = 240      -- tenths of volts, external power voltage value
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[13], avlConstants.funcDigInp.GeneralPurpose}, -- line set for General Purpose function
+                                             }
+                   )
+
+  local INPUT_VOLTAGE = 240      -- tenths of volts, external power voltage value
 
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
-              speed = 0,                      -- terminal in stationary state
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
+                      speed = 0,                      -- terminal in stationary state
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      fixType = 3,                    -- valid fix provided, no GpsFixAge expected in the report
                      }
 
-  gps.set(gpsSettings)               -- applying gps settings
+  gps.set(gpsSettings)                    -- applying gps settings
   framework.delay(2)
 
-  device.setPower(8,0)                   -- external power not present (terminal unplugged from external power source)
+  device.setPower(8,0)                    -- external power not present (terminal unplugged from external power source)
   framework.delay(3)
 
-  gateway.setHighWaterMark()         -- to get the newest messages
+  gateway.setHighWaterMark()              -- to get the newest messages
   -- setting external power source
-  device.setPower(9,inputVoltageTC*100)  -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
+  device.setPower(9,INPUT_VOLTAGE*100)   -- setting external power source input voltage to known value, multiplied by 100 as this is saved in milivolts
   framework.delay(2)
-  device.setPower(8,1)             -- external power present (terminal plugged to external power source)
-  timeOfEventTC = os.time()
+  device.setPower(8,1)                   -- external power present (terminal plugged to external power source)
+  timeOfEvent = os.time()
+
 
   -- PowerMain message expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.powerMain),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "PowerMain message not received")
-  gpsSettings.heading = 361   -- 361 is reported for stationary state
+  local expectedMins = {avlConstants.mins.powerMain}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.powerMain], "PowerMain message not received")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "PowerMain",
-                  currentTime = timeOfEventTC,
-                  inputVoltage = inputVoltageTC
-                        }
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.powerMain].Longitude), "PowerMain message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.powerMain].Latitude), "PowerMain message has incorrect latitude value")
+  assert_equal("PowerMain", receivedMessages[avlConstants.mins.powerMain].Name, "PowerMain message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.powerMain].EventTime), 5, "PowerMain message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.powerMain].Speed), "PowerMain message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.powerMain].Heading), "PowerMain message has incorrect heading value")
+  assert_equal(INPUT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.powerMain].InputVoltage), "PowerMain message has incorrect InputVoltage value")
 
-  avlHelperFunctions.reportVerification(message, expectedValues) -- verification of the report fields
   -- verification of the state of terminal - onMainPower true expected
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).onMainPower, "terminal not in onMainPower state")
 
 end
-
 
 
 
@@ -2635,8 +2647,6 @@ end
 
 
 end
-
-
 
 
 --- TC checks if IgnitionOn message is sent and Service Meter 0 becomes active according to state of line number 13 .
