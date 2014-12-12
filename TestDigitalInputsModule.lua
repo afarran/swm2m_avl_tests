@@ -1774,8 +1774,10 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
-    tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
-
+    if hardwareVariant ~= 3 then 
+      tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
+    end
+    
     chooseTest(tests)
 
 end
@@ -1909,8 +1911,10 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
-    tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
-
+    if hardwareVariant ~= 3  then 
+      tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
+    end
+    
     chooseTest(tests)
 
 end
@@ -3105,7 +3109,8 @@ end
 
 end
 
-
+-- This is common logic for test cases like test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent
+-- Terminal is moving, and port X changes from low to high
 function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
 
   -- setting the IO properties
@@ -3140,7 +3145,8 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLow
 
 end
 
--- xxx
+-- This is common logic for test cases like test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent
+-- Terminal is moving, and port X changes from high to low
 function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
 
 
