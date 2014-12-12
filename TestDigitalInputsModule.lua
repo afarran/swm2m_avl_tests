@@ -5,6 +5,10 @@
 
 module("TestDigitalInputsModule", package.seeall)
 
+-- tests are very similiar for every SM, so sm number is randomized
+-- you can turn it off/on here
+RANDOM_SM = true
+
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -1980,6 +1984,20 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 
 end
 
+-- Test cases for every IO are quite the same, so we are randomizing only one
+-- You can force firing every test by changing constant RANDOM_SM ..
+function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToHigh_DigInpRandomHiMessageSent()
+
+    local tests = {}
+    tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent
+    tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
+    tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
+    tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
+    
+    chooseTest(tests)
+
+end
+
 
 
 --- TC checks if DigInp1Hi message is sent when port 1 state changes from low to high
@@ -1992,55 +2010,44 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp1Hi message sent when port changes state from low to high
-function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent()
-
-  -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+function random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent()
+  
+  local configuration = {}
+  
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+                   
+  configuration.no = 1
+  configuration.min = avlConstants.mins.digitalInp1Hi
+  configuration.name = "DigInp1Hi"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(1, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
-  framework.delay(3)                                       -- wait until message is processed
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
 
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp1Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp1Hi))
-  assert_true(next(filteredMessages), "DigInp1Hi report not received")   -- checking if digitalInp1Hi message has been caught, if not assertion fails
-  digitalInp1HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp1Hi",
-                  currentTime = os.time(),
-                         }
 
-  avlHelperFunctions.reportVerification(digitalInp1HiMessage, expectedValues) -- verification of the report fields
+end
 
+-- Test cases for every IO are quite the same, so we are randomizing only one
+-- You can force firing every test by changing constant RANDOM_SM
+function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighToLow_DigInpRandomLoMessageSent()
+
+    local tests = {}
+    tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent
+    tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
+    tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
+    tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
+    
+    chooseTest(tests)
 
 end
 
@@ -2055,58 +2062,29 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp1Lo message sent when port changes state from high to low
-function test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent()
+function random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent()
+
+  local configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+        
+  configuration.no = 1
+  configuration.min = avlConstants.mins.digitalInp1Lo
+  configuration.name = "DigInp1Lo"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
-
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(1, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  device.setIO(1, 0)                                       -- set port 1 to low level - that should trigger DigInp1Lo
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp1Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp1Lo))
-  assert_true(next(filteredMessages), "DigInp1Lo report not received")   -- checking if digitalInp1Lo message has been caught, if not assertion fails
-  digitalInp1LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp1Lo",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp1LoMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
 
 end
 
@@ -2121,55 +2099,28 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp2Hi message sent when port changes state from low to high
-function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent()
-
-  -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+function random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent()
+  
+   local configuration = {}
+  
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+                   
+  configuration.no = 2
+  configuration.min = avlConstants.mins.digitalInp2Hi
+  configuration.name = "DigInp2Hi"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}, -- port 2 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                    {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp.GeneralPurpose}, -- line number 2 set for General Purpose function
-                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                    {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
-
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(2, 1)                                       -- set port 2 to high level - that should trigger DigInp2Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp2Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp2Hi))
-  assert_true(next(filteredMessages), "DigInp2Hi report not received")   -- checking if digitalInp2Hi message has been caught, if not assertion fails
-  digitalInp2HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp2Hi",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp2HiMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
 
 end
 
@@ -2185,58 +2136,29 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp2Lo message sent when port changes state from high to low
-function test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent()
+function random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent()
+  
+  local configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+        
+  configuration.no = 2
+  configuration.min = avlConstants.mins.digitalInp2Lo
+  configuration.name = "DigInp2Lo"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}, -- port 2 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp.GeneralPurpose}, -- line number 2 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
-
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(2, 1)                                       -- set port 2 to high level - that should trigger DigInp2Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  device.setIO(2, 0)                                       -- set port 2 to low level - that should trigger DigInp2Lo
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp2Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp2Lo))
-  assert_true(next(filteredMessages), "DigInp2Lo report not received")   -- checking if digitalInp2Lo message has been caught, if not assertion fails
-  digitalInp2LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp2Lo",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp2LoMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
 
 end
 
@@ -2252,55 +2174,29 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp2Hi message sent when port changes state from low to high
-function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent()
-
-  -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+function random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent()
+  
+  local configuration = {}
+  
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+                   
+  configuration.no = 3
+  configuration.min = avlConstants.mins.digitalInp3Hi
+  configuration.name = "DigInp3Hi"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[3], 3},    -- port 3 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[3], 3}, -- port 3 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[3], avlConstants.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
 
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(3, 1)                                       -- set port 3 to high level - that should trigger DigInp3Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp3Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp3Hi))
-  assert_true(next(filteredMessages), "DigInp3Hi report not received")   -- checking if digitalInp3Hi message has been caught, if not assertion fails
-  digitalInp3HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp3Hi",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp3HiMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
 
 end
 
@@ -2316,58 +2212,29 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp3Lo message sent when port changes state from high to low
-function test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent()
+function random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent()
+  
+  local configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+        
+  configuration.no = 3
+  configuration.min = avlConstants.mins.digitalInp3Lo
+  configuration.name = "DigInp3Lo"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[3], 3},     -- port 3 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[3], 3}, -- port 3 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[3], avlConstants.funcDigInp.GeneralPurpose}, -- line number 3 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
-
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(3, 1)                                       -- set port 3 to high level - that should trigger DigInp3Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  device.setIO(3, 0)                                       -- set port 3 to low level - that should trigger DigInp3Lo
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp3Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp3Lo))
-  assert_true(next(filteredMessages), "DigInp3Lo report not received")   -- checking if digitalInp3Lo message has been caught, if not assertion fails
-  digitalInp3LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp3Lo",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp3LoMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
 
 end
 
@@ -2383,58 +2250,30 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp4Hi message sent when port changes state from low to high
-function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
+function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
 
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant==3) then skip("TC related only to IDP 600 and 700s") end
 
-  -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-
+   local configuration = {}
+  
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+                   
+  configuration.no = 4
+  configuration.min = avlConstants.mins.digitalInp4Hi
+  configuration.name = "DigInp4Hi"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[4], 3},     -- port 4 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[4], 3}, -- port 4 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[4], avlConstants.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},            -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},              -- movingDebounceTime
-
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(4, 1)                                       -- set port 4 to high level - that should trigger DigInp4Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp4Hi message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp4Hi))
-  assert_true(next(filteredMessages), "DigInp4Hi report not received")   -- checking if digitalInp4Hi message has been caught, if not assertion fails
-  digitalInp4HiMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp4Hi",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp4HiMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
 
 end
 
@@ -2450,61 +2289,32 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- DigInp4Lo message sent when port changes state from high to low
-function test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
+function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
 
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant==3) then skip("TC related only to IDP 600s and 700s") end
-  -- properties values to be used in TC
+  
+  local configuration = {}
 
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld + 10, -- to simulate terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld + 10, -- to simulate terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided
               heading = 90                      -- heading in degrees
-                     }
+                   }
+        
+  configuration.no = 4
+  configuration.min = avlConstants.mins.digitalInp4Lo
+  configuration.name = "DigInp4Lo"
 
-  -- setting the IO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[4], 3},     -- port 4 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[4], 3}, -- port 4 detection for both rising and falling edge
-                                        }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[4], avlConstants.funcDigInp.GeneralPurpose}, -- line number 4 set for General Purpose function
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},              -- stationarySpeedThld
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},                -- movingDebounceTime
-
-                                             }
-                   )
-  gps.set(gpsSettings)                                     -- applying gps settings to make terminal moving
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
-  gateway.setHighWaterMark()                               -- to get the newest messages
-  device.setIO(4, 1)                                       -- set port 4 to high level - that should trigger DigInp4Hi
-  framework.delay(3)                                       -- wait until message is processed
-
-  device.setIO(4, 0)                                       -- set port 4 to low level - that should trigger DigInp4Lo
-  framework.delay(3)                                       -- wait until message is processed
-
-  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
-  -- flitering received messages to find DigInp4Lo message
-  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.digitalInp4Lo))
-  assert_true(next(filteredMessages), "DigInp4Lo report not received")   -- checking if digitalInp4Lo message has been caught, if not assertion fails
-  digitalInp4LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "DigInp4Lo",
-                  currentTime = os.time(),
-                         }
-
-  avlHelperFunctions.reportVerification(digitalInp4LoMessage, expectedValues) -- verification of the report fields
-
+  generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
 
 end
 
@@ -3431,5 +3241,109 @@ end
 
 end
 
+
+function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromLowToHigh_DigInpXHiMessageSent(configuration)
+  
+  -- setting the IO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[configuration.no], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[configuration.no], 3}, -- port 1 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[configuration.no], avlConstants.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
+                                                {avlConstants.pins.stationarySpeedThld, configuration.stationarySpeedThld},            -- stationarySpeedThld
+                                                {avlConstants.pins.movingDebounceTime, configuration.movingDebounceTime},              -- movingDebounceTime
+
+                                             }
+                   )
+  gps.set(configuration.gpsSettings)                                     -- applying gps settings to make terminal moving
+  framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
+  gateway.setHighWaterMark()                               -- to get the newest messages
+  device.setIO(configuration.no, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
+  framework.delay(3)                                       -- wait until message is processed
+
+  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
+  -- flitering received messages to find DigInp1Hi message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, configuration.min))
+  assert_true(next(filteredMessages), configuration.name.." report not received")   -- checking if digitalInp1Hi message has been caught, if not assertion fails
+  digitalInpMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
+  local expectedValues={
+                  gps = configuration.gpsSettings,
+                  messageName = configuration.name,
+                  currentTime = os.time(),
+                         }
+
+  avlHelperFunctions.reportVerification(digitalInpMessage, expectedValues) -- verification of the report fields
+end
+
+-- xxx
+function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHighToLow_DigInpXLoMessageSent(configuration)
+  
+  
+  -- setting the IO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[configuration.no], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[configuration.no], 3}, -- port 1 detection for both rising and falling edge
+                                        }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[configuration.no], avlConstants.funcDigInp.GeneralPurpose}, -- line number 1 set for General Purpose function
+                                                {avlConstants.pins.stationarySpeedThld, configuration.stationarySpeedThld},            -- stationarySpeedThld
+                                                {avlConstants.pins.movingDebounceTime, configuration.movingDebounceTime},              -- movingDebounceTime
+
+                                             }
+                   )
+  gps.set(configuration.gpsSettings)                                     -- applying gps settings to make terminal moving
+  framework.delay(configuration.movingDebounceTime+GPS_READ_INTERVAL+3)    -- wait terminal gets moving state and MovingStart message is processed
+  gateway.setHighWaterMark()                               -- to get the newest messages
+  device.setIO(configuration.no, 1)                                       -- set port 1 to high level - that should trigger DigInp1Hi
+  framework.delay(3)                                       -- wait until message is processed
+
+  device.setIO(configuration.no, 0)                                       -- set port 1 to low level - that should trigger DigInp1Lo
+  framework.delay(3)                                       -- wait until message is processed
+
+  receivedMessages = gateway.getReturnMessages()           -- receiving all the messages
+  -- flitering received messages to find DigInp1Lo message
+  local filteredMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, configuration.min))
+  assert_true(next(filteredMessages), configuration.name .. " report not received")   -- checking if digitalInp1Lo message has been caught, if not assertion fails
+  digitalInp1LoMessage = filteredMessages[1]                             -- that is due to structure of the filteredMessages
+  local expectedValues={
+                  gps = configuration.gpsSettings,
+                  messageName = configuration.name,
+                  currentTime = os.time(),
+                         }
+
+  avlHelperFunctions.reportVerification(digitalInp1LoMessage, expectedValues) -- verification of the report fields
+  
+end
+
+--
+-- Stuff for randomizing tests
+--
+
+-- Randomizing SM test case (0 - 4)
+function getRandomSm()
+  testCase = lunatest.random_int (0, 4)
+  print("Port"..testCase.." choosen.")
+  return testCase
+end
+
+-- Choosing tc or firing all.
+function chooseTest(tests)
+  if RANDOM_SM == true then
+    testCase = getRandomSm()
+    tests['Port'..testCase]()
+  else
+    for i, tc in pairs(tests) do
+        print(i.." choosen.")
+        setup()
+        tc()
+        teardown()
+    end
+  end
+end
 
 
