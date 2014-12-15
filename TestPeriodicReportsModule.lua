@@ -762,6 +762,13 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
   local NUMBER_OF_JUMPS = 4              -- number of position changes
 
 
+  -- applying properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                             }
+                   )
+
   -- definition of locations
   -- 1 st - initial position
   gpsSettings={
@@ -772,16 +779,15 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
                simulateLinearMotion = false,
               }
 
-  --applying properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.distanceSatThld, DISTANCE_SAT_THLD},
-                                                {avlConstants.pins.odometerDistanceIncrement, ODOMETER_DISTANCE_INCREMENT},
-                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
-                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
-                                             }
-                   )
   gps.set(gpsSettings)  -- applying gps settings for initial position
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  --applying properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.distanceSatThld, DISTANCE_SAT_THLD},
+                                               {avlConstants.pins.odometerDistanceIncrement, ODOMETER_DISTANCE_INCREMENT},
+                                             }
+                   )
 
   -- loop simulating terminal travelling by changing position of terminal with step of distanceJumpStep for numberOfJumps times
   -- after every jump received distanceSat report is verified
@@ -795,7 +801,7 @@ function test_Odometer_WhenTerminalTravelsDistanceSatThld_DistanceSatMessageSent
     -- DistanceSat message is expected
     local expectedMins = {avlConstants.mins.distanceSat}
     local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-    assert_not_nil(receivedMessages[avlConstants.mins.distanceSat], "DistanceSat message has not been received after request")
+    assert_not_nil(receivedMessages[avlConstants.mins.distanceSat], "DistanceSat message has not been received after travelling distance above threshold")
     assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.distanceSat].Longitude), "DistanceSat message has incorrect longitude value")
     assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.distanceSat].Latitude), "DistanceSat message has incorrect latitude value")
     assert_equal("DistanceSat", receivedMessages[avlConstants.mins.distanceSat].Name, "DistanceSat message has incorrect message name")
@@ -828,57 +834,59 @@ end
   -- DistanceSat not sent when covered distance is below distanceSatThld
 function test_Odometer_WhenTerminalTravelsDistanceBelowdistanceSatThld_DistanceSatMessageNotSent()
 
-  local distanceSatThld = 100000         -- in meters
-  local stationarySpeedThld = 10         -- in kmh
-  local odometerDistanceIncrement = 10   -- in meters
-  local stationarySpeedThld = 20         -- in kmh
-  local movingDebounceTime = 1           -- in seconds
-  local gpsSettings = {}                 -- gps settings table to be used in TC
+  local DISTANCE_SAT_THLD = 100000       -- in meters, 100 kilometers
+  local STATIONARY_SPEED_THLD  = 10      -- in kmh
+  local ODOMETER_DISTANCE_INCREMENT = 10 -- in meters
+  local MOVING_DEBOUNCE_TIME = 1         -- in seconds
+  local gpsSettings = {}
+
+  -- applying properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                             }
+                   )
 
   -- definition of terminal position during simulated travel
   -- gps settings for 1st position
   gpsSettings[1]={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 0,                  -- degrees
-              simulateLinearMotion = false,
-                     }
+                    speed = 72,                     -- 20 m/s
+                    heading = 30,                   -- degrees
+                    latitude = 0,                   -- degrees
+                    longitude = 0,                  -- degrees
+                    simulateLinearMotion = false,
+                  }
 
   -- gps settings for 2nd position -- 89 kilometers from 1st position
   gpsSettings[2]={
-              speed = 72,                     -- 20 m/s
-              heading = 30,                   -- degrees
-              latitude = 0,                   -- degrees
-              longitude = 0.8,                -- degrees
+                  speed = 72,                     -- 20 m/s
+                  heading = 30,                   -- degrees
+                  latitude = 0,                   -- degrees
+                  longitude = 0.8,                -- degrees
                  }
 
   gps.set(gpsSettings[1])  -- applying gps settings for initial position
-  framework.delay(3)       -- wait until report is generated
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)       -- wait until terminal goes to moving state
 
-  --applying properties of the service
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                              {avlConstants.pins.distanceSatThld, DISTANCE_SAT_THLD},
+                                              {avlConstants.pins.odometerDistanceIncrement, ODOMETER_DISTANCE_INCREMENT},
                                              }
                    )
 
   -- terminal moved to next location, that is 89 km away from first one (below distanceSatThld)
   gps.set(gpsSettings[2]) -- applying gps settings for seconds position
-  framework.delay(3)      -- wait until report is generated
 
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for DistanceSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
-  assert_false(next(matchingMessages), "DistanceSat report not expected") -- distanceSat message is not expected
+  -- DistanceSat message is not expected
+  local expectedMins = {avlConstants.mins.distanceSat}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+  assert_nil(receivedMessages[avlConstants.mins.distanceSat], "DistanceSat message received but not expected")
 
   -- back to distanceSatThld = 0 to get no more reports
-  distanceSatThld = 0       -- meters
+  DISTANCE_SAT_THLD = 0       -- meters
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
+                                                {avlConstants.pins.distanceSatThld, DISTANCE_SAT_THLD},
                                              }
                    )
 
