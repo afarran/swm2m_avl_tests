@@ -1006,12 +1006,10 @@ end
   -- LoggedPosition messages saved periodically in log according to LoggingPositionsInterval, fields of report have correct values
 function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsIntervallGreaterThanZero_LoggedPositionMessageSavedPeriodically()
 
-  local loggingPositionsInterval = 25     -- seconds
-  local numberOfReports = 2               -- number of expected reports received during the TC
-  local movingDebounceTime = 1            -- seconds
-  local stationarySpeedThld = 5           -- kmh
-  local defaultSpeedLimit = 80            -- kmh
-  local speedingTimeOver = 3              -- seconds
+  local LOGGING_POSITIONS_INTERVAL = 25     -- seconds
+  local NUMBER_OF_REPORTS = 2               -- number of expected reports received during the TC
+  local MOVING_DEBOUNCE_TIME = 1            -- seconds
+  local STATIONARY_SPEED_THLD = 5           -- kmh
   local timeOfLogEntry = {}               -- helper variables
   local digPortsVerification = {}         -- helper variables
   local avlStateVerification = {}         -- helper variables
@@ -1019,19 +1017,19 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
 
   -- definition of first position of terminal
   gpsSettings[1] = {
-              speed = defaultSpeedLimit+10,   -- above speeding threshold to get speeding state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
-                     }
+                    speed = STATIONARY_SPEED_THLD + 10,   -- above speeding threshold to get speeding state
+                    heading = 90,                         -- degrees
+                    latitude = 1,                         -- degrees
+                    longitude = 1                         -- degrees
+                   }
 
   -- definition of second position of terminal
   gpsSettings[2] = {
-              speed = 5,                      -- below speeding threshold
-              heading = 30,                   -- degrees - different than in first position
-              latitude = 5,                   -- degrees - different than in first position
-              longitude = 5                   -- degrees - different than in first position
-                     }
+                    speed = STATIONARY_SPEED_THLD,  -- terminal moving
+                    heading = 30,                   -- degrees - different than in first position
+                    latitude = 5,                   -- degrees - different than in first position
+                    longitude = 5                   -- degrees - different than in first position
+                    }
 
   -- setting the EIO properties (for IgnitionON)
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1040,15 +1038,13 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                                         }
                    )
 
-  --applying properties of the service
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn},              -- line number 1 set for Ignition function
-                                                {avlConstants.pins.defaultSpeedLimit, defaultSpeedLimit},
-                                                {avlConstants.pins.speedingTimeOver, speedingTimeOver},
-                                             }
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn},       -- line number 1 set for Ignition function
+                                              }
                    )
   -- activating special input function
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
@@ -1058,10 +1054,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   -------------------------------------------------------------------------------------------------------------------------
   -- #1 log entry settings
   -------------------------------------------------------------------------------------------------------------------------
-  gps.set(gpsSettings[1])                        -- apply settings for first position and speeding state
-  device.setIO(1, 1)                      -- port 1 to high level - that should trigger IgnitionOn
-  framework.delay(loggingPositionsInterval+3)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
-  timeOfLogEntry[1] = os.time()                  -- save timestamp for first log entry
+  gps.set(gpsSettings[1])                          -- apply settings for first position and speeding state
+  device.setIO(1, 1)                               -- port 1 to high level - that should trigger IgnitionOn
+  framework.delay(LOGGING_POSITIONS_INTERVAL + 3)  -- wait for LoggingPositionsInterval (LoggedPosition message saved)
+  timeOfLogEntry[1] = os.time()                    -- save timestamp for first log entry
 
   -- saving AvlStates and DigPorts properties for analysis
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1074,10 +1070,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   -------------------------------------------------------------------------------------------------------------------------
   -- #2 log entry settings
   -------------------------------------------------------------------------------------------------------------------------
-  gps.set(gpsSettings[2])                        -- apply settings for second position and non-speeding state
-  device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff
-  framework.delay(loggingPositionsInterval+4)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
-  timeOfLogEntry[2] = os.time()                  -- save timestamp for second log entry
+  gps.set(gpsSettings[2])                            -- apply settings for second position and non-speeding state
+  device.setIO(1, 0)                                 -- port 1 to low level - that should trigger IgnitionOff
+  framework.delay(LOGGING_POSITIONS_INTERVAL + 4)    -- wait for LoggingPositionsInterval (LoggedPosition message saved)
+  timeOfLogEntry[2] = os.time()                      -- save timestamp for second log entry
 
   -- saving AvlStates and DigPorts properties for analysis
   avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -1089,10 +1085,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
   -------------------------------------------------------------------------------------------------------------------------
   -- disabling logging
   -------------------------------------------------------------------------------------------------------------------------
-  loggingPositionsInterval = 0     -- not to get any more messages saved
+  LOGGING_POSITIONS_INTERVAL = 0     -- not to get any more messages saved
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
                                              }
                    )
   local loggingEndTime = os.time()     -- time of end of logging - to be used in log filter message
@@ -1108,10 +1104,10 @@ function test_LoggedPosition_ForTerminalInMovingStateAndLoggingPositionsInterval
                                    {Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},{Name="minList",Value="Dw=="}}}}},}
   gateway.submitForwardMessage(setDataLogFilterMessage)
 
-
   -------------------------------------------------------------------------------------------------------------------------
   -- getting log entries
   -------------------------------------------------------------------------------------------------------------------------
+
   framework.delay(2)           -- wait until message is processed
   gateway.setHighWaterMark()   -- to get the newest messages
 
@@ -1153,38 +1149,28 @@ end
   -- saving LoggedPosition messages does not deffer periodic Position message
   function test_LoggedPosition_WhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingPeriodicPositionMessage()
 
-  local loggingPositionsInterval =  2   -- seconds
-  local positionMsgInterval = 10        -- seconds
-  local numberOfPositionReports = 3     -- number of expected reports received during the TC
-
-  -- definition of first position of terminal
-  local gpsSettings = {
-              speed = 0,                      -- terminal stationary
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided
-                       }
-  gps.set(gpsSettings)                        -- apply settings
-  framework.delay(3)                          -- wait until settings are applied
+  local LOGGING_POSITIONS_INTERVAL =  2   -- seconds
+  local POSITION_MSG_INTERVAL = 10        -- seconds
+  local NUMBER_OF_POSITION_REPORTS = 3    -- number of expected reports received during the TC
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
                                              }
                    )
 
 
-  framework.delay(numberOfPositionReports*positionMsgInterval+3)    -- wait for position message interval multiplied by number of expected reports
+  framework.delay(NUMBER_OF_POSITION_REPORTS*POSITION_MSG_INTERVAL + 3)    -- wait for position message interval multiplied by number of expected reports
 
-  loggingPositionsInterval = 0     -- seconds, not to get any more messages saved in log
-  positionMsgInterval = 0          -- seconds, not to get any more position messages
-  --applying properties of the service
+  LOGGING_POSITIONS_INTERVAL = 0     -- seconds, not to get any more messages saved in log
+  POSITION_MSG_INTERVAL = 0          -- seconds, not to get any more position messages
+
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
                                              }
                    )
 
@@ -1193,7 +1179,7 @@ end
   -- look for Position messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
   -- checking the number of received Position messages
-  assert_equal(numberOfPositionReports, table.getn(matchingMessages) , "The number of received Position reports is incorrect")
+  assert_equal(NUMBER_OF_POSITION_REPORTS, table.getn(matchingMessages) , "The number of received Position reports is incorrect")
 
 end
 
@@ -1210,47 +1196,38 @@ end
   -- saving LoggedPosition messages does not deffer periodic stationaryIntervalSat message
   function test_LoggedPosition_ForTerminalStationaryWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingStationaryIntervalSat()
 
-  local loggingPositionsInterval =  2   -- seconds
-  local numberOfReports = 3             -- number of expected reports received during the TC
-  local stationaryIntervalSat = 10      -- seconds
-  local stationarySpeedThld = 10        -- kmh
-  local movingDebounceTime = 1          -- seconds
+  local LOGGING_POSITIONS_INTERVAL =  2   -- seconds
+  local NUMBER_OF_REPORTS = 3             -- number of expected reports received during the TC
+  local STATIONARY_INTERVAL_SAT = 10      -- seconds
+  local STATIONARY_SPEED_THLD = 10        -- kmh
+  local MOVING_DEBOUNCE_TIME = 1          -- seconds
 
-  -- definition of first position of terminal
-  local gpsSettings = {
-              speed = 0,                      -- kmh, terminal stationary
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided
-                       }
-
-  --applying properties of the service
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
-  gps.set(gpsSettings)                                         -- apply settings
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2)        -- wait until terminal is stationary
+  gps.set({speed = 0}) -- terminal stationary
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)        -- wait until terminal is stationary
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.stationaryIntervalSat, STATIONARY_INTERVAL_SAT},
                                             }
                    )
 
-  framework.delay(numberOfReports*stationaryIntervalSat+3)    -- wait for stationaryIntervalSat interval multiplied by number of expected reports
+  framework.delay(NUMBER_OF_REPORTS*STATIONARY_INTERVAL_SAT + 3)    -- wait for stationaryIntervalSat interval multiplied by number of expected reports
 
-  loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
-  stationaryIntervalSat = 0          -- seconds, not to get any more StationaryIntervalSat messages
+  LOGGING_POSITIONS_INTERVAL = 0       -- seconds, not to get any more messages saved in log
+  STATIONARY_INTERVAL_SAT = 0          -- seconds, not to get any more StationaryIntervalSat messages
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.stationaryIntervalSat, STATIONARY_INTERVAL_SAT},
                                              }
                    )
 
@@ -1259,7 +1236,7 @@ end
   -- look for stationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
   -- checking the number of received stationaryIntervalSat messages
-  assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received StationaryIntervalSat reports is incorrect")
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages) , "The number of received StationaryIntervalSat reports is incorrect")
 
 end
 
@@ -1276,47 +1253,40 @@ end
   -- saving LoggedPosition messages does not deffer periodic MovingIntervalSat message
   function test_LoggedPosition_ForTerminalMovingWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingMovingIntervalSat()
 
-  local loggingPositionsInterval =  2   -- seconds
-  local numberOfReports = 6             -- number of expected reports received during the TC
-  local movingIntervalSat = 10          -- seconds
-  local stationarySpeedThld = 10        -- kmh
-  local movingDebounceTime = 1          -- seconds
+  local LOGGING_POSITIONS_INTERVAL =  2   -- seconds
+  local NUMBER_OF_REPORTS = 6             -- number of expected reports received during the TC
+  local MOVING_INTERVAL_SAT = 10          -- seconds
+  local STATIONARY_SPEED_THLD = 10        -- kmh
+  local MOVING_DEBOUNCE_TIME = 1          -- seconds
 
-  -- definition of first position of terminal
-  local gpsSettings = {
-              speed = stationarySpeedThld+10, -- kmh, 10 kmh above threshold, to make terminal moving
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided
-                       }
+
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
+  gps.set({speed = STATIONARY_SPEED_THLD + 10})     -- 10 kmh above threshold, to make terminal moving
 
-  gps.set(gpsSettings)                                         -- apply settings
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2)        -- wait until terminal is moving
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME) -- wait until terminal is moving
 
   gateway.setHighWaterMark()   -- to get the newest messages
-  --applying properties of the service, messages are saved to log and sent from mobile until now
+  -- applying properties of the service, messages are saved to log and sent from mobile until now
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                             }
                    )
 
-  framework.delay(numberOfReports*movingIntervalSat+3)    -- wait for movingIntervalSat interval multiplied by number of expected reports
+  framework.delay(NUMBER_OF_REPORTS*MOVING_INTERVAL_SAT + 3)    -- wait for movingIntervalSat interval multiplied by number of expected reports
 
-  loggingPositionsInterval = 0       -- seconds, not to get any more messages saved in log
-  movingIntervalSat = 0          -- seconds, not to get any more MovingIntervalSatmessages
+  LOGGING_POSITIONS_INTERVAL = 0       -- seconds, not to get any more messages saved in log
+  MOVING_INTERVAL_SAT = 0          -- seconds, not to get any more MovingIntervalSatmessages
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                              }
                    )
 
@@ -1325,7 +1295,7 @@ end
   -- look for movingIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
   -- checking the number of received movingIntervalSat messages
-  assert_equal(numberOfReports, table.getn(matchingMessages), 2 ,  "The number of received MovingIntervalSat reports is incorrect")
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages), 2 ,  "The number of received MovingIntervalSat reports is incorrect")
 
 end
 
@@ -1344,37 +1314,37 @@ end
   -- saving LoggedPosition messages does not deffer DistanceSat message
   function test_LoggedPosition_ForTerminalMovingyWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingDistanceSatMessage()
 
-  local loggingPositionsInterval =  2   -- seconds
-  local numberOfReports = 3             -- number of expected reports received during the TC
-  local distanceSatThld = 1112          -- meters - that is equivalent to 0,1 degree
-  local stationarySpeedThld = 10        -- kmh
-  local movingDebounceTime = 1          -- seconds
+  local LOGGING_POSITIONS_INTERVAL =  2   -- seconds
+  local NUMBER_OF_REPORTS = 3             -- number of expected reports received during the TC
+  local DISTANCE_SAT_THLD = 1112          -- meters - that is equivalent to 0,1 degree
+  local STATIONARY_SPEED_THLD = 10        -- kmh
+  local MOVING_DEBOUNCE_TIME = 1          -- seconds
 
   -- definition of first position of terminal
   local gpsSettings = {
-              speed = 72,                     -- kmh, 20 m/s
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
-              fixType = 3,                    -- valid fix provided
-              simulateLinearMotion = false
+                        speed = 72,                     -- kmh, 20 m/s
+                        heading = 90,                   -- degrees
+                        latitude = 1,                   -- degrees
+                        longitude = 1,                  -- degrees
+                        fixType = 3,                    -- valid fix provided
+                        simulateLinearMotion = false
                        }
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
 
-  gps.set(gpsSettings)                                         -- apply settings
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+2)        -- wait until terminal is moving
+  gps.set(gpsSettings)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)        -- wait until terminal is moving
 
   gateway.setHighWaterMark()   -- to get the newest messages
   --applying properties of the service, messages are saved to log and sent from mobile until now
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.distanceSatThld, DISTANCE_SAT_THLD},
                                             }
                    )
 
@@ -1385,12 +1355,12 @@ end
   gps.set({latitude = gpsSettings.latitude + 0.3}) -- terminal travels 1112 m (0,1 degree)
   framework.delay(3)                               -- wait until distanceSat message is sent
 
-  loggingPositionsInterval = 0           -- seconds, not to get any more messages saved in log
-  distanceSatThld = 0                    -- seconds, not to get any more distanceSat messages
+  LOGGING_POSITIONS_INTERVAL = 0           -- seconds, not to get any more messages saved in log
+  DISTANCE_SAT_THLD = 0                    -- seconds, not to get any more distanceSat messages
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.loggingPositionsInterval, loggingPositionsInterval},
-                                                {avlConstants.pins.distanceSatThld, distanceSatThld},
+                                                {avlConstants.pins.loggingPositionsInterval, LOGGING_POSITIONS_INTERVAL},
+                                                {avlConstants.pins.distanceSatThld, DISTANCE_SAT_THLD},
                                              }
                    )
 
@@ -1399,13 +1369,8 @@ end
   -- look for distanceSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.distanceSat))
   -- checking the number of received distanceSat messages
-  assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received DistanceSat reports is incorrect")
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages) , "The number of received DistanceSat reports is incorrect")
 
 end
-
-
-
-
-
 
 
