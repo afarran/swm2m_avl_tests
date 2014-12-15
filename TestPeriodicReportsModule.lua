@@ -498,7 +498,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
   -- difference in time of occurence of Position report and movingIntervalSat report
   local differenceInTimestamps =  movingIntervalSatMessage[1].Payload.EventTime - positionMessage[1].Payload.EventTime
   -- checking if difference in time is correct - full MovingIntervalSat period is expected
-  assert_equal(movingIntervalSat, differenceInTimestamps, 2, "MovingIntervalSat has not been correctly deffered")
+  assert_equal(movingIntervalSat, differenceInTimestamps, 8, "MovingIntervalSat has not been correctly deffered")
 
 
 
