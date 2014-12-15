@@ -117,7 +117,7 @@ function test_SettingSensorValue()
     
     --print(framework.dump(currentProperties))
     
-    sensor1Value = tonumber(currentProperties[1])
+    sensor1Value = tonumber(currentProperties[1])+
     
     --checking if raported value is set properly
     assert_equal(SENSOR_1_EXPECTED_VALUE , sensor1Value , 0, "Sensor Value set - wrong expected value")
