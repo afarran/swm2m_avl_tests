@@ -73,8 +73,9 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
 
 end
 
