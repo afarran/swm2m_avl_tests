@@ -233,10 +233,10 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalInStationaryStateAndPosi
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 0,                      -- for stationary state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = 0,                      -- for stationary state
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1                   -- degrees
                      }
 
   --applying properties of the service
@@ -299,10 +299,10 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
-              heading = 90,                       -- degrees
-              latitude = 1,                       -- degrees
-              longitude = 1                       -- degrees
+                      speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees
+                      longitude = 1                       -- degrees
                      }
 
   --applying properties of the service
@@ -375,10 +375,10 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
-              heading = 90,                       -- degrees
-              latitude = 1,                       -- degrees
-              longitude = 1                       -- degrees
+                      speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees
+                      longitude = 1                       -- degrees
                      }
 
   --applying properties of the service
@@ -392,7 +392,12 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEvent = os.time()
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + 1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME) -- one second is added to make sure the gps is read and processed by agent
+
+  -- MovingStart message expected
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received, moving state true is necessary condition in this TC")
 
   gps.set({fixType = 1})    -- no fix provided
   framework.delay(lsfConstants.coldFixDelay)
@@ -431,39 +436,42 @@ end
   --  MovingIntervalSat message sent after full movingIntervalSat period (deffered by Position message)
 function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEventoccurs_MovingIntervalSatMessageSentAfterFullMovingIntervalSatPeriodIfDeffered()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local movingIntervalSat = 20       -- seconds
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
+  local MOVING_INTERVAL_SAT = 20       -- seconds
 
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees
+                      longitude = 1                       -- degrees
                      }
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                              }
                    )
 
   gateway.setHighWaterMark()                 -- to get the newest messages
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+6)         -- wait until terminal gets moving state
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)         -- wait until terminal gets moving state
 
-  local message = {SIN = 126, MIN = 1}      -- to trigger Position event
+  -- MovingStart message expected
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received, moving state true is necessary condition in this TC")
+
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}      -- to trigger Position event
 	gateway.submitForwardMessage(message)
-  framework.delay(movingIntervalSat + 4)                   -- wait longer than movingIntervalSat to receive report
+  framework.delay(MOVING_INTERVAL_SAT)                   -- wait longer than movingIntervalSat to receive report
 
-  local receivedMessages = gateway.getReturnMessages()  -- receiving all from mobile messages sent after setHighWaterMark()
-  -- looking for movingIntervalSatMessage and Position messages
-  local movingIntervalSatMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
-  local positionMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
+  expectedMins = {avlConstants.mins.movingIntervalSat, avlConstants.mins.position}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, 7)     -- timeout is short on purpose
 
   -- back to movingIntervalSat = 0 to get no more reports
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -471,14 +479,13 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
                                              }
                    )
 
-  -- checking if expected messages has been received
-  assert_not_nil(next(movingIntervalSatMessage), "MovingIntervalSat message message not received")     -- if MovingIntervalSat message not received assertion fails
-  assert_not_nil(next(positionMessage), "Position message not received")                               -- if Position message not received assertion fails
+  assert_not_nil(receivedMessages[avlConstants.mins.movingIntervalSat], "MovingIntervalSat message expected but not received")
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "MovingIntervalSat expected but not received")
 
   -- difference in time of occurence of Position report and movingIntervalSat report
-  local differenceInTimestamps =  movingIntervalSatMessage[1].Payload.EventTime - positionMessage[1].Payload.EventTime
+  local differenceInTimestamps =  receivedMessages[avlConstants.mins.movingIntervalSat].EventTime - receivedMessages[avlConstants.mins.position].EventTime
   -- checking if difference in time is correct - full MovingIntervalSat period is expected
-  assert_equal(movingIntervalSat, differenceInTimestamps, 8, "MovingIntervalSat has not been correctly deffered")
+  assert_equal(MOVING_INTERVAL_SAT, differenceInTimestamps, 8, "MovingIntervalSat has not been correctly deffered")
 
 end
 
@@ -500,10 +507,10 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 0,                      -- stationary state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = 0,                      -- stationary state
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1                   -- degrees
                      }
   gps.set(gpsSettings)
 
