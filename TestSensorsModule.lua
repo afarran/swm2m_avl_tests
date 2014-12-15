@@ -86,6 +86,7 @@ function test_PeriodicallySendingMessageContainingSensorValues()
 
 end
 
+-- TC for seting single value of sensor 1
 function test_SettingSensorValue()
     local SENSOR_SIMULATOR_SIN  = 128
     local SENSOR_SIMULATOR_PIN  = 1
@@ -109,17 +110,17 @@ function test_SettingSensorValue()
     gateway.submitForwardMessage(message)
     gateway.setHighWaterMark()         -- to get the newest messages
     
-    -- framework.delay(4)
+    framework.delay(4)
     
-    -- verify properties
-    -- currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(SENSOR_SIMULATOR_SIN, {SENSOR_SIMULATOR_PIN,}))
+    --verify properties
+    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(SENSOR_SIMULATOR_SIN, {SENSOR_SIMULATOR_PIN,}))
     
-    -- print(framework.dump(currentProperties))
+    --print(framework.dump(currentProperties))
     
-    -- sensor1Value = 1
+    sensor1Value = tonumber(currentProperties[1])
     
-    -- checking if raported value is set properly
-    -- assert_equal(SENSOR_1_EXPECTED_VALUE , sensor1Value , 0, "Sensor Value set - wrong expected value")
+    --checking if raported value is set properly
+    assert_equal(SENSOR_1_EXPECTED_VALUE , sensor1Value , 0, "Sensor Value set - wrong expected value")
 end
 
 
