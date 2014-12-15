@@ -102,6 +102,12 @@ end
                                                 {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode interval of position service
                                                }
                     )
+  -- setting the power service properties - external power source detection enabled
+  lsf.setProperties(lsfConstants.sins.power,{
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
+                                         }
+                   )
+
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
@@ -714,7 +720,6 @@ function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternal
                                              }
                    )
 
-  -- Important: there is bug reported for setPower function
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   framework.delay(3)               -- wait until setting is applied
   -- check external power property
