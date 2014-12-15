@@ -1,5 +1,5 @@
 --
--- Service: NewService
+-- Service: ServiceSimulator
 -- Created: 2014-12-11
 --
 
