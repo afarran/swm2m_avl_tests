@@ -142,8 +142,6 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
 
   assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages) , 2, "The number of received stationaryIntervalSat reports is incorrect")
 
-  print(framework.dump(matchingMessages[1]))
-
   assert_equal(gpsSettings.longitude*60000, tonumber(matchingMessages[1].Payload.Longitude), "StationaryIntervalSat message has incorrect longitude value")
   assert_equal(gpsSettings.latitude*60000, tonumber(matchingMessages[1].Payload.Latitude), "StationaryIntervalSat message has incorrect latitude value")
   assert_equal("StationaryIntervalSat", matchingMessages[1].Payload.Name, "StationaryIntervalSat message has incorrect message name")
@@ -293,44 +291,45 @@ end
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
 function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingIntervalSatGreaterThanZero_MovingIntervalSatMessageSentPeriodically()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local movingIntervalSat = 10       -- seconds
-  local numberOfReports = 2          -- number of expected reports received during the TC
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
+  local MOVING_INTERVAL_SAT = 10       -- seconds
+  local NUMBER_OF_REPORTS = 3          -- number of expected reports received during the TC
 
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+              speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+              heading = 90,                       -- degrees
+              latitude = 1,                       -- degrees
+              longitude = 1                       -- degrees
                      }
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                              }
                    )
 
   gateway.setHighWaterMark() -- to get the newest messages
-  local timeOfEventTc = os.time()
+  local timeOfEvent = os.time()
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + 1) -- one second is added to make sure the gps is read and processed by agent
 
-  -- checking if terminal is moving state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
+  -- MovingStart message expected
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received, moving state true is necessary condition in this TC")
 
-  framework.delay(movingIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(MOVING_INTERVAL_SAT*NUMBER_OF_REPORTS + GPS_READ_INTERVAL + 2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to movingIntervalSat = 0 to get no more reports
-  movingIntervalSat = 0       -- seconds
+  MOVING_INTERVAL_SAT = 0       -- seconds
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                              }
                    )
 
@@ -338,15 +337,15 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
+  assert_equal(numberOfReports, table.getn(matchingMessages) , 2 , "The number of received MovingIntervalSat reports is incorrect")
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "MovingIntervalSat",
-                  currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  assert_equal(gpsSettings.longitude*60000, tonumber(matchingMessages[1].Payload.Longitude), "MovingIntervalSat message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(matchingMessages[1].Payload.Latitude), "MovingIntervalSat message has incorrect latitude value")
+  assert_equal("StationaryIntervalSat", matchingMessages[1].Payload.Name, "MovingIntervalSat message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(matchingMessages[1].Payload.EventTime), 10, "MovingIntervalSat message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(matchingMessages[1].Payload.Speed), "MovingIntervalSat message has incorrect speed value")
+  assert_equal(361, tonumber(matchingMessages[1].Payload.Heading), "MovingIntervalSat message has incorrect heading value")
 
-  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received MovingIntervalSat reports is incorrect")
 
 
 
@@ -367,46 +366,44 @@ end
   --  MovingIntervalSat message sent periodically and fields of the reports have correct values
 function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingIntervalSatGreaterThanZero_MovingIntervalSatMessageSentPeriodicallyGpsFixReported()
 
-  local movingDebounceTime = 1       -- seconds
-  local stationarySpeedThld = 5      -- kmh
-  local movingIntervalSat = 10       -- seconds
-  local numberOfReports = 2          -- number of expected reports received during the TC
+
+  local MOVING_DEBOUNCE_TIME = 1       -- seconds
+  local STATIONARY_SPEED_THLD = 5      -- kmh
+  local MOVING_INTERVAL_SAT = 10       -- seconds
+  local NUMBER_OF_REPORTS = 3          -- number of expected reports received during the TC
 
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = stationarySpeedThld+1,  -- one kmh above threshold
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+              speed = STATIONARY_SPEED_THLD + 1,  -- one kmh above threshold
+              heading = 90,                       -- degrees
+              latitude = 1,                       -- degrees
+              longitude = 1                       -- degrees
                      }
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                              }
                    )
 
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1) -- one second is added to make sure the gps is read and processed by agent
-
-  -- checking if terminal is moving state
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in the moving state")
-
-  gps.set({fixType = 1})    -- no fix displayed
-  framework.delay(lsfConstants.coldFixDelay)
   gateway.setHighWaterMark() -- to get the newest messages
-  local timeOfEventTc = os.time()
-  framework.delay(movingIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  local timeOfEvent = os.time()
+  gps.set(gpsSettings)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + 1) -- one second is added to make sure the gps is read and processed by agent
 
-  -- back to movingIntervalSat = 0 to get no more reports
-  movingIntervalSat = 0       -- seconds
+  gps.set({fixType = 1})    -- no fix provided
+  framework.delay(lsfConstants.coldFixDelay)
+
+  framework.delay(MOVING_INTERVAL_SAT*NUMBER_OF_REPORTS + GPS_READ_INTERVAL + 2)    -- wait for time interval of generating report multiplied by number of expected reports
+
+  -- back to MOVING_INTERVAL_SAT = 0 to get no more reports
+  MOVING_INTERVAL_SAT = 0       -- seconds
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.movingIntervalSat, movingIntervalSat},
+                                                {avlConstants.pins.movingIntervalSat, MOVING_INTERVAL_SAT},
                                              }
                    )
 
@@ -415,16 +412,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
 
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "MovingIntervalSat",
-                  currentTime = timeOfEventTc,
-                  GpsFixAge = 43
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
-
-  assert_equal(numberOfReports, table.getn(matchingMessages) , 1, "The number of received MovingIntervalSat reports is incorrect")
-
+  assert_equal(43, tonumber(matchingMessages[1].Payload.GpsFixAge), 15,  "MovingIntervalSat message has incorrect heading value")
 
 
 end
