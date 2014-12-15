@@ -525,10 +525,10 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   framework.delay(POSITION_MSG_INTERVAL*NUMBER_OF_REPORTS + 2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to positionMsgInterval = 0 to get no more reports
-  positionMsgInterval = 0       -- seconds
+  POSITION_MSG_INTERVAL = 0       -- seconds
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
                                              }
                    )
 
@@ -657,11 +657,11 @@ end
   -- Position messages correctly deffered by DiagnosticsInfo event
 function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndDiagnosticsInfoDeffers_PositionMessageSentAfterFullPositionMsgInterval()
 
-  local positionMsgInterval = 20     -- seconds
+  local POSITION_MSG_INTERVAL = 20     -- seconds
 
-  --applying properties of the service
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                               {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                               {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
                                              }
                    )
 
@@ -672,10 +672,7 @@ function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndDiagno
   local getDiagnosticsMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getDiagnostics}   -- to trigger DiagnosticsInfo message
 	gateway.submitForwardMessage(getDiagnosticsMessage)
 
-  framework.delay(positionMsgInterval+3)  -- wait longer than positionMsgInterval to receive report
-
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages() -- receiving all from mobile messages sent after setHighWaterMark()
+  framework.delay(POSITION_MSG_INTERVAL + 3)  -- wait longer than positionMsgInterval to receive report
 
   -- back to positionMsgInterval = 0 to get no more reports
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -683,20 +680,16 @@ function test_PeriodicPosition_WhenPositionMsgIntervalIsGreaterThanZeroAndDiagno
                                              }
                    )
 
-  -- looking for Position and DiagnosticsInfo message
-  local positionMsgIntervalMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
-  local diagnosticsInfoMessage = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.diagnosticsInfo))
+  expectedMins = {avlConstants.mins.diagnosticsInfo, avlConstants.mins.position}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, 5)     -- timeout is short on purpose
 
-  -- checking if expected messages has been received
-  assert_not_nil(next(positionMsgIntervalMessage), "PositionMsgInterval message message not received")     -- if PositionMsgInterval message not received assertion fails
-  assert_not_nil(next(diagnosticsInfoMessage), "DiagnosticsInfo message not received")                     -- if DiagnosticsInfo message not received assertion fails
+  assert_not_nil(receivedMessages[avlConstants.mins.diagnosticsInfo], "DiagnosticsInfo message expected but not received")
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position expected but not received")
 
-  -- difference in time of occurence of diagnosticsInfoMessage report and positionMsgIntervalMessage
-  local differenceInTimestamps =  positionMsgIntervalMessage[1].Payload.EventTime - diagnosticsInfoMessage[1].Payload.EventTime
-
-  -- checking if difference in time is correct - full positionMsgInterval period is expected
-  assert_equal(positionMsgInterval, differenceInTimestamps, 2, "PositionMsgInterval message has not been correctly deffered")
-
+  -- difference in time of occurence of Position report and movingIntervalSat report
+  local differenceInTimestamps =  receivedMessages[avlConstants.mins.position].EventTime - receivedMessages[avlConstants.mins.diagnosticsInfo].EventTime
+  -- checking if difference in time is correct - full MovingIntervalSat period is expected
+  assert_equal(POSITION_MSG_INTERVAL, differenceInTimestamps, 7, "PositionMsgInterval has not been correctly deffered")
 
 
 end
