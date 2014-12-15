@@ -429,7 +429,7 @@ function avlHelperFunctions.matchReturnMessages(expectedMins, timeout)
   local function UpdateMsgMatchingList(msg)
     if msg then   --TODO: why would this function be called with no msg?
       for idx, min in pairs(expectedMins) do
-        if min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
+        if msg.Payload and min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
           msgList[min] = framework.collapseMessage(msg).Payload
           msgList.count = msgList.count + 1
           break
