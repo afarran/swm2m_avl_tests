@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MessageDefinition xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Services>
+    <Service>
+      <Name>SensorSimulator</Name>
+      <SIN>128</SIN>
+      <ForwardMessages>
+        <Message>
+          <Name>TimeChanges</Name>
+          <MIN>1</MIN>
+          <Fields>
+            <Field xsi:type="ArrayField">
+              <Name>TimeChanges</Name>
+              <Fields>
+                <Field xsi:type="UnsignedIntField">
+                  <Name>time</Name>
+                  <Size>31</Size>
+                </Field>
+                <Field xsi:type="UnsignedIntField">
+                  <Name>value</Name>
+                  <Size>31</Size>
+                </Field>
+              </Fields>
+              <Size>20</Size>
+            </Field>
+          </Fields>
+        </Message>
+        <Message>
+          <Name>Restart</Name>
+          <MIN>2</MIN>
+        </Message>
+      </ForwardMessages>
+    </Service>
+  </Services>
+</MessageDefinition>
