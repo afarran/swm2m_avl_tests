@@ -1341,10 +1341,10 @@ end
   -- terminal not in the moving state and not in the low power mode, gps read periodically with interval of GPS_READ_INTERVAL
   -- *expected results:
   -- saving LoggedPosition messages does not deffer periodic MovingIntervalSat message
-  function test_LoggedPosition_ForTerminalMovingyWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingMovingIntervalSat()
+  function test_LoggedPosition_ForTerminalMovingWhenLoggedPositionIntervalGreaterThanZero_SavingToLogDoesNotDefferSendingMovingIntervalSat()
 
   local loggingPositionsInterval =  2   -- seconds
-  local numberOfReports = 3             -- number of expected reports received during the TC
+  local numberOfReports = 6             -- number of expected reports received during the TC
   local movingIntervalSat = 10          -- seconds
   local stationarySpeedThld = 10        -- kmh
   local movingDebounceTime = 1          -- seconds
@@ -1392,7 +1392,7 @@ end
   -- look for movingIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
   -- checking the number of received movingIntervalSat messages
-  assert_equal(numberOfReports, table.getn(matchingMessages) , "The number of received MovingIntervalSat reports is incorrect")
+  assert_equal(numberOfReports, table.getn(matchingMessages), 2 ,  "The number of received MovingIntervalSat reports is incorrect")
 
 end
 
