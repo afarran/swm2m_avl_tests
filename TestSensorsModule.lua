@@ -39,11 +39,11 @@ end
 -- Test Cases
 -------------------------
 
+
 -- Test for: Periodically sending a message 
-function test_PeriodicallySendingMessageContainingAllSensorValues()
+function test_PeriodicallySendingMessageContainingSensorValues()
   
-    local SENSOR_REPORTING_INTERVAL = 1 -- 60 secs
-    
+    local SENSOR_REPORTING_INTERVAL = 1 -- 60 secs 
     local SENSOR_SIMULATOR_SIN  = 128
     local SENSOR_SIMULATOR_PIN  = 1
     local SENSOR_SIMULATOR_DATA_MSG = 1
@@ -84,6 +84,43 @@ function test_PeriodicallySendingMessageContainingAllSensorValues()
     -- checking if raported value is set properly
     assert_equal(SENSOR_1_EXPECTED_VALUE , tonumber(receivedMessages[AVL_RESPONSE_MIN].Sensor1), 0, "Sensor Reporting Interval test failed - wrong expected value")
 
+end
+
+-- TC for seting single value of sensor 1
+function test_SettingSensorValue()
+    local SENSOR_SIMULATOR_SIN  = 128
+    local SENSOR_SIMULATOR_PIN  = 1
+    local SENSOR_SIMULATOR_DATA_MSG = 1
+    local SENSOR_1_EXPECTED_VALUE = 120
+    
+    -- setting AVL properties
+    lsf.setProperties(avlConstants.avlAgentSIN,{
+                        {avlConstants.pins.Sensor1Source, framework.base64Encode({SENSOR_SIMULATOR_SIN, SENSOR_SIMULATOR_PIN}), "data" }
+                                             }
+                    )
+  
+    -- sending data to Simulator with expected value after 10th second
+    local message = {SIN = SENSOR_SIMULATOR_SIN, MIN = SENSOR_SIMULATOR_DATA_MSG }
+    message.Fields = {{Name="TimeChanges", Elements={
+                                                  {Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+                                                  {Index=1, Fields={{Name="time",Value=1 }, {Name="value",Value=10 }}},
+                                                  {Index=2, Fields={{Name="time",Value=3 }, {Name="value",Value=SENSOR_1_EXPECTED_VALUE }}},
+                                                  }},}
+   
+    gateway.submitForwardMessage(message)
+    gateway.setHighWaterMark()         -- to get the newest messages
+    
+    framework.delay(4)
+    
+    --verify properties
+    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(SENSOR_SIMULATOR_SIN, {SENSOR_SIMULATOR_PIN,}))
+    
+    --print(framework.dump(currentProperties))
+    
+    sensor1Value = tonumber(currentProperties[1])
+    
+    --checking if raported value is set properly
+    assert_equal(SENSOR_1_EXPECTED_VALUE , sensor1Value , 0, "Sensor Value set - wrong expected value")
 end
 
 
