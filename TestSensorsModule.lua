@@ -57,8 +57,8 @@ function test_Sensors_SendMessageWhenValueBelowThreshold()
                     })
 
 	message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
-                                                   {Index=1, Fields={{Name="time",Value=5 }, {Name="value",Value=10 }}},
-                                                   {Index=2, Fields={{Name="time",Value=10 }, {Name="value",Value=4 }}},
+                                                   {Index=1, Fields={{Name="time",Value=3 }, {Name="value",Value=10 }}},
+                                                   {Index=2, Fields={{Name="time",Value=6 }, {Name="value",Value=4 }}},
                                                    }},}
 	gateway.submitForwardMessage(message)
   
@@ -77,6 +77,49 @@ function test_Sensors_SendMessageWhenValueBelowThreshold()
   -- disable Sensor
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {{avlConstants.pins.Sensor1Source, framework.base64Encode(""), "data"},
+                    })
+  
+end
+
+function test_Sensors_SendMessageWhenValueAboveThreshold()
+  
+  local message = {SIN = SENSOR_SERVICE_SIN, MIN = 1}
+  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+                                                   }},}
+	gateway.submitForwardMessage(message)
+  framework.delay(SENSOR_PROCESS_TIME)
+  
+  -- configure sensor
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    { {avlConstants.pins.Sensor3Source, framework.base64Encode({128, 1}), "data"},
+                      {avlConstants.pins.Sensor3ChangeThld, 0},
+                      {avlConstants.pins.Sensor3MinThld, 5},
+                      {avlConstants.pins.Sensor3MaxThld, 15},
+                      {avlConstants.pins.Sensor3MaxReportInterval, 0},
+                      {avlConstants.pins.Sensor3NormalSampleInterval, 1},
+                    })
+
+	message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+                                                   {Index=1, Fields={{Name="time",Value=3 }, {Name="value",Value=10 }}},
+                                                   {Index=2, Fields={{Name="time",Value=6 }, {Name="value",Value=17 }}},
+                                                   }},}
+	gateway.submitForwardMessage(message)
+  
+  -- wait for min start message
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor3MaxStart}, GATEWAY_TIMEOUT)  
+  assert_not_nil(receivedMessages[avlConstants.mins.Sensor3MaxStart], 'Sensor did not send Max Start message')
+  
+  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+                                                  }},}
+	gateway.submitForwardMessage(message)
+  
+  -- wait for min end message
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor3MaxEnd}, GATEWAY_TIMEOUT)
+  assert_not_nil(receivedMessages[avlConstants.mins.Sensor3MaxEnd], 'Sensor did not send Max End message')
+  
+  -- disable Sensor
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    {{avlConstants.pins.Sensor3Source, framework.base64Encode(""), "data"},
                     })
   
 end
