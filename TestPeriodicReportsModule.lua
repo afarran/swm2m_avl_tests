@@ -501,8 +501,8 @@ end
   --  Position messages sent periodically and fields of the reports have correct values
 function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
 
-  local positionMsgInterval = 15     -- seconds
-  local numberOfReports = 4          -- number of expected reports received during the TC
+  local POSITION_MSG_INTERVAL = 10     -- seconds
+  local NUMBER_OF_REPORTS = 4          -- number of expected reports received during the TC
 
 
   -- gps settings table to be sent to simulator
@@ -516,13 +516,13 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
                                              }
                    )
 
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEventTc = os.time()
-  framework.delay(positionMsgInterval*numberOfReports + 2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(POSITION_MSG_INTERVAL*NUMBER_OF_REPORTS + 2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to positionMsgInterval = 0 to get no more reports
   positionMsgInterval = 0       -- seconds
@@ -539,13 +539,6 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   assert_equal(numberOfReports, table.getn(matchingMessages), 1, "The number of received Position reports is incorrect")
 
-  gpsSettings.heading = 361                 -- that is expected for stationary state
-  local expectedValues={
-                          gps = gpsSettings,
-                          messageName = "Position",
-                          currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
 
 end
 
