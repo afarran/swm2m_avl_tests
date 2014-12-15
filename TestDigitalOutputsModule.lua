@@ -32,23 +32,35 @@ function suite_setup()
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
 
-  -- sending fences.dat file to the terminal with the definitions of geofences used in TCs
+  -- sending messages containing definitions of geofences used in TCs
   -- for more details please go to Geofences.jpg file in Documentation
-  local message = {SIN = lsfConstants.sins.filesystem, MIN = lsfConstants.mins.write}
-	message.Fields = {{Name="path",Value="/data/svc/geofence/fences.dat"},{Name="offset",Value=0},{Name="flags",Value="Overwrite"},
-  {Name="data",Value="ABIABQAtxsAAAr8gAACcQAAAAfQEagAOAQEALg0QAAK/IAAATiABnAASAgUALjvwAAQesAAAw1AAAJxABCEAEgMFAC4NEAAEZQAAAFfkAABEXAKX"}}
-	gateway.submitForwardMessage(message)
 
-  framework.delay(5) -- to make sure file is saved
+  -- ID 0 rectangle
+  local message = {SIN = lsfConstants.sins.geofence, MIN = lsfConstants.mins.setRectangle}
+  message.Fields = {{Name="number",Value=0},{Name="enabled",Value=true},{Name="alarmCondition",Value="None"},{Name="centreLatitude",Value=3000000},{Name="centreLongitude",Value=180000},{Name="latitudeDistance",Value=40000},{Name="longitudeDistance",Value=500}}
+  gateway.submitForwardMessage(message)
 
-  -- restarting geofences service, that action is necessary after sending new fences.dat file
+  -- ID 1 circle
+  message = {SIN = lsfConstants.sins.geofence, MIN = lsfConstants.mins.setCircle}
+  message.Fields = {{Name="number",Value=1},{Name="enabled",Value=true},{Name="alarmCondition",Value="None"},{Name="centreLatitude",Value=3018000},{Name="centreLongitude",Value=180000},{Name="radius",Value=20000}}
+  gateway.submitForwardMessage(message)
+
+  -- ID 2 rectangle
+  message = {SIN = lsfConstants.sins.geofence, MIN = lsfConstants.mins.setRectangle}
+  message.Fields = {{Name="number",Value=2},{Name="enabled",Value=true},{Name="alarmCondition",Value="None"},{Name="centreLatitude",Value=3030000},{Name="centreLongitude",Value=270000},{Name="latitudeDistance",Value=50000},{Name="longitudeDistance",Value=40000}}
+  gateway.submitForwardMessage(message)
+
+  -- ID 3 rectangle
+  message = {SIN = lsfConstants.sins.geofence, MIN = lsfConstants.mins.setRectangle}
+  message.Fields = {{Name="number",Value=3},{Name="enabled",Value=true},{Name="alarmCondition",Value="None"},{Name="centreLatitude",Value=3018000},{Name="centreLongitude",Value=288000},{Name="latitudeDistance",Value=22500},{Name="longitudeDistance",Value=17500}}
+  gateway.submitForwardMessage(message)
+
+  -- restaring geofences service, that action is necessary after defining new zones in fences.dat file
   message = {SIN = lsfConstants.sins.system, MIN = lsfConstants.mins.restartService}
 	message.Fields = {{Name="sin",Value=lsfConstants.sins.geofence}}
 	gateway.submitForwardMessage(message)
 
   framework.delay(5) -- wait until geofences service is up again
-
-
 
 end
 

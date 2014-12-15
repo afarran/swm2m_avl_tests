@@ -15,6 +15,8 @@ lsfConstantsAllTerminals = {
                                                 -- Messages MINs
                                                 mins = {
                                                           setDataLogFilter = 1,   -- to mobile message, log service
+                                                          setCircle = 1,          -- to mobile message, geofences service
+                                                          setRectangle = 7,       -- to mobile message, geofences service
                                                           write = 1,              -- to mobile message, filesystem service
                                                           saveProperties = 11,    -- to mobile, system service
                                                           propertyValues = 5,     -- from mobile, system service
@@ -73,6 +75,8 @@ lsfConstantsAllTerminals = {
                                                 -- Messages MINs
                                                 mins = {
                                                           setDataLogFilter = 1,   -- to mobile message, log service
+                                                          setCircle = 1,          -- to mobile message, geofences service
+                                                          setRectangle = 7,       -- to mobile message, geofences service
                                                           write = 1,              -- to mobile message, filesystem service
                                                           saveProperties = 11,    -- to mobile, system service
                                                           propertyValues = 5,     -- from mobile, system service
