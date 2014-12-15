@@ -43,8 +43,9 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
 
 end
 
@@ -117,7 +118,7 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal incorrectly in the moving state")
 
-  --applying properties of the service
+  -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
                                              }
@@ -477,7 +478,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
 
   local message = {SIN = 126, MIN = 1}      -- to trigger Position event
 	gateway.submitForwardMessage(message)
-  framework.delay(movingIntervalSat+4)                   -- wait longer than movingIntervalSat to receive report
+  framework.delay(movingIntervalSat + 4)                   -- wait longer than movingIntervalSat to receive report
 
   local receivedMessages = gateway.getReturnMessages()  -- receiving all from mobile messages sent after setHighWaterMark()
   -- looking for movingIntervalSatMessage and Position messages
@@ -487,7 +488,6 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
   -- back to movingIntervalSat = 0 to get no more reports
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.movingIntervalSat, 0},
-
                                              }
                    )
 
@@ -499,8 +499,6 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndPositionEven
   local differenceInTimestamps =  movingIntervalSatMessage[1].Payload.EventTime - positionMessage[1].Payload.EventTime
   -- checking if difference in time is correct - full MovingIntervalSat period is expected
   assert_equal(movingIntervalSat, differenceInTimestamps, 8, "MovingIntervalSat has not been correctly deffered")
-
-
 
 end
 
@@ -537,7 +535,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEventTc = os.time()
-  framework.delay(positionMsgInterval*numberOfReports+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  framework.delay(positionMsgInterval*numberOfReports + 2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to positionMsgInterval = 0 to get no more reports
   positionMsgInterval = 0       -- seconds
@@ -554,16 +552,13 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
 
   assert_equal(numberOfReports, table.getn(matchingMessages), 1, "The number of received Position reports is incorrect")
 
-  gpsSettings.heading = 361                 -- that is for stationary state
+  gpsSettings.heading = 361                 -- that is expected for stationary state
   local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "Position",
-                  currentTime = timeOfEventTc,
+                          gps = gpsSettings,
+                          messageName = "Position",
+                          currentTime = timeOfEventTc,
                         }
   avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
-
-
-
 
 end
 
@@ -579,21 +574,21 @@ end
   --  Position message sent after request and fields of the reports have correct values
 function test_Position_WhenTerminalInStationaryStateAndRequestedPositionMessageByMIN1_PositionMessageSent()
 
-  local positionMsgInterval =  0     -- seconds (periodic sending disabled)
+  local POSITION_MSG_INTERVAL =  0     -- seconds (periodic sending disabled)
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = 0,                      -- terminal stationary
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = 0,                      -- terminal stationary
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1                   -- degrees
                      }
   gps.set(gpsSettings)
   framework.delay(2)     -- wait until settings are applied
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                                {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
                                              }
                    )
 
@@ -602,22 +597,18 @@ function test_Position_WhenTerminalInStationaryStateAndRequestedPositionMessageB
   local requestPositionMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}      -- to trigger Position event
 	gateway.submitForwardMessage(requestPositionMessage)
 
-  local timeOfEventTc = os.time()
-  framework.delay(2)    -- wait until message is processed
+  local timeOfEvent = os.time()
 
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
-
-  gpsSettings.heading = 361                 -- that is for stationary state
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "Position",
-                  currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
-
+  -- Position message is expected after request
+  local expectedMins = {avlConstants.mins.position}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message has not been received after request")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.position].Longitude), "Position message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.position].Latitude), "Position message has incorrect latitude value")
+  assert_equal("Position", receivedMessages[avlConstants.mins.position].Name, "Position message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.position].EventTime), 5, "Position message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.position].Speed), "Position message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.position].Heading), "Position message has incorrect heading value")
 
 end
 
@@ -632,46 +623,46 @@ end
   --  Position message sent after request and fields of the reports have correct values
 function test_Position_WhenTerminalInMovingStateAndRequestedPositionMessageByMIN1_PositionMessageSent()
 
-  local positionMsgInterval =  0     -- seconds (periodic sending disabled)
-  local stationarySpeedThld = 10     -- kmh
-  local movingDebounceTime = 1       -- seconds
+  local POSITION_MSG_INTERVAL =  0     -- seconds (periodic sending disabled)
+  local STATIONARY_SPEED_THLD = 10       -- kmh
+  local MOVING_DEBOUNCE_TIME = 1         -- seconds
 
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.positionMsgInterval, positionMsgInterval},
+                                               {avlConstants.pins.positionMsgInterval, POSITION_MSG_INTERVAL},
+                                               {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
                                              }
                    )
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
-              speed = stationarySpeedThld+2,  -- terminal moving
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = STATIONARY_SPEED_THLD + 2,  -- terminal moving
+                      heading = 90,                       -- degrees
+                      latitude = 1,                       -- degrees
+                      longitude = 1                       -- degrees
                      }
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+1)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME)
 
   gateway.setHighWaterMark() -- to get the newest messages
 
   local requestPositionMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.positionRequest}      -- to trigger Position event
 	gateway.submitForwardMessage(requestPositionMessage)
 
-  local timeOfEventTc = os.time()
-  framework.delay(2)    -- wait until message is processed
+  local timeOfEvent = os.time()
 
-  -- receiving all from mobile messages sent after setHighWaterMark()
-  local receivedMessages = gateway.getReturnMessages()
-  -- look for StationaryIntervalSat messages
-  local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "Position",
-                  currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  -- Position message is expected after request
+  local expectedMins = {avlConstants.mins.position}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message has not been received after request")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.position].Longitude), "Position message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.position].Latitude), "Position message has incorrect latitude value")
+  assert_equal("Position", receivedMessages[avlConstants.mins.position].Name, "Position message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.position].EventTime), 5, "Position message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.position].Speed), "Position message has incorrect speed value")
+  assert_equal(gpsSettings.heading, tonumber(receivedMessages[avlConstants.mins.position].Heading), "Position message has incorrect heading value")
 
 
 end
