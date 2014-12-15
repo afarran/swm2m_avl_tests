@@ -1,5 +1,5 @@
 --
--- Service: ServiceSimulator
+-- Service: NewService
 -- Created: 2014-12-11
 --
 
@@ -9,7 +9,6 @@ module(..., package.seeall)
 -- Version information (required)
 --
 _VERSION = "1.0.0"
-LOG = true
 local stimer = nil
 local timeChanges = {}
 local msgHandler = nil
@@ -83,7 +82,7 @@ function processTimeChange()
 end
 
 function logvar(value)
-  if LOG then
+  if properties.printLog then
     dumpvar(value)
   end
 
