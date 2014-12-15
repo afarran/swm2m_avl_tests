@@ -104,15 +104,15 @@ end
 function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryIntervalSatGreaterThenZero_StationaryIntervalSatReportsMessageSentPeriodically()
 
   local gpsSettings={
-              speed = 0,                      -- for stationary state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1                   -- degrees
+                      speed = 0,                      -- for stationary state
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1                   -- degrees
                      }
   gps.set(gpsSettings)
 
-  local stationaryIntervalSat = 10       -- seconds
-  local numberOfReports = 2              -- number of expected reports received during the TC
+  local STATIONARY_INTERVAL_SAT = 10       -- seconds
+  local NUMBER_OF_REPORTS = 4              -- number of expected reports received during the TC
 
   -- check if terminal is in the stationary state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -120,18 +120,18 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
 
   -- applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
+                                                {avlConstants.pins.stationaryIntervalSat, STATIONARY_INTERVAL_SAT},
                                              }
                    )
 
-  gateway.setHighWaterMark()                                                -- to get the newest messages
-  local timeOfEventTc = os.time()                                           -- time of receiving first stationaryIntervalSat report
-  framework.delay(stationaryIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  gateway.setHighWaterMark()                                                           -- to get the newest messages
+  local timeOfEvent = os.time() +  STATIONARY_INTERVAL_SAT                             -- time of receiving first stationaryIntervalSat report
+  framework.delay(STATIONARY_INTERVAL_SAT*NUMBER_OF_REPORTS + GPS_READ_INTERVAL+ 2)    -- wait for time interval of generating report multiplied by number of expected reports
 
-   -- back to stationaryIntervalSat = 0 to get no more reports
-  local stationaryIntervalSat = 0       -- seconds
+  -- back to stationaryIntervalSat = 0 to get no more reports
+  local STATIONARY_INTERVAL_SAT = 0     -- seconds
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
+                                                {avlConstants.pins.stationaryIntervalSat, STATIONARY_INTERVAL_SAT},
                                              }
                    )
 
@@ -140,15 +140,16 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
 
-  gpsSettings.heading = 361 -- for stationary state
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "StationaryIntervalSat",
-                  currentTime = timeOfEventTc,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[1], expectedValues ) -- verification of the report fields
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages) , 2, "The number of received stationaryIntervalSat reports is incorrect")
 
-  assert_equal(numberOfReports, table.getn(matchingMessages) , 2, "The number of received stationaryIntervalSat reports is incorrect")
+  print(framework.dump(matchingMessages[1]))
+
+  assert_equal(gpsSettings.longitude*60000, tonumber(matchingMessages[1].Payload.Longitude), "StationaryIntervalSat message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(matchingMessages[1].Payload.Latitude), "StationaryIntervalSat message has incorrect latitude value")
+  assert_equal("StationaryIntervalSat", matchingMessages[1].Payload.Name, "StationaryIntervalSat message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(matchingMessages[1].Payload.EventTime), 10, "StationaryIntervalSat message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(matchingMessages[1].Payload.Speed), "StationaryIntervalSat message has incorrect speed value")
+  assert_equal(361, tonumber(matchingMessages[1].Payload.Heading), "StationaryIntervalSat message has incorrect heading value")
 
 
 
@@ -169,15 +170,15 @@ end
 function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryIntervalSatGreaterThanZero_StationaryIntervalSatMessageSentPeriodicallyGpxFixReported()
 
   local gpsSettings={
-              speed = 0,                      -- for stationary state
-              heading = 90,                   -- degrees
-              latitude = 1,                   -- degrees
-              longitude = 1,                  -- degrees
+                      speed = 0,                      -- for stationary state
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
                      }
   gps.set(gpsSettings)
 
-  local stationaryIntervalSat = 5        -- seconds
-  local numberOfReports = 5              -- number of expected reports received during the TC
+  local STATIONARY_INTERVAL_SAT = 5        -- seconds
+  local NUMBER_OF_REPORTS = 3              -- number of expected reports received during the TC
 
   -- check if terminal is in the stationary state
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
@@ -186,22 +187,20 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
 
   --applying properties of the service
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
+                                                {avlConstants.pins.stationaryIntervalSat, STATIONARY_INTERVAL_SAT},
                                              }
                    )
 
   gps.set({fixType = 1})                      -- no fix provided
   framework.delay(lsfConstants.coldFixDelay)
 
-  gateway.setHighWaterMark()                               -- to get the newest messages
-
-  local timeOfEventTc = os.time()                                          -- time of receiving first stationaryIntervalSat report
-  framework.delay(stationaryIntervalSat*numberOfReports+GPS_READ_INTERVAL+2)    -- wait for time interval of generating report multiplied by number of expected reports
+  gateway.setHighWaterMark()                                                            -- to get the newest messages
+  framework.delay(STATIONARY_INTERVAL_SAT*NUMBER_OF_REPORTS + GPS_READ_INTERVAL + 2)    -- wait for time interval of generating report multiplied by number of expected reports
 
   -- back to stationaryIntervalSat = 0 to get no more reports
-  local stationaryIntervalSat = 0       -- seconds
+  local STATIONARY_INTERVAL_SAT = 0       -- seconds
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationaryIntervalSat, stationaryIntervalSat},
+                                              {avlConstants.pins.stationaryIntervalSat, STATIONARY_INTERVAL_SAT},
                                              }
                    )
 
@@ -210,15 +209,8 @@ function test_PeriodicStationaryIntervalSat_WhenTerminalStationaryAndStationaryI
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.stationaryIntervalSat))
 
-  gpsSettings.heading = 361 -- for stationary state
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "StationaryIntervalSat",
-                  currentTime = timeOfEventTc,
-                  GpsFixAge = 51,
-                        }
-  avlHelperFunctions.reportVerification(matchingMessages[2], expectedValues) -- verification of the report fields
-  assert_equal(numberOfReports,table.getn(matchingMessages), 4, "The number of received stationaryIntervalSat reports is incorrect")
+  assert_equal(51, tonumber(matchingMessages[1].Payload.GpsFixAge), 15,  "StationaryIntervalSat message has incorrect heading value")
+
 
 end
 
