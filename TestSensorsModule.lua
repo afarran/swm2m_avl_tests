@@ -128,8 +128,11 @@ end
 -------------------------
 function test_Sensors_SendMessageWhenValueBelowThreshold()
   
+  local SENSOR_MIN = 4
+  local SENSOR_INITIAL = 11
+
   local message = {SIN = SENSOR_SERVICE_SIN, MIN = 1}
-  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=SENSOR_INITIAL }}},
                                                    }},}
 	gateway.submitForwardMessage(message)
   framework.delay(SENSOR_PROCESS_TIME)
@@ -144,23 +147,26 @@ function test_Sensors_SendMessageWhenValueBelowThreshold()
                       {avlConstants.pins.Sensor1NormalSampleInterval, 1},
                     })
 
-	message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
-                                                   {Index=1, Fields={{Name="time",Value=3 }, {Name="value",Value=10 }}},
-                                                   {Index=2, Fields={{Name="time",Value=6 }, {Name="value",Value=4 }}},
+	message.Fields = {{Name="TimeChanges", Elements={{Index = 0, Fields = {{Name = "time", Value = 0 }, {Name = "value", Value = SENSOR_INITIAL }}},
+                                                   {Index = 1, Fields = {{Name = "time", Value = 3 }, {Name = "value", Value = SENSOR_INITIAL-1 }}},
+                                                   {Index = 2, Fields = {{Name = "time", Value = 6 }, {Name = "value", Value = SENSOR_MIN }}},
                                                    }},}
 	gateway.submitForwardMessage(message)
   
   -- wait for min start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor1MinStart}, GATEWAY_TIMEOUT)  
   assert_not_nil(receivedMessages[avlConstants.mins.Sensor1MinStart], 'Sensor did not send Min Start message')
+  assert_equal(SENSOR_MIN, tonumber(receivedMessages[avlConstants.mins.Sensor1MinStart].Sensor1))
   
-  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=SENSOR_INITIAL }}},
                                                   }},}
 	gateway.submitForwardMessage(message)
   
   -- wait for min end message
   receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor1MinEnd}, GATEWAY_TIMEOUT)
   assert_not_nil(receivedMessages[avlConstants.mins.Sensor1MinEnd], 'Sensor did not send Min End message')
+  assert_equal(SENSOR_MIN, tonumber(receivedMessages[avlConstants.mins.Sensor1MinEnd].SensorMin))
+  assert_equal(SENSOR_INITIAL, tonumber(receivedMessages[avlConstants.mins.Sensor1MinEnd].Sensor1))
   
   -- disable Sensor
   lsf.setProperties(avlConstants.avlAgentSIN,
@@ -170,9 +176,10 @@ function test_Sensors_SendMessageWhenValueBelowThreshold()
 end
 
 function test_Sensors_SendMessageWhenValueAboveThreshold()
-  
+  local SENSOR_MAX = 17
+  local SENSOR_INITIAL = 11
   local message = {SIN = SENSOR_SERVICE_SIN, MIN = 1}
-  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=SENSOR_INITIAL }}},
                                                    }},}
 	gateway.submitForwardMessage(message)
   framework.delay(SENSOR_PROCESS_TIME)
@@ -187,24 +194,27 @@ function test_Sensors_SendMessageWhenValueAboveThreshold()
                       {avlConstants.pins.Sensor3NormalSampleInterval, 1},
                     })
 
-	message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
-                                                   {Index=1, Fields={{Name="time",Value=3 }, {Name="value",Value=10 }}},
-                                                   {Index=2, Fields={{Name="time",Value=6 }, {Name="value",Value=17 }}},
+	message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=SENSOR_INITIAL }}},
+                                                   {Index=1, Fields={{Name="time",Value=3 }, {Name="value",Value=SENSOR_INITIAL-1 }}},
+                                                   {Index=2, Fields={{Name="time",Value=6 }, {Name="value",Value=SENSOR_MAX }}},
                                                    }},}
 	gateway.submitForwardMessage(message)
   
   -- wait for min start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor3MaxStart}, GATEWAY_TIMEOUT)  
   assert_not_nil(receivedMessages[avlConstants.mins.Sensor3MaxStart], 'Sensor did not send Max Start message')
-  
-  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=11 }}},
+  assert_equal(SENSOR_MAX, tonumber(receivedMessages[avlConstants.mins.Sensor3MaxStart].Sensor3))
+
+  message.Fields = {{Name="TimeChanges", Elements={{Index=0, Fields={{Name="time",Value=0 }, {Name="value",Value=SENSOR_INITIAL }}},
                                                   }},}
 	gateway.submitForwardMessage(message)
   
   -- wait for min end message
   receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor3MaxEnd}, GATEWAY_TIMEOUT)
   assert_not_nil(receivedMessages[avlConstants.mins.Sensor3MaxEnd], 'Sensor did not send Max End message')
-  
+  assert_equal(SENSOR_MAX, tonumber(receivedMessages[avlConstants.mins.Sensor3MaxEnd].SensorMax))
+  assert_equal(SENSOR_INITIAL, tonumber(receivedMessages[avlConstants.mins.Sensor3MaxEnd].Sensor3))
+
   -- disable Sensor
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {{avlConstants.pins.Sensor3Source, framework.base64Encode(""), "data"},
