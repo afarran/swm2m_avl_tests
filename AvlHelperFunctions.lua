@@ -506,4 +506,35 @@ function bytes_to_int(str,endian,signed) -- use length of string to determine 8,
     return n
 end
 
+-- This uses the ‘haversine’ formula to calculate 
+-- the great-circle distance between two points – that is, 
+-- the shortest distance over the earth’s surface – 
+-- giving an ‘as-the-crow-flies’ distance between the points (ignoring any hills they fly over, of course!).
+-- Haversine
+-- formula: 	a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+-- c = 2 ⋅ atan2( √a, √(1−a) )
+-- d = R ⋅ c
+-- where 	φ is latitude, λ is longitude, R is earth’s radius (mean radius = 6,371km);
+-- note that angles need to be in radians to pass to trig functions!
+--
+-- This solution has accuracy about 3m per 1km
+-- Solution of better accuracy (1mm per 1km) is here: http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+-- Python implementation: https://github.com/geopy/geopy/blob/master/geopy/distance.py
+-- usage: geoDistance(30.19, 71.51, 31.33, 74.21)
+local function geoDistance(lat1, lon1, lat2, lon2)
+  if lat1 == nil or lon1 == nil or lat2 == nil or lon2 == nil then
+    return nil
+  end
+  local dlat = math.rad(lat2-lat1)
+  local dlon = math.rad(lon2-lon1)
+  local sin_dlat = math.sin(dlat/2)
+  local sin_dlon = math.sin(dlon/2)
+  local a = sin_dlat * sin_dlat + math.cos(math.rad(lat1)) * math.cos(math.rad(lat2)) * sin_dlon * sin_dlon
+  local c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+  -- To get miles, use 3963 as the constant (equator again)
+  local d = 6378 * c
+  return d
+end
+
+
 return function() return avlHelperFunctions end
