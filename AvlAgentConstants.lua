@@ -50,14 +50,19 @@ avlConstants = {
                               digitalInp11Hi = 70, digitalInp11Lo = 71,
                               digitalInp12Hi = 72, digitalInp12Lo = 73,
                               SensorInterval = 74, 
+                              --Sensor 1
                               Sensor1MinStart = 75, Sensor1MaxStart = 76,
                               Sensor1Change = 77, Sensor1MinEnd = 78, Sensor1MaxEnd = 79,
+                              --Sensor 2
                               Sensor2MinStart = 80, Sensor2MaxStart = 81,
                               Sensor2Change = 82, Sensor2MinEnd = 83, Sensor2MaxEnd = 84,
+                              --Sensor 3
                               Sensor3MinStart = 85, Sensor3MaxStart = 86,
                               Sensor3Change = 87, Sensor3MinEnd = 88, Sensor3MaxEnd = 89,
+                              --Sensor 4
                               Sensor4MinStart = 90, Sensor4MaxStart = 91,
                               Sensor4Change = 92, Sensor4MinEnd = 93, Sensor4MaxEnd = 94,
+                              
                               serviceProperties = 201,
                           },
                     -- AVL Agent PINs
@@ -90,6 +95,26 @@ avlConstants = {
                               avlStates = 41,
                               digStatesDefBitmap =  46,
                               funcDigInp = {47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59},
+                              
+                              --Sensors
+                              SensorReportingInterval = 60,
+                              --Sensor 1
+                              Sensor1Source = 61, Sensor1NormalSampleInterval = 62, Sensor1LpmSampleInterval = 63,
+                              Sensor1MaxReportInterval = 64, Sensor1ChangeThld = 65,
+                              Sensor1MinThld = 66, Sensor1MaxThld = 67,
+                              --Sensor 2
+                              Sensor2Source = 68, Sensor2NormalSampleInterval = 69, Sensor2LpmSampleInterval = 70,
+                              Sensor2MaxReportInterval = 71, Sensor2ChangeThld = 72,
+                              Sensor2MinThld = 73, Sensor2MaxThld = 74,
+                              --Sensor 3
+                              Sensor3Source = 75, Sensor3NormalSampleInterval = 76, Sensor3LpmSampleInterval = 77,
+                              Sensor3MaxReportInterval = 78, Sensor3ChangeThld = 79,
+                              Sensor3MinThld = 80, Sensor3MaxThld = 81,
+                              --Sensor 4
+                              Sensor4Source = 82, Sensor4NormalSampleInterval = 83, Sensor4LpmSampleInterval = 84,
+                              Sensor4MaxReportInterval = 85, Sensor4ChangeThld = 86,
+                              Sensor4MinThld = 87, Sensor4MaxThld = 88,
+                              
                               seatbeltDebounceTime = 115,
                               digOutActiveBitmap = 116,
                               funcDigOut1 = 117,
