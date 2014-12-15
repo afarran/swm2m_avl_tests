@@ -37,7 +37,7 @@ end
 -- Test Cases
 -------------------------
 
--- Test for: Periodically sending a message containing all sensor values
+-- Test for: Periodically sending a message 
 function test_PeriodicallySendingMessageContainingAllSensorValues()
   
     local SENSOR_REPORTING_INTERVAL = 1 -- 60 secs
