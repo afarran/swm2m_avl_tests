@@ -5,7 +5,6 @@
 
 module("TestSensorsModule", package.seeall)
 
-local SENSOR_SERVICE_SIN = 128
 local GPS_SIN = 20
    
 -- Setup and Teardown
