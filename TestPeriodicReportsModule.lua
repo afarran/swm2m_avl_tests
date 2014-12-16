@@ -337,7 +337,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   local receivedMessages = gateway.getReturnMessages()
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.movingIntervalSat))
-  assert_equal(numberOfReports, table.getn(matchingMessages) , 2 , "The number of received MovingIntervalSat reports is incorrect")
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages) , 2 , "The number of received MovingIntervalSat reports is incorrect")
 
   assert_equal(gpsSettings.longitude*60000, tonumber(matchingMessages[1].Payload.Longitude), "MovingIntervalSat message has incorrect longitude value")
   assert_equal(gpsSettings.latitude*60000, tonumber(matchingMessages[1].Payload.Latitude), "MovingIntervalSat message has incorrect latitude value")
@@ -537,7 +537,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
-  assert_equal(numberOfReports, table.getn(matchingMessages), 1, "The number of received Position reports is incorrect")
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages), 1, "The number of received Position reports is incorrect")
 
 
 end

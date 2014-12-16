@@ -104,6 +104,7 @@ end
   -- 1. Terminal put in stationary state
 function setup()
 
+  gps.set({fixType = 3}) -- valid fix provided
   avlHelperFunctions.putTerminalIntoStationaryState()
 
 
@@ -113,6 +114,12 @@ end
 function teardown()
 
   gps.set({speed = 0})   -- terminal does not move
+
+  -- enabling the continues mode of position service (SIN 20, PIN 15)
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                   {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL}
+                                               }
+                    )
 
   -- not to get LongDriving reports
   lsf.setProperties(AVL_SIN,{
@@ -2160,7 +2167,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 
   -- *** Setup
   local EXT_VOLTAGE = 17000     -- milivolts
-  local BATT_VOTAGE = 23000    -- milivolts
+  local BATT_VOLTAGE = 23000    -- milivolts
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
@@ -2172,14 +2179,15 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   gps.set(gpsSettings)
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until settings are applied
 
-
   -- setting terminals power properties for verification
-  device.setPower(3, BATT_VOTAGE) -- setting battery voltage
-  device.setPower(9, EXT_VOLTAGE)  -- setting external power voltage
 
-  -- setting external power source
-  device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
-  framework.delay(2)
+  if (hardwareVariant == 3) then
+    device.setPower(3, BATT_VOLTAGE) -- setting battery voltage
+     device.setPower(9, EXT_VOLTAGE)  -- setting external power voltage
+    -- setting external power source
+    device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
+    framework.delay(2)
+  end
 
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
@@ -2215,10 +2223,9 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(99, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].CellRssi), "DiagnosticsInfo message has incorrect CellRssi value")
 
   if (hardwareVariant == 3) then
+    assert_equal(BATT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
     assert_equal(EXT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].ExtVoltage), "DiagnosticsInfo has incorrect ExtVoltage value")
-    assert_equal(BATT_VOTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
   else
-    assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].ExtVoltage), "DiagnosticsInfo has incorrect ExtVoltage value")
     assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
   end
 
