@@ -50,18 +50,53 @@ end
 
 
 -- Test for: Periodically sending a message 
-function test_PeriodicallySendingMessageContainingSensorValues()
+-- Testing if report timeout is set properly
+-- Testing if report has proper value
+-- Testing Sensor1
+function test_PeriodicallySendingMessageContainingSensor1Values()
+  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor1', source = 'Sensor1Source'})
+end
+
+-- Test for: Periodically sending a message 
+-- Testing if report timeout is set properly
+-- Testing if report has proper value
+-- Testing Sensor2
+function test_PeriodicallySendingMessageContainingSensor2Values()
+  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor2', source = 'Sensor2Source'})
+end
+
+-- Test for: Periodically sending a message 
+-- Testing if report timeout is set properly
+-- Testing if report has proper value
+-- Testing Sensor3
+function test_PeriodicallySendingMessageContainingSensor3Values()
+  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor3', source = 'Sensor3Source'})
+end
+
+-- Test for: Periodically sending a message 
+-- Testing if report timeout is set properly
+-- Testing if report has proper value
+-- Testing Sensor4
+function test_PeriodicallySendingMessageContainingSensor4Values()
+  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor4', source = 'Sensor4Source'})
+end
+
+-- Test for: Periodically sending a message 
+-- Testing if report timeout is set properly
+-- Testing if report has proper value
+-- Test logic
+function generic_test_PeriodicallySendingMessageContainingSensorValues(configuration)
   
     local SENSOR_REPORTING_INTERVAL = 1 -- 60 secs 
     local AVL_RESPONSE_MIN = 74
-    local SENSOR_1_EXPECTED_VALUE = 0.02
+    local SENSOR_EXPECTED_VALUE = 0.02
     local DEFAULT_TIMEOUT = 5*60
     local GPS_LAT_PIN = 6;
     
     -- setting AVL properties
     lsf.setProperties(avlConstants.avlAgentSIN,{
                         {avlConstants.pins.SensorReportingInterval, SENSOR_REPORTING_INTERVAL},
-                        {avlConstants.pins.Sensor1Source, framework.base64Encode({GPS_SIN, GPS_LAT_PIN}), "data" }
+                        {avlConstants.pins[configuration.source], framework.base64Encode({GPS_SIN, GPS_LAT_PIN}), "data" }
                                              }
                     )
   
@@ -73,7 +108,7 @@ function test_PeriodicallySendingMessageContainingSensorValues()
     local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, DEFAULT_TIMEOUT+5)
     
     -- set monitored value in position service to expected value
-    gps.set({  speed = 1, heading = 90, latitude = SENSOR_1_EXPECTED_VALUE, longitude = 2})
+    gps.set({  speed = 1, heading = 90, latitude = SENSOR_EXPECTED_VALUE, longitude = 2})
 
     local startTime = os.time()
     
@@ -85,13 +120,18 @@ function test_PeriodicallySendingMessageContainingSensorValues()
     assert_equal(timeDiff , 60, 5, "Sensor Reporting Interval test failed - wrong timeout between messages")
     
     -- checking if raported value is monitored properly
-    assert_equal(SENSOR_1_EXPECTED_VALUE * 60000 , tonumber(receivedMessages[AVL_RESPONSE_MIN].Sensor1), 0, "Sensor Reporting Interval test failed - wrong expected value")
+    assert_equal(SENSOR_EXPECTED_VALUE * 60000 , tonumber(receivedMessages[AVL_RESPONSE_MIN][configuration.name]), 0, "Sensor Reporting Interval test failed - wrong expected value")
 
 end
 
--- TC for seting single value of sensor 1
+--Sending a message when a sensor value has changed by more than set amount
+function test_changeSensorValueByAmount()
+
+end
+
+-- TC for seting single value of gps
 function test_SettingSensorValue()
-    local SENSOR_1_EXPECTED_VALUE = 2
+    local GPS_EXPECTED_VALUE = 2
     local GPS_LAT_PIN = 6;
     
     -- setting AVL properties
@@ -100,13 +140,13 @@ function test_SettingSensorValue()
                                              }
                     )
   
-    gps.set({  speed = 1, heading = 90, latitude = SENSOR_1_EXPECTED_VALUE, longitude = 2})
+    gps.set({  speed = 1, heading = 90, latitude = GPS_EXPECTED_VALUE, longitude = 2})
     framework.delay(3)
     
     --checking if raported value is set properly
     currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(GPS_SIN, {GPS_LAT_PIN,}))
     sensor1Value = tonumber(currentProperties[GPS_LAT_PIN])
-    assert_equal(SENSOR_1_EXPECTED_VALUE * 60000 , sensor1Value , 0, "Sensor Value set - wrong expected value")
+    assert_equal(GPS_EXPECTED_VALUE * 60000 , sensor1Value , 0, "Problem with gps setting (a sensor source)")
 end
 
 
