@@ -54,7 +54,7 @@ function test_PeriodicallySendingMessageContainingSensorValues()
   
     local SENSOR_REPORTING_INTERVAL = 1 -- 60 secs 
     local AVL_RESPONSE_MIN = 74
-    local SENSOR_1_EXPECTED_VALUE = 2
+    local SENSOR_1_EXPECTED_VALUE = 0.02
     local DEFAULT_TIMEOUT = 5*60
     local GPS_LAT_PIN = 6;
     
@@ -85,13 +85,13 @@ function test_PeriodicallySendingMessageContainingSensorValues()
     assert_equal(timeDiff , 60, 5, "Sensor Reporting Interval test failed - wrong timeout between messages")
     
     -- checking if raported value is monitored properly
-    assert_equal(SENSOR_1_EXPECTED_VALUE , tonumber(receivedMessages[AVL_RESPONSE_MIN].Sensor1), 0, "Sensor Reporting Interval test failed - wrong expected value")
+    assert_equal(SENSOR_1_EXPECTED_VALUE * 60000 , tonumber(receivedMessages[AVL_RESPONSE_MIN].Sensor1), 0, "Sensor Reporting Interval test failed - wrong expected value")
 
 end
 
 -- TC for seting single value of sensor 1
 function test_SettingSensorValue()
-    local SENSOR_1_EXPECTED_VALUE = 12
+    local SENSOR_1_EXPECTED_VALUE = 2
     local GPS_LAT_PIN = 6;
     
     -- setting AVL properties
@@ -101,18 +101,12 @@ function test_SettingSensorValue()
                     )
   
     gps.set({  speed = 1, heading = 90, latitude = SENSOR_1_EXPECTED_VALUE, longitude = 2})
-
     framework.delay(3)
     
-    --verify properties
-    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(GPS_SIN, {GPS_LAT_PIN,}))
-    
-    print(framework.dump(currentProperties))
-    
-    --sensor1Value = tonumber(currentProperties[1])
-    
     --checking if raported value is set properly
-    --assert_equal(SENSOR_1_EXPECTED_VALUE , sensor1Value , 0, "Sensor Value set - wrong expected value")
+    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(GPS_SIN, {GPS_LAT_PIN,}))
+    sensor1Value = tonumber(currentProperties[GPS_LAT_PIN])
+    assert_equal(SENSOR_1_EXPECTED_VALUE * 60000 , sensor1Value , 0, "Sensor Value set - wrong expected value")
 end
 
 
