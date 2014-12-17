@@ -210,7 +210,6 @@ end
 
 --Sending a message when a sensor value has changed by more than set amount
 function generic_test_changeSensorValueByAmount(configuration)
-  
   local AVL_RESPONSE_MIN = configuration.min
   local CHANGE_THLD = 1000
   local DEFAULT_TIMEOUT = 5*60
@@ -254,12 +253,52 @@ function generic_test_changeSensorValueByAmount(configuration)
   assert_not_nil(receivedMessages[AVL_RESPONSE_MIN], "Message with report not delivered")
   -- checking value (whitch triggered threshold)
   assert_equal( (INIT_VALUE + 2*(CHANGE_THLD/60000)) * 60000 , tonumber(receivedMessages[AVL_RESPONSE_MIN][configuration.name]), 1, "Problem with triggering change with threshold.")
- 
+end
+
+--Sending a message when a sensor value has changed by less than set amount
+function generic_test_changeSensorValueByLessThanAmount(configuration)
+  local AVL_RESPONSE_MIN = configuration.min
+  local CHANGE_THLD = 1000
+  local DEFAULT_TIMEOUT = 5*60
+  local GPS_LAT_PIN = 6;
+  local INIT_VALUE = 0.01
+  local SENSOR_REPORTING_INTERVAL = configuration.reporting_interval
+  local MSG_TIMEOUT = 65
+  local SAMPLE_INTERVAL = 1
+  local AVL_REPORT_MIN = 74
+  
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                        {avlConstants.pins[configuration.change_thld_name], CHANGE_THLD},
+                        {avlConstants.pins[configuration.sample_interval], SAMPLE_INTERVAL},
+                        {avlConstants.pins.SensorReportingInterval, SENSOR_REPORTING_INTERVAL},
+                        {avlConstants.pins[configuration.source], framework.base64Encode({GPS_SIN, GPS_LAT_PIN}), "data" }
+                                             }
+                    )
+  
+   -- set init value
+  gps.set({  speed = 1, heading = 90, latitude = 0, longitude = 1})
+  framework.delay(5)
+  
+  -- set first value
+  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
+  
+  -- message can be received - we establish previous report value for further calculations
+  local expectedMins = {AVL_RESPONSE_MIN,}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
+  
+  -- set second value
+  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE + 0.5*(CHANGE_THLD/60000) , longitude = 1})
+   
+  -- message should not be received
+  expectedMins = {AVL_RESPONSE_MIN,}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
+  assert_nil(receivedMessages[AVL_RESPONSE_MIN], "Message should not be delivered (amount less than threshold)")
   
 end
 
 -- TC for seting single value of gps
-function xtest_SettingGpsValue()
+function test_SettingGpsValue()
     local GPS_EXPECTED_VALUE = 2
     local GPS_LAT_PIN = 6;
     
@@ -333,6 +372,65 @@ function off_test_ChangeThresholdWhenReportIntervalZeroForSensor4()
   generic_test_changeSensorValueByAmount(configuration)  
 end
 
+
+-- ***************
+
+-- Sending a message when a sensor 1 value has changed by less than set amount
+function test_changeSensor1ValueByLessThanAmount()
+  configuration = {}
+  configuration.change_thld_name = 'Sensor1ChangeThld'
+  configuration.min = 77
+  configuration.source = 'Sensor1Source'
+  configuration.sample_interval = 'Sensor1NormalSampleInterval'
+  configuration.name = 'Sensor1'
+  configuration.reporting_interval = 1 
+  
+  generic_test_changeSensorValueByLessThanAmount(configuration)  
+end
+
+-- Sending a message when a sensor 2 value has changed by more than set amount 
+function test_changeSensor2ValueByLessThanAmount()
+  configuration = {}
+  configuration.change_thld_name = 'Sensor2ChangeThld'
+  configuration.min = 82
+  configuration.source = 'Sensor2Source'
+  configuration.sample_interval = 'Sensor2NormalSampleInterval'
+  configuration.name = 'Sensor2'
+  configuration.reporting_interval = 1 
+  
+  generic_test_changeSensorValueByLessThanAmount(configuration)  
+end
+
+-- Sending a message when a sensor 3 value has changed by more than set amount
+function test_changeSensor3ValueByLessThanAmount()
+  configuration = {}
+  configuration.change_thld_name = 'Sensor3ChangeThld'
+  configuration.min = 77
+  configuration.source = 'Sensor3Source'
+  configuration.sample_interval = 'Sensor3NormalSampleInterval'
+  configuration.name = 'Sensor3'
+  configuration.reporting_interval = 1 
+  
+  generic_test_changeSensorValueByLessThanAmount(configuration)  
+end
+
+
+
+-- Sending a message when a sensor 4 value has changed by more than set amount 
+function test_changeSensor4ValueByLessThanAmount()
+  configuration = {}
+  configuration.change_thld_name = 'Sensor4ChangeThld'
+  configuration.min = 92
+  configuration.source = 'Sensor4Source'
+  configuration.sample_interval = 'Sensor4NormalSampleInterval'
+  configuration.name = 'Sensor4'
+  configuration.reporting_interval = 1
+  
+  generic_test_changeSensorValueByLessThanAmount(configuration)  
+end
+
+
+-- ***************
 
 -------------------------
 
