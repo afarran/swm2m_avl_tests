@@ -2364,6 +2364,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounce
 end
 
 
+
 --- TC checks if for terminal in GPSJammed state GpsJammingEnd (MIN 26) message is sent when GPS signal jamming is not detected for time longer than  GpsJamDebounceTime (PIN 28) .
   -- Initial Conditions:
   --
@@ -2441,8 +2442,6 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not left GPSJammed state after sending GpsJammingEnd message")
 
 end
-
-
 
 
 
