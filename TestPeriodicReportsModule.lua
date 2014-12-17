@@ -1471,7 +1471,56 @@ function test_AirCommBlockedEventNotGeneratedAfterBlockageLessThanAirBlockageTim
 end
 
 
-function test_GpsPositionIsSentFromBlockageStartMoment()
+function test_DataSentWithTheEventIsFromBlockageStartMoment()
+  
+  print("Testing if data sent with the event is from blockage start moment.")
+  
+  local AIR_BLOCKAGE_TIME = 1 -- minutes
+  local AIR_BLOCKAGE_TIMEOUT = AIR_BLOCKAGE_TIME*60 + 10 -- seconds
+  local WAIT_FOR_EVENT_TIMEOUT = 2 * AIR_BLOCKAGE_TIMEOUT -- it's max time of waiting for message
+  local STATIONARY_SPEED_THLD = 1
+  local MOVING_DEBOUNCE_TIME = 1
+  local AIR_COMM_BLOCKED_MIN  = 33
+  local NOT_EXPECTED_VALUE = 15
+  local EXPECTED_VALUE = 10
+  
+  -- set property AirBlockageTime
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                        {avlConstants.pins.AirBlockageTime, AIR_BLOCKAGE_TIME},
+                                             }
+                    )
+                    
+  -- triggering message to start blockage timing
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                            }
+                   )
+  gps.set({speed = 0})
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  gps.set({speed = EXPECTED_VALUE})
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  
+  
+  print("SET BLOCKAGE for " .. AIR_BLOCKAGE_TIMEOUT .. "secs (for now manually in simulator) " )
+  -- TODO: set the blockage via API
+  framework.delay(AIR_BLOCKAGE_TIMEOUT/2)
+  -- set value during blockage time
+  gps.set({speed = EXPECTED_VALUE})
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(AIR_BLOCKAGE_TIMEOUT/2)
+  print("UNSET BLOCKAGE NOW!")
+ 
+  gateway.setHighWaterMark()
+  
+  -- wait for event
+  expectedMins = {AIR_COMM_BLOCKED_MIN,}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
+  
+  -- check if event occurs
+  assert_not_nil(receivedMessages[AIR_COMM_BLOCKED_MIN], "AirCommBlocked message not received.")
+  -- check if value is correct
+  assert_equal(EXPECTED_VALUE, tonumber(receivedMessages[AIR_COMM_BLOCKED_MIN].Speed) , 0, "Uncorrect value in AirCommBlocked message ")
   
 end
 
