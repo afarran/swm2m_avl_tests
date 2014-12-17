@@ -2294,7 +2294,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "GpsJammingStart message has incorrect EventTime value")
   assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "GpsJammingStart message has incorrect speed value")
   assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "GpsJammingStart message has incorrect heading value")
-  assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].JammingRaw), "GpsJammingStart message has incorrect heading value")
+  assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].JammingRaw), "GpsJammingStart message has incorrect JammingRaw value")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not entered GPSJammed state after sending GpsJammingStart message")
@@ -2436,7 +2436,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingEnd].EventTime), 5, "GpsJammingEnd message has incorrect EventTime value")
   assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingEnd].Speed), "GpsJammingEnd message has incorrect speed value")
   assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingEnd].Heading), "GpsJammingEnd message has incorrect heading value")
-  assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingEnd].JammingRaw), "GpsJammingEnd message has incorrect heading value")
+  assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingEnd].JammingRaw), "GpsJammingEnd message has incorrect JammingRaw value")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not left GPSJammed state after sending GpsJammingEnd message")
@@ -2510,9 +2510,126 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_nil(receivedMessages[avlConstants.mins.gpsJammingEnd], "GpsJammingEnd message not expected")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has unexpectedly left GPSJammed state")
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal is unexpectedly left GPSJammed state")
 
 end
+
+
+
+
+--- TC checks if AntennaCutStart (MIN 22) message is sent when  occurs when the  terminal detects that the satellite antenna has been cut or disconnected .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Simulate sattelite antenna cut
+  -- 2. Wait for AntennaCutStart message
+  -- 3. Check the content of the report
+  --
+  -- Results:
+  --
+  -- 1. Sattelite antena cut simulated
+  -- 2. AntennaCutStart message send immediately (no debounce time)
+  -- 3. Report contains time and GPS information from the moment when the antenna was cut
+function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartMessageSent()
+
+  -- *** Setup
+  -- gps settings table
+  local gpsSettings={
+                      speed = 0,                      -- terminal stationary
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      antennaCutDetect = "false"
+                     }
+
+
+  gps.set(gpsSettings)
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until terminal reads current GPS position
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+  local timeOfEvent = os.time()
+  gps.set({antennaCutDetect = "true"}) -- antenna cut from this point
+
+  local expectedMins = {avlConstants.mins.antennaCutStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  gps.set({antennaCutDetect = "false"}) -- antenna connected back from this point
+
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "AntennaCutStart message not received")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "AntennaCutStart message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "AntennaCutStart message has incorrect latitude value")
+  assert_equal("AntennaCutStart", receivedMessages[avlConstants.mins.gpsJammingStart].Name, "AntennaCutStart message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "AntennaCutStart message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "AntennaCutStart message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "AntennaCutStart message has incorrect heading value")
+
+
+end
+
+
+
+--- TC checks if AntennaCutEnd (MIN 37) message is sent when terminal detects that the satellite antenna has been connected back.
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Simulate satellite antenna cut
+  -- 2. Wait for AntennaCutStart message
+  -- 3. Simulate satellite antenna connected back
+  -- 4. Check the content of the report
+  --
+  -- Results:
+  --
+  -- 1. Sattelite antena cut simulated
+  -- 2. AntennaCutStart message sent
+  -- 3. AntennaCutEnd sent immediately (no debounce time)
+  -- 4. Report contains time and GPS information from the moment when the antenna was connected back
+function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaConnectedBack_AntennaCutEndMessageSent()
+
+  -- *** Setup
+  -- gps settings table
+  local gpsSettings={
+                      speed = 0,                      -- terminal stationary
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      antennaCutDetect = "true"
+                     }
+
+
+  gps.set(gpsSettings)
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until terminal reads current GPS position
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+  local timeOfEvent = os.time()
+  gps.set({antennaCutDetect = "false" }) -- antenna connected back
+
+  local expectedMins = {avlConstants.mins.antennaCutEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.antennaCutEnd], "AntennaCutEnd message not received")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.antennaCutEnd].Longitude), "AntennaCutEnd message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.antennaCutEnd].Latitude), "AntennaCutEnd message has incorrect latitude value")
+  assert_equal("AntennaCutEnd", receivedMessages[avlConstants.mins.antennaCutEnd].Name, "AntennaCutEnd message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.antennaCutEnd].EventTime), 5, "AntennaCutEnd message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.antennaCutEnd].Speed), "AntennaCutEnd message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.antennaCutEnd].Heading), "AntennaCutEnd message has incorrect heading value")
+
+
+end
+
+
 
 
 
