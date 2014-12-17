@@ -2355,10 +2355,10 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounce
 
   gps.set({jammingDetect = "false"}) -- back to jamming off
 
-  assert_false(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
+  assert_false(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not expected")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not entered GPSJammed state after sending GpsJammingStart message")
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has unexcpectedly entered GPSJammed state")
 
 
 end
@@ -2442,6 +2442,78 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not left GPSJammed state after sending GpsJammingEnd message")
 
 end
+
+
+
+
+--- TC checks if for terminal in GPSJammed state GpsJammingEnd (MIN 26) message is not sent when GPS signal jamming is not detected for time shorter than  GpsJamDebounceTime (PIN 28) .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set gpsJamDebounceTime (PIN 28)
+  -- 2. Simulate gps jamming for time longer than gpsJamDebounceTime with known jamming level
+  -- 3. Wait longer than gpsJamDebounceTime
+  -- 4. Simulate gps signal not jammed for time shorter than gpsJamDebounceTime period
+  -- 5. Wait for shorter than gpsJamDebounceTime period
+  -- 6. Read AvlStates property (PIN 51)
+  --
+  -- Results:
+  --
+  -- 1. gpsJamDebounceTime set
+  -- 2. Gps jamming simulated for time longer than gpsJamDebounceTime with known jamming level
+  -- 3. GpsJammingStart message sent by terminal
+  -- 4. Gps signal not jammed for time shorter than gpsJamDebounceTime
+  -- 5. GpsJammingEnd (MIN 26) message not sent by terminal
+  -- 7. Terminal does not leave GPSJammed  state
+function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedForTimeShorterThanGpsJamDebounceTimePeriod_GpsJammingEndMessageNotSent()
+
+  -- *** Setup
+  local GPS_JAMMING_DEBOUNCE_TIME = 20    -- seconds
+  local JAMMING_LEVEL = 10                -- integer
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.gpsJamDebounceTime, GPS_JAMMING_DEBOUNCE_TIME},
+                            }
+                    )
+
+  -- gps settings table
+  local gpsSettings={
+                      speed = 0,                      -- terminal stationary
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      jammingDetect = "true",
+                      jammingLevel = JAMMING_LEVEL,
+                     }
+
+
+  gateway.setHighWaterMark() -- to get the newest messages
+  gps.set(gpsSettings)
+  framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until terminal goes to GPSJammed = true state
+  local expectedMins = {avlConstants.mins.gpsJammingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
+
+  -- *** Execute
+  gps.set({jammingDetect = "false"}) -- back to jamming off
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until shorter than GPS_JAMMING_DEBOUNCE_TIME
+
+  expectedMins = {avlConstants.mins.gpsJammingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, 10)
+
+  assert_nil(receivedMessages[avlConstants.mins.gpsJammingEnd], "GpsJammingEnd message not expected")
+
+  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has unexpectedly left GPSJammed state")
+
+end
+
 
 
 
