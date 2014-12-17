@@ -7,7 +7,9 @@ avlConstants = {
                               reset = 1,
                               setDigitalOutputs = 2,  -- to mobile
                               powerMain = 2,
+                              SetEventEnable = 3,     -- to mobile
                               powerBackup = 3,
+                              GetEventEnable = 4,     -- to mobile
                               ignitionON = 4,
                               ignitionOFF = 5,
                               movingStart = 6,
@@ -66,7 +68,8 @@ avlConstants = {
                               --Sensor 4
                               Sensor4MinStart = 90, Sensor4MaxStart = 91,
                               Sensor4Change = 92, Sensor4MinEnd = 93, Sensor4MaxEnd = 94,
-
+                              
+                              EventEnableStatus = 200,
                               serviceProperties = 201,
                               
                                -- Driver Features
@@ -145,27 +148,27 @@ avlConstants = {
                               
                              
 
-                          },
+                    },
 
-                          avlAgentSIN = 126,
+                    avlAgentSIN = 126,
 
-                          -- table of states of agent
-                          avlStateNames = {"InLPM", "onMainPower", "Speeding", "Moving", "Towing", "GPSJammed", "CellJammed",
-                                           "Tamper", "AirCommunicationBlocked", "Reserved", "SeatbeltViolation", "IgnitionON",
-                                           "EngineIdling", "SM1Active", "SM2Active", "SM3Active", "SM4Active", "Geodwelling"},
+                    -- table of states of agent
+                    avlStateNames = {"InLPM", "onMainPower", "Speeding", "Moving", "Towing", "GPSJammed", "CellJammed",
+                                     "Tamper", "AirCommunicationBlocked", "Reserved", "SeatbeltViolation", "IgnitionON",
+                                     "EngineIdling", "SM1Active", "SM2Active", "SM3Active", "SM4Active", "Geodwelling"},
 
-                          digitalStatesNames = {"IgnitionON", "SeatbeltOFF", "SM1Active", "SM2Active", "SM3Active", "SM4Active"},
+                    digitalStatesNames = {"IgnitionON", "SeatbeltOFF", "SM1Active", "SM2Active", "SM3Active", "SM4Active"},
 
-                          funcDigInp = {Disabled = 0, GeneralPurpose = 1, IgnitionOn = 2, SeatbeltOff = 3, IgnitionAndSM0 = 4,
-                                         SM1 = 5, SM2 = 6, SM3 = 7, SM4 = 8},
+                    funcDigInp = {Disabled = 0, GeneralPurpose = 1, IgnitionOn = 2, SeatbeltOff = 3, IgnitionAndSM0 = 4,
+                                   SM1 = 5, SM2 = 6, SM3 = 7, SM4 = 8},
 
-                          digStatesDefBitmap = {IgnitionOn = 0  , SeatbeltOff = 1, SM1Active = 2, SM2Active = 3, SM3Active = 4 ,  SM4Active = 5},
+                    digStatesDefBitmap = {IgnitionOn = 0  , SeatbeltOff = 1, SM1Active = 2, SM2Active = 3, SM3Active = 4 ,  SM4Active = 5},
 
-                          funcDigOut =  {LowPower = 0, MainPower = 1, Speeding = 2, Moving = 3, Towing = 4, GpsJammed = 5, CellJammed = 6,
-                                          Tamper = 7, AirBlocked = 8, LoggedIn = 9, SeatbeltViol = 10, IgnitionOn = 11, Idling = 12, SM1ON = 13,
-                                          SM2ON = 14, SM3ON = 15, SM4ON = 16, GeoDwelling = 17, AntCut = 18},
+                    funcDigOut =  {LowPower = 0, MainPower = 1, Speeding = 2, Moving = 3, Towing = 4, GpsJammed = 5, CellJammed = 6,
+                                    Tamper = 7, AirBlocked = 8, LoggedIn = 9, SeatbeltViol = 10, IgnitionOn = 11, Idling = 12, SM1ON = 13,
+                                    SM2ON = 14, SM3ON = 15, SM4ON = 16, GeoDwelling = 17, AntCut = 18},
 
-                          digOutActiveBitmap = {FuncDigOut1 = 0, FuncDigOut2 = 1, FuncDigOut3 = 2, FuncDigOut4 = 3, FuncDigOut5 = 4},
+                    digOutActiveBitmap = {FuncDigOut1 = 0, FuncDigOut2 = 1, FuncDigOut3 = 2, FuncDigOut4 = 3, FuncDigOut5 = 4},
           }
 
 return avlConstants

@@ -29,6 +29,7 @@ local function setup()
   lunatest.suite("TestGeofencesModule")
   lunatest.suite("TestPeriodicReportsModule")
   lunatest.suite("TestSensorsModule")
+  lunatest.suite("TestAdminConfigModule")
 
 end
 
