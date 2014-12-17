@@ -2285,6 +2285,9 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
 
   local expectedMins = {avlConstants.mins.gpsJammingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  gps.set({jammingDetect = "false"}) -- back to jamming off
+
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
   assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "GpsJammingStart message has incorrect latitude value")
@@ -2298,6 +2301,70 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not entered GPSJammed state after sending GpsJammingStart message")
 
 end
+
+
+
+--- TC checks if GpsJammingStart (MIN 25) message is not sent when GPS signal jamming is detected for time below GpsJamDebounceTime (PIN 28) period .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set gpsJamDebounceTime (PIN 28) to high value
+  -- 2. Simulate gps jamming for time shorter than gpsJamDebounceTime
+  -- 3. Wait shorter than gpsJamDebounceTime
+  -- 4. Read AvlStates property (PIN 51)
+  --
+  -- Results:
+  --
+  -- 1. gpsJamDebounceTime set
+  -- 2. Gps jamming simulated for time shorter than gpsJamDebounceTime
+  -- 3. GpsJammingStart message not sent by terminal
+  -- 4. Terminal does not enter GPSJammed state
+function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounceTimePeriod_GpsJammingStartMessageNotSent()
+
+  -- *** Setup
+  local GPS_JAMMING_DEBOUNCE_TIME = 100  -- seconds
+  local JAMMING_LEVEL = 10               -- integer
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.gpsJamDebounceTime, GPS_JAMMING_DEBOUNCE_TIME},
+                            }
+                    )
+
+  -- gps settings table
+  local gpsSettings={
+                      speed = 0,                      -- terminal stationary
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      jammingDetect = "true",
+                      jammingLevel = JAMMING_LEVEL,
+                     }
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+  gps.set(gpsSettings)
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)    --- wait shorter than GpsJamDebounceTime
+
+  local expectedMins = {avlConstants.mins.gpsJammingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
+
+  gps.set({jammingDetect = "false"}) -- back to jamming off
+
+  assert_false(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
+
+  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
+  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not entered GPSJammed state after sending GpsJammingStart message")
+
+
+end
+
+
 
 
 
