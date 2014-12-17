@@ -256,10 +256,9 @@ function generic_test_changeSensorValueByAmount(configuration)
                                              }
                     )
   
-   -- set init value
-  gps.set({  speed = 1, heading = 90, latitude = 0, longitude = 1})
-  
-  framework.delay(5)
+  -- set init value
+  -- gps.set({  speed = 1, heading = 90, latitude = 0, longitude = 1})
+  -- framework.delay(5)
   
   -- set first value
   gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
@@ -267,7 +266,7 @@ function generic_test_changeSensorValueByAmount(configuration)
   -- waiting for first change report msg
   local expectedMins = {AVL_RESPONSE_MIN,}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
-  --print(framework.dump(receivedMessages))
+  -- print(framework.dump(receivedMessages))
   
   -- set second value
   gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE + 2*(CHANGE_THLD/60000) , longitude = 1})
@@ -275,7 +274,7 @@ function generic_test_changeSensorValueByAmount(configuration)
   -- waiting for change message
   expectedMins = {AVL_RESPONSE_MIN,}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
-  --print(framework.dump(receivedMessages))
+  -- print(framework.dump(receivedMessages))
   
   assert_not_nil(receivedMessages[AVL_RESPONSE_MIN], "Message with report not delivered")
   -- checking value (whitch triggered threshold)
@@ -303,16 +302,13 @@ function generic_test_changeSensorValueByLessThanAmount(configuration)
                                              }
                     )
   
-   -- set init value
-  gps.set({  speed = 1, heading = 90, latitude = 0, longitude = 1})
-  framework.delay(5)
-  
   -- set first value
   gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
   
   -- message can be received - we establish previous report value for further calculations
   local expectedMins = {AVL_RESPONSE_MIN,}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
+  -- print(framework.dump(receivedMessages))
   
   -- set second value
   gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE + 0.5*(CHANGE_THLD/60000) , longitude = 1})
@@ -320,6 +316,7 @@ function generic_test_changeSensorValueByLessThanAmount(configuration)
   -- message should not be received
   expectedMins = {AVL_RESPONSE_MIN,}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
+  -- print(framework.dump(receivedMessages))
   assert_nil(receivedMessages[AVL_RESPONSE_MIN], "Message should not be delivered (amount less than threshold)")
   
 end
@@ -399,9 +396,6 @@ function off_test_ChangeThresholdWhenReportIntervalZeroForSensor4()
   generic_test_changeSensorValueByAmount(configuration)  
 end
 
-
--- ***************
-
 -- Sending a message when a sensor 1 value has changed by less than set amount
 function test_changeSensor1ValueByLessThanAmount()
   configuration = {}
@@ -441,8 +435,6 @@ function test_changeSensor3ValueByLessThanAmount()
   generic_test_changeSensorValueByLessThanAmount(configuration)  
 end
 
-
-
 -- Sending a message when a sensor 4 value has changed by more than set amount 
 function test_changeSensor4ValueByLessThanAmount()
   configuration = {}
@@ -456,8 +448,6 @@ function test_changeSensor4ValueByLessThanAmount()
   generic_test_changeSensorValueByLessThanAmount(configuration)  
 end
 
-
--- ***************
 
 -------------------------
 
