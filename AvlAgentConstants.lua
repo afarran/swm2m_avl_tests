@@ -17,28 +17,30 @@ avlConstants = {
                               speedingStart = 8,
                               speedingEnd = 9,
                               setGeoDwellTimes = 9,   -- to mobile
-                              turn = 14,
-                              idlingStart = 21,
-                              seatbeltViolationStart = 19,
-                              seatbeltViolationEnd = 20,
-                              idlingEnd = 41,
-                              stationaryIntervalSat = 49,
-                              movingIntervalSat = 22,
-                              position = 16,
                               zoneEntry = 10,
                               zoneExit = 11,
-                              gpsJammingStart = 25,
-                              gpsJammingEnd = 26,
-                              geoDwellStart = 30,
-                              geoDwellEnd = 40,
-                              longDriving = 29,
-                              distanceSat = 23,
                               setServiceMeter = 11,    -- to mobile
                               getServiceMeter = 12,    -- to mobile
                               getDiagnostics = 13,     -- to mobile
+                              turn = 14,
                               loggedPosition = 15,
+                              position = 16,
+                              seatbeltViolationStart = 19,
+                              seatbeltViolationEnd = 20,
+                              idlingStart = 21,
+                              movingIntervalSat = 22,
+                              distanceSat = 23,
+                              antennaCutStart = 24,
+                              gpsJammingStart = 25,
+                              gpsJammingEnd = 26,
+                              longDriving = 29,
+                              geoDwellStart = 30,
                               serviceMeter = 31,
                               diagnosticsInfo = 32,
+                              antennaCutEnd = 37,
+                              geoDwellEnd = 40,
+                              idlingEnd = 41,
+                              stationaryIntervalSat = 49,
                               digitalInp1Hi = 50, digitalInp1Lo = 51,
                               digitalInp2Hi = 52, digitalInp2Lo = 53,
                               digitalInp3Hi = 54, digitalInp3Lo = 55,
@@ -132,7 +134,7 @@ avlConstants = {
                               SM2Time = 95, SM2Distance = 96,
                               SM3Time = 97, SM3Distance = 98,
                               SM4Time = 99, SM4Distance = 100,
-                              
+
                               -- Air Blockage
                               AirBlockageTime = 22
 
