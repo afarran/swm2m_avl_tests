@@ -32,6 +32,7 @@ function suite_teardown()
                                                 {CONTINUOUS_PIN, 0 },
                                                }
                     )
+                    
 end
 
 --- setup function 
@@ -72,7 +73,33 @@ function teardown()
                      
                      {avlConstants.pins.SensorReportingInterval, 0}
                     })
+  
+  -- if in LMP mode then disable it
+  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+  if avlHelperFunctions.stateDetector(avlStatesProperty).InLPM then
+    
+    local lpmEntryDelay = 0    -- in minutes
+    local lpmTrigger = 1       -- 1 is for IgnitionOff
 
+    -- setting the EIO properties
+    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 3},     -- port as digital input
+                                            {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                           })
+    -- setting AVL properties
+    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlConstants.pins.lpmTrigger, lpmTrigger},                                   -- setting lpmTrigger
+                                               })
+    -- activating special input function
+    avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+    device.setIO(1, 1) -- that should trigger IgnitionOn
+    framework.delay(lpmEntryDelay*60 + 2)
+    -- checking if terminal correctly goes to IgnitionOn state
+    -- enable gps continuous
+    local CONTINUOUS_PIN = 15
+    lsf.setProperties(lsfConstants.sins.position, {{CONTINUOUS_PIN, 1}, })
+  end
 end
 
 ------------------------- 
@@ -783,4 +810,119 @@ end
 
 function test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval()
   return generic_test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval(math.random(1,4))
+end
+
+function generic_test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval(sensorNo)
+  print("Testing test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval using sensor " .. sensorNo)
+  local SENSOR_NO = sensorNo
+  
+  local GPSCONV = 60000
+  local INITIAL = 0.05
+  local MIN = 0.03
+  local MAX = 0.07
+  local INITIAL_SAMPLE_INTERVAL = 1
+
+  local GPSFIX = {INITIAL = {speed = 0, heading = 0, latitude = INITIAL, longitude = 0},
+                  ABOVE_MAX = {speed = 0, heading = 0, latitude = MAX + 0.01, longitude = 0},
+                  MAX = {speed = 0, heading = 0, latitude = MAX, longitude = 0},
+                  BELOW_MAX = {speed = 0, heading = 0, latitude = MAX - 0.01, longitude = 0},
+                  ABOVE_MIN = {speed = 0, heading = 0, latitude = MIN + 0.01, longitude = 0},
+                  MIN = {speed = 0, heading = 0, latitude = MIN, longitude = 0},
+                  BELOW_MIN = {speed = 0, heading = 0, latitude = MIN - 0.01, longitude = 0},
+                 }
+  
+  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = 20, PIN = 6, MAX = MAX * GPSCONV, MIN = MIN * GPSCONV, 
+                  INITIAL = INITIAL * GPSCONV, CHANGE = 0, SAMPLE = 1, LPMSAMPLE = 10}
+  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
+                  MaxEnd = SENSOR.NAME .. "MaxEnd",
+                  MinStart = SENSOR.NAME .. "MinStart",
+                  MinEnd = SENSOR.NAME .. "MinEnd",
+                  Source = SENSOR.NAME .. "Source",
+                  ChangeThld = SENSOR.NAME .. "ChangeThld",
+                  MinThld = SENSOR.NAME .. "MinThld",
+                  MaxThld = SENSOR.NAME .. "MaxThld",
+                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
+                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",
+                  LpmSampleInterval = SENSOR.NAME .. "LpmSampleInterval",}
+  
+  gps.set(GPSFIX.INITIAL) 
+  framework.delay(GPS_READ_INTERVAL)
+  
+  -- configure sensor
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
+                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
+                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN},
+                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX},
+                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
+                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},
+                      {avlConstants.pins[SENSOR.props.LpmSampleInterval], SENSOR.LPMSAMPLE},
+                    })
+                  
+  framework.delay(SENSOR.SAMPLE)
+  gps.set(GPSFIX.ABOVE_MAX)
+  -- wait for max start message
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart]}, GATEWAY_TIMEOUT)  
+  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  assert_not_nil(msg, 'Sensor did not send Max Start message')
+  assert_equal(GPSFIX.ABOVE_MAX.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
+  
+  --* Go into LPM mode
+
+    local lpmEntryDelay = 0    -- in minutes
+    local lpmTrigger = 1       -- 1 is for IgnitionOff
+
+    -- setting the EIO properties
+    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 3},     -- port as digital input
+                                            {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                           })
+    -- setting AVL properties
+    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionOn}, -- line number 1 set for Ignition function
+                                                {avlConstants.pins.lpmEntryDelay, lpmEntryDelay},                    -- time of lpmEntryDelay, in minutes
+                                                {avlConstants.pins.lpmTrigger, lpmTrigger},                                   -- setting lpmTrigger
+                                               })
+    -- activating special input function
+    avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+
+    device.setIO(1, 1) -- that should trigger IgnitionOn
+    framework.delay(2)
+    -- checking if terminal correctly goes to IgnitionOn state
+    avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+    assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).IgnitionON, "terminal not in the IgnitionOn state")
+
+    device.setIO(1, 0)                 -- port transition to low state; that should trigger IgnitionOff
+    receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.ignitionOFF,}, GATEWAY_TIMEOUT)
+    assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], 'Terminal not in IgnitionOff / LPM state')
+    
+    framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
+
+    avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
+    assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state")
+  --* End of Setting LPM 
+  
+  -- Check if Max End message is send after time determined by Sample Interval
+  local CONTINUOUS_PIN = 15
+  --re enable continuous gps mode
+  lsf.setProperties(lsfConstants.sins.position,{{CONTINUOUS_PIN, 1 },})
+  gps.set(GPSFIX.BELOW_MAX)
+  
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxEnd],}, 1.5 * SENSOR.LPMSAMPLE)
+  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxEnd]]
+  assert_not_nil(msg, 'Message Max end not received')
+  local FirstSampleTimestamp = msg.EventTime
+  
+  
+  gps.set(GPSFIX.ABOVE_MAX) 
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart],}, 1.5 * SENSOR.LPMSAMPLE)
+  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  assert_not_nil(receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]], 'Sensor did not send Max Start message')
+  local SecondSampleTimestamp = msg.EventTime
+  
+  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, SENSOR.LPMSAMPLE, 'Message Timestamps do not match LPM sampling interval')   
+    
+  
+end
+
+function test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval()
+  return generic_test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval(math.random(1,4))
 end
