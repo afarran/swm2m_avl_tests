@@ -31,31 +31,37 @@ end
 -- Test Cases
 -------------------------
 
+-- Test of aplying new driver id.
+-- Message SetDriverIds is sent.
+-- Message GetDriverIds is sent.
+-- Message DefinedDriversIds is received and driver id is checked.
 function test_SetDriverIds()
-  
-  local SET_DRIVER_IDS = avlConstants.SetDriverIds
-  local GET_DRIVER_IDS = avlConstants.GetDriverIds
-  local DEFINED_DRIVER_IDS_MIN = avlConstants.DefindedDriverIds
+  local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
+  local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
+  local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
   local AVL_SIN = avlConstants.avlAgentSIN 
-  
+  local DRIVER_ID = "AQEBAQEBAQ==" 
+  local DRIVER_ID_INDEX = 1
   
   -- set driver id via message
-  local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS}
-	message.Fields = {{Name="DeleteAll",Value=false},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=1},{Name="DriverId",Value="AQ=="}}}}},}
+  local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
+  message.Fields = {{Name="DeleteAll",Value=false},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=DRIVER_ID_INDEX},{Name="DriverId",Value=DRIVER_ID}}}}},}
 	gateway.submitForwardMessage(message)
-  
   framework.delay(5)
-  
-  local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS}
-
+  local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
   
    -- wait for event
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
+
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN], "DefinedDriver message is not received." )
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX], "No proper index in messsage" )
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId, "No driver id in message" )
   
-  print(framework.dump(receivedMessages[DEFINED_DRIVER_IDS_MIN]))
-  
+  local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId
+  assert_equal(DRIVER_ID, driver_id, 0 , "Wrong DriverId : " .. driver_id .. " it should be: "..DRIVER_ID )
 end
 
 function test_GetDriverIds()

@@ -68,6 +68,11 @@ avlConstants = {
                               Sensor4Change = 92, Sensor4MinEnd = 93, Sensor4MaxEnd = 94,
 
                               serviceProperties = 201,
+                              
+                               -- Driver Features
+                              SetDriverIds = 14,
+                              GetDriverIds = 15,
+                              DefindedDriverIds = 202,
                           },
                     -- AVL Agent PINs
                     pins = {
@@ -138,10 +143,7 @@ avlConstants = {
                               -- Air Blockage
                               AirBlockageTime = 22,
                               
-                              -- Driver Features
-                              SetDriverIds = 14,
-                              GetDriverIds = 15,
-                              DefindedDriverIds = 202,
+                             
 
                           },
 
