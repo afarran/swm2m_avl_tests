@@ -1376,7 +1376,7 @@ end
 ---------------------
 
 -- test if an Air Communication Blocked (AirCommBlocked MIN 33) event occurs after blockage longer than AirBlockageTime
-function test_AirCommBlockedEventGenerated()
+function test_AirCommBlockedEventGeneratedAfterBlockageLongerThanAirBlockageTime()
   
   print("testing if AirCommBlocked  event occurs after blockage longer than AirBlockageTime")
   
@@ -1425,7 +1425,7 @@ function test_AirCommBlockedEventGenerated()
 end
 
 -- test if an Air Communication Blocked (AirCommBlocked MIN 33) event doesn't occur after blockage less than AirBlockageTime
-function test_AirCommBlockedEventNotGenerated()
+function test_AirCommBlockedEventNotGeneratedAfterBlockageLessThanAirBlockageTime()
   
   print("testing if AirCommBlocked event doesn't occur after blockage less than AirBlockageTime")
   
