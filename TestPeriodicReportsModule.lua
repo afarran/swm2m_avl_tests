@@ -1373,4 +1373,46 @@ end
 
 end
 
+---------------------
+
+-- test if an Air Communication Blocked (AirCommBlocked MIN 33) event occurs after blockage longer than AirBlockageTime
+function test_AirCommBlockedEventGenerated()
+  
+  local AIR_BLOCKAGE_TIME = 30
+  local AIR_BLOCKAGE_TIMEOUT = 40
+  local WAIT_FOR_EVENT_TIMEOUT = 60
+  
+  -- set property AirBlockageTime
+  
+  -- set the blockage (for now manually in simulator) AIR_BLOCKAGE_TIMEOUT  
+  -- TODO: set the blockage via API
+  
+  -- wait for event
+  
+  -- check if event occurs
+  -- asert
+  
+  
+end
+
+-- test if an Air Communication Blocked (AirCommBlocked MIN 33) event doesn't occur after blockage less than AirBlockageTime
+function test_AirCommBlockedEventNotGenerated()
+  
+  local AIR_BLOCKAGE_TIME = 30
+  local AIR_BLOCKAGE_TIMEOUT = 20
+  local WAIT_FOR_EVENT_TIMEOUT = 60
+  
+  -- set property AirBlockageTime
+  
+  -- set the blockage (for now manually in simulator) AIR_BLOCKAGE_TIMEOUT
+  -- TODO: set the blockage via API
+  
+  -- wait for event
+  
+  -- check if event doesn't occur
+  -- asert_nil
+  
+  
+end
+
 
