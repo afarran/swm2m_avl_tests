@@ -73,8 +73,9 @@ function suite_teardown()
 	gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
 
 end
 
@@ -102,6 +103,12 @@ end
                                                 {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode interval of position service
                                                }
                     )
+  -- setting the power service properties - external power source detection enabled
+  lsf.setProperties(lsfConstants.sins.power,{
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
+                                         }
+                   )
+
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
@@ -431,45 +438,28 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
 
-  -- checking state of the terminal, Low Power Mode is not expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
-  framework.delay(2)
+  avlHelperFunctions.putTerminalIntoMovingState()  -- terminal in moving state from this moment
 
-  avlHelperFunctions.putTerminalIntoMovingState()
-
+  gateway.setHighWaterMark()
   device.setIO(1, 0) -- that should trigger IgnitionOff
   framework.delay(2)
 
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
-  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
-  -- checking state of the terminal, Low Power Mode is expected
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state as expected")
+  framework.delay(lpmEntryDelay*60)    -- multiplication by 60 because lpmEntryDelay is in minutes
 
-  -- reading AVLStates property to check moving state
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  -- checking if terminal is not in moving state (while being in LPM)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal unexpectedly in moving state while being in LPM")
+  -- terminal is expected to stop moving
+  local expectedMins = {avlConstants.mins.movingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received after entering Low Power Mode")
 
-  device.setIO(1, 1) -- IgnitionOn line becomes active, that should trigger IgnitionOn
-  framework.delay(4)
+  gateway.setHighWaterMark()
+  device.setIO(1, 1)            -- IgnitionOn line becomes active, that should trigger IgnitionOn and leaving LPM
 
-  -- checking state of the terminal, Low Power Mode is not expected
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
+  -- terminal is expected to start moving again
+  expectedMins = {avlConstants.mins.movingStart}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received after leaving Low Power Mode")
 
-  -- reading movingDebounceTime property (it is needed as delay value in next step)
-  local movingDebounceTime = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.movingDebounceTime)
-  framework.delay(2)
-
-  -- waiting until terminal goes into moving state again (speed is above threshold)
-  framework.delay(movingDebounceTime[1].value+GPS_READ_INTERVAL+10)
-
-  -- reading AVLStates property to check moving state
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  -- checking if terminal is in moving state after leaving LPM (according to simulated speed it should be moving)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal is not in moving state after leaving LPM as expected ")
 
 
 end
@@ -731,7 +721,6 @@ function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternal
                                              }
                    )
 
-  -- Important: there is bug reported for setPower function
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   framework.delay(3)               -- wait until setting is applied
   -- check external power property

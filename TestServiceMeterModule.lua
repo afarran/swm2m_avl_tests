@@ -41,13 +41,15 @@ end
 function suite_teardown()
 
   -- restarting AVL agent after running module
-	-- local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
-	-- message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
-	-- gateway.submitForwardMessage(message)
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+  message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+  gateway.submitForwardMessage(message)
 
   -- wait until service is up and running again and sends Reset message
-  -- message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  -- assert_not_nil(message, "Reset message after reset of AVL not received")
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+
 
 end
 
@@ -209,7 +211,7 @@ end
   -- ServiceMeter message send after GetServiceMeter request; SM0Time and SM0Distance correctly reported
 function random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
 
-   -- test configuration
+  -- test configuration
   configuration = {}
 
   -- properties values to be used in TC
@@ -530,7 +532,7 @@ end
   -- SetServiceMeter message correctly sets SM3Time and SM3Distance
 function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
 
-    -- test configuration
+  -- test configuration
 
   configuration = {}
 
@@ -577,7 +579,7 @@ end
   -- ServiceMeter message send after GetServiceMeter request; SM4Time and SM4Distance correctly reported
 function random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
 
-   -- test configuration
+  -- test configuration
   configuration = {}
 
   -- properties values to be used in TC
@@ -755,7 +757,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
 
-     --ServiceMeter message is expected
+    -- ServiceMeter message is expected
     local expectedMins = {avlConstants.mins.serviceMeter}
     local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
     assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")

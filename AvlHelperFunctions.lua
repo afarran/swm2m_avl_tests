@@ -271,36 +271,58 @@ end
 -- @usage
 -- avlHelperFunctions.putTerminalIntoStationaryState()
 -- @within AvlhelperFunctions
-function avlHelperFunctions.putTerminalIntoStationaryState()
+function avlHelperFunctions.putTerminalIntoStationaryState(tries)
 
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  tries = tries or 10
+  local STATIONARY_DEBOUNCE_TIME = 1      -- seconds
+  local STATIONARY_SPEED_THLD = 5         -- kmh
 
+  gateway.setHighWaterMark()
 
-  --setting properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                    {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
-                                             }
-                    )
-
-  -- gps settings table
   local gpsSettings={
-              speed = 0,
-              longitude = 0,                   -- degrees
-              latitude = 0,                    -- degrees
-              fixType = 3,                     -- valid fix provided
-              simulateLinearMotion = false,   -- terminal not moving
+                       speed = 0,
+                       longitude = 0,                   -- degrees
+                       latitude = 0,                    -- degrees
+                       fixType = 3,                     -- valid fix provided
+                       simulateLinearMotion = false,   -- terminal not moving
                      }
+  gps.set(gpsSettings)
 
-  -- set the speed to zero and wait for stationaryDebounceTime
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+6) -- 6 seconds are added to make sure terminal changes state
-
+  -- get avlStatesPropety to decide if waiting for MovingEnd message is necessary
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
-  framework.delay(2) -- wait until property is read
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in stationary state as expected")
+
+
+
+
+
+  if(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) then
+
+    -- setting properties of the service to put terminal into stationary state
+    lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
+                                               }
+                      )
+    -- set the speed to zero and wait for stationaryDebounceTime
+    framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  end
+
+  -- checking if terminal entered stationary state for sure
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+
+  local whilecount = 0
+  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) do
+    avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+    whilecount = whilecount + 1
+    if (whilecount > tries) then
+      assert_true(false, "Not possible to put terminal into stationary state after defined number of tries")
+      break
+    end
+  end
+
+
+
 
 
 end
@@ -311,34 +333,48 @@ end
 -- @usage
 -- avlHelperFunctions.putTerminalIntoMovingState()
 -- @within AvlhelperFunctions
-function avlHelperFunctions.putTerminalIntoMovingState()
+function avlHelperFunctions.putTerminalIntoMovingState(tries)
 
-  local movingDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5     -- kmh
+  tries = tries or 10
 
-  --setting properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                    {avlConstants.pins.movingDebounceTime, movingDebounceTime}
-                                             }
-                    )
+  local MOVING_DEBOUNCE_TIME = 1      -- seconds
+  local STATIONARY_SPEED_THLD = 5     -- kmh
 
   -- gps settings table
   local gpsSettings={
-              speed = stationarySpeedThld+5,   -- kmh
-              longitude = 0,                   -- degrees
-              latitude = 0,                    -- degrees
-              fixType= 3,                      -- valid fix provided
+                      speed = STATIONARY_SPEED_THLD + 5,   -- kmh
+                      longitude = 0,                       -- degrees
+                      latitude = 0,                        -- degrees
+                      fixType= 3,                          -- valid fix provided
                      }
-
-  -- set the speed above stationarySpeedThld and wait longer than movingDebounceTime
   gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3) -- three seconds are added to make sure terminal changes state
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
-   framework.delay(2) -- wait until property is read
-  -- assertion gives the negative result if terminal does not change the moving state to true
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
+
+  if(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) then
+    -- setting properties of the service
+    lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
+                                               }
+                      )
+
+    framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_READ_INTERVAL)
+
+  end
+
+  -- checking if terminal entered stationary state for sure
+  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+
+  local whilecount = 0
+  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) do
+    avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+    whilecount = whilecount + 1
+    if (whilecount > tries) then
+      assert_true(false, "Not possible to put terminal into moving state after defined number of tries")
+      break
+    end
+  end
 
 
 end
@@ -429,7 +465,7 @@ function avlHelperFunctions.matchReturnMessages(expectedMins, timeout)
   local function UpdateMsgMatchingList(msg)
     if msg then   --TODO: why would this function be called with no msg?
       for idx, min in pairs(expectedMins) do
-        if min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
+        if msg.Payload and min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
           msgList[min] = framework.collapseMessage(msg).Payload
           msgList.count = msgList.count + 1
           break
@@ -458,11 +494,11 @@ function avlHelperFunctions.getChangedProperties(oldProperties, timeout, delay)
   for i=1, #oldProperties do
     propList[i] = oldProperties[i].pin
   end
-  
+
   while (os.time() - startTime < timeout) do
     framework.delay(delay)
     newProperties = lsf.getProperties(avlConstants.avlAgentSIN, propList)
-    
+
     for i=1,#newProperties do
       if newProperties[i].value ~= oldProperties[i].value then
         result = newProperties
@@ -471,7 +507,7 @@ function avlHelperFunctions.getChangedProperties(oldProperties, timeout, delay)
     end
     if result then break end
   end
-  return result  
+  return result
 end
 
 --- Function converts property list to table
