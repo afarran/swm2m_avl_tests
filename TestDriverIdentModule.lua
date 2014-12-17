@@ -63,3 +63,26 @@ function test_SendingAndReceivingDriverIds()
   local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId
   assert_equal(DRIVER_ID, driver_id, 0 , "Wrong DriverId : " .. driver_id .. " it should be: "..DRIVER_ID )
 end
+
+-- Test of deleting all driver ids
+function test_DeleteAllDriverIds()
+  local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
+  local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
+  local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
+  local AVL_SIN = avlConstants.avlAgentSIN 
+  
+  -- set driver id via message
+  local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
+  message.Fields = {{Name="DeleteAll",Value=true},}
+  gateway.submitForwardMessage(message)
+  framework.delay(5)
+  local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
+	gateway.submitForwardMessage(message2)
+  
+   -- wait for event
+  expectedMins = {DEFINED_DRIVER_IDS_MIN}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
+
+  assert_nil(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "DriverIds collection should be empty")
+
+end
