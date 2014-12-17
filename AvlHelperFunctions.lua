@@ -514,13 +514,15 @@ end
 -- e.g. propList = {{pin = pin1, value = val1}, {pin = pin2, value = val2}}
 -- is converted into result = {pin1 = val1, pin2 = val2}
 -- @tparam propertyList - list of properties received from getProperties method ({{pin, value}, {pin, value}})
--- @treturn - table of properties where pin determines index and value determines pin value
+-- @treturn - table of properties where pin determines index and value determines pin value, table of pins
 function avlHelperFunctions.propertiesToTable(propertyList)
   result = {}
+  pins = {}
   for index, property in ipairs(propertyList) do
     result[tonumber(property.pin)] = property.value
+    pins[index] = tonumber(property.pin)
   end
-  return result
+  return result, pins
 end
 
 function avlHelperFunctions.bytesToInt(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
@@ -572,5 +574,27 @@ function avlHelperFunctions.geoDistance(lat1, lon1, lat2, lon2)
   return d
 end
 
+function avlHelperFunctions.matchParameters(expectedProps, timeout)
+  timeout = timeout or 10
+  local props, pins = avlHelperFunctions.propertiesToTable(expectedProps)
+  local startTime = os.time()
+  
+  local currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+  local currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
+  
+  while (os.time() - startTime < timeout) do
+    local match = true
+    for k, v in pairs(currentPropTable) do
+        if currentPropTable[k] ~= props[k] then match = false end
+    end
+    if match then 
+      return currentProps, currentPropTable, pins
+    end
+      currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+      currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
+  end
+  
+  return nil
+end
 
 return function() return avlHelperFunctions end
