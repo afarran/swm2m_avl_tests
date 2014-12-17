@@ -136,12 +136,12 @@ avlConstants = {
                               SM4Time = 99, SM4Distance = 100,
 
                               -- Air Blockage
-                              AirBlockageTime = 22
+                              AirBlockageTime = 22,
                               
                               -- Driver Features
-                              SetDriverIds = 14
-                              GetDriverIds = 15
-                              DefindedDriverIds = 202
+                              SetDriverIds = 14,
+                              GetDriverIds = 15,
+                              DefindedDriverIds = 202,
 
                           },
 
