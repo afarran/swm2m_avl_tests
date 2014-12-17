@@ -439,10 +439,9 @@ function avlHelperFunctions.getTerminalHardwareVersion()
   local getTerminalInfoMessage = {SIN = 16, MIN = 1}
  	-- local getTerminalInfoMessage = {SIN = lsfConstants.sins.system, MIN = lsfConstans.mins.getTerminalInfo}  -- TODO: change function to use this line
   gateway.submitForwardMessage(getTerminalInfoMessage)
-  framework.delay(2)
   -- receiving terminalInfo messge (MIN 1) as the response to the request
-  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16, 1))
-  -- local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstans.mins.getTerminalInfo)) -- TODO: change function to use this line
+  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16,1), nil, 60)
+
   if(terminalInfoMessage.Payload.Fields[1].Value == "IDP-6XX") then return 1
   elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-7XX") then  return 2
   elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-8XX") then return 3
@@ -542,9 +541,9 @@ function bytes_to_int(str,endian,signed) -- use length of string to determine 8,
     return n
 end
 
--- This uses the ‘haversine’ formula to calculate 
--- the great-circle distance between two points – that is, 
--- the shortest distance over the earth’s surface – 
+-- This uses the ‘haversine’ formula to calculate
+-- the great-circle distance between two points – that is,
+-- the shortest distance over the earth’s surface –
 -- giving an ‘as-the-crow-flies’ distance between the points (ignoring any hills they fly over, of course!).
 -- Haversine
 -- formula: 	a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
