@@ -27,6 +27,8 @@ avlConstants = {
                               position = 16,
                               zoneEntry = 10,
                               zoneExit = 11,
+                              gpsJammingStart = 25,
+                              gpsJammingEnd = 26,
                               geoDwellStart = 30,
                               geoDwellEnd = 40,
                               longDriving = 29,
@@ -49,7 +51,7 @@ avlConstants = {
                               digitalInp10Hi = 68, digitalInp10Lo = 69,
                               digitalInp11Hi = 70, digitalInp11Lo = 71,
                               digitalInp12Hi = 72, digitalInp12Lo = 73,
-                              SensorInterval = 74, 
+                              SensorInterval = 74,
                               --Sensor 1
                               Sensor1MinStart = 75, Sensor1MaxStart = 76,
                               Sensor1Change = 77, Sensor1MinEnd = 78, Sensor1MaxEnd = 79,
@@ -62,7 +64,7 @@ avlConstants = {
                               --Sensor 4
                               Sensor4MinStart = 90, Sensor4MaxStart = 91,
                               Sensor4Change = 92, Sensor4MinEnd = 93, Sensor4MaxEnd = 94,
-                              
+
                               serviceProperties = 201,
                           },
                     -- AVL Agent PINs
@@ -88,6 +90,7 @@ avlConstants = {
                               digPorts = 24,
                               defaultGeoDwellTime = 25,
                               positionMsgInterval = 26,
+                              gpsJamDebounceTime = 28,
                               lpmTrigger = 31,
                               lpmEntryDelay = 32,
                               lpmGeoInterval = 33,
@@ -95,7 +98,7 @@ avlConstants = {
                               avlStates = 41,
                               digStatesDefBitmap =  46,
                               funcDigInp = {47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59},
-                              
+
                               --Sensors
                               SensorReportingInterval = 60,
                               --Sensor 1
@@ -114,7 +117,7 @@ avlConstants = {
                               Sensor4Source = 82, Sensor4NormalSampleInterval = 83, Sensor4LpmSampleInterval = 84,
                               Sensor4MaxReportInterval = 85, Sensor4ChangeThld = 86,
                               Sensor4MinThld = 87, Sensor4MaxThld = 88,
-                              
+
                               seatbeltDebounceTime = 115,
                               digOutActiveBitmap = 116,
                               funcDigOut1 = 117,
@@ -133,23 +136,23 @@ avlConstants = {
                           },
 
                           avlAgentSIN = 126,
-                          
+
                           -- table of states of agent
-                          avlStateNames = {"InLPM", "onMainPower", "Speeding", "Moving", "Towing", "GPSJammed", "CellJammed", 
-                                           "Tamper", "AirCommunicationBlocked", "Reserved", "SeatbeltViolation", "IgnitionON", 
+                          avlStateNames = {"InLPM", "onMainPower", "Speeding", "Moving", "Towing", "GPSJammed", "CellJammed",
+                                           "Tamper", "AirCommunicationBlocked", "Reserved", "SeatbeltViolation", "IgnitionON",
                                            "EngineIdling", "SM1Active", "SM2Active", "SM3Active", "SM4Active", "Geodwelling"},
-                          
+
                           digitalStatesNames = {"IgnitionON", "SeatbeltOFF", "SM1Active", "SM2Active", "SM3Active", "SM4Active"},
-                          
+
                           funcDigInp = {Disabled = 0, GeneralPurpose = 1, IgnitionOn = 2, SeatbeltOff = 3, IgnitionAndSM0 = 4,
                                          SM1 = 5, SM2 = 6, SM3 = 7, SM4 = 8},
-                          
+
                           digStatesDefBitmap = {IgnitionOn = 0  , SeatbeltOff = 1, SM1Active = 2, SM2Active = 3, SM3Active = 4 ,  SM4Active = 5},
 
                           funcDigOut =  {LowPower = 0, MainPower = 1, Speeding = 2, Moving = 3, Towing = 4, GpsJammed = 5, CellJammed = 6,
                                           Tamper = 7, AirBlocked = 8, LoggedIn = 9, SeatbeltViol = 10, IgnitionOn = 11, Idling = 12, SM1ON = 13,
                                           SM2ON = 14, SM3ON = 15, SM4ON = 16, GeoDwelling = 17, AntCut = 18},
-                                        
+
                           digOutActiveBitmap = {FuncDigOut1 = 0, FuncDigOut2 = 1, FuncDigOut3 = 2, FuncDigOut4 = 3, FuncDigOut5 = 4},
           }
 
