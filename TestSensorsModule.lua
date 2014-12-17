@@ -497,7 +497,8 @@ function generic_test_Sensors_SendMessageWhenValueAboveThreshold(sensorNo)
   local msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
   assert_not_nil(msg, 'Sensor did not send Max Start message')
   assert_equal(GPSFIX.ABOVE_MAX.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
-
+  local FirstSampleTime = tonumber(msg.EventTime)
+  
   gps.set(GPSFIX.BELOW_MAX)
   -- wait for min end message
   receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxEnd]}, GATEWAY_TIMEOUT)
@@ -505,6 +506,8 @@ function generic_test_Sensors_SendMessageWhenValueAboveThreshold(sensorNo)
   assert_not_nil(msg, 'Sensor did not send Max End message')
   assert_equal(GPSFIX.ABOVE_MAX.latitude * GPSCONV, tonumber(msg.SensorMax), 0.001, "SensorMax has incorrect value")
   assert_equal(GPSFIX.BELOW_MAX.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
+  local SecondSampleTime = tonumber(msg.EventTime)
+  assert_gt(FirstSampleTime, SecondSampleTime, 'Message EventTime is too small')
   
 end
 
@@ -557,6 +560,7 @@ function generic_test_Sensors_SendMessageWhenValueBelowThreshold(sensorNo)
   local msg = receivedMessages[avlConstants.mins[SENSOR.props.MinStart]]
   assert_not_nil(msg, 'Sensor did not send Min Start message')
   assert_equal(GPSFIX.BELOW_MIN.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
+  local FirstSampleTime = tonumber(msg.EventTime)
 
   gps.set(GPSFIX.ABOVE_MIN)
   -- wait for min end message
@@ -565,7 +569,8 @@ function generic_test_Sensors_SendMessageWhenValueBelowThreshold(sensorNo)
   assert_not_nil(msg, 'Sensor did not send Min End message')
   assert_equal(GPSFIX.BELOW_MIN.latitude * GPSCONV, tonumber(msg.SensorMin), 0.001, "SensorMin has incorrect value")
   assert_equal(GPSFIX.ABOVE_MIN.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
-  
+  local SecondSampleTime = tonumber(msg.EventTime)
+  assert_gt(FirstSampleTime, SecondSampleTime, 'Message EventTime is too small')
 end
 
 -- Check if correnct Messages are sent if sensor value goes below min threshold and then jumps above max threshold
