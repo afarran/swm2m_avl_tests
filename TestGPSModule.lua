@@ -2229,6 +2229,73 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
     assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
   end
 
+end
+
+
+
+--- TC checks if GpsJammingStart (MIN 25) message is sent when GPS signal jamming is detected for time longer than  GpsJamDebounceTime (PIN 28) .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set gpsJamDebounceTime (PIN 28)
+  -- 2. Simulate gps jamming for time longer than gpsJamDebounceTime with known jamming level
+  -- 3. Wait longer than gpsJamDebounceTime
+  -- 4. Check fields of received message
+  -- 5. Read AvlStates property (PIN 51)
+  --
+  -- Results:
+  --
+  -- 1. gpsJamDebounceTime set
+  -- 2. Gps jamming simulated for time longer than gpsJamDebounceTime with known jamming level
+  -- 3. GpsJammingStart message sent by terminal
+  -- 4. Message contains simulated jamming level information
+  -- 5. Terminal enters GPSJammed state
+function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceTimePeriod_GpsJammingStartMessageSent()
+
+  -- *** Setup
+  local GPS_JAMMING_DEBOUNCE_TIME = 10   -- seconds
+  local JAMMING_LEVEL = 10               -- integer
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.gpsJamDebounceTime, GPS_JAMMING_DEBOUNCE_TIME},
+                            }
+                    )
+
+  -- gps settings table
+  local gpsSettings={
+                      speed = 0,                      -- terminal stationary
+                      heading = 90,                   -- degrees
+                      latitude = 1,                   -- degrees
+                      longitude = 1,                  -- degrees
+                      jammingDetect = "true",
+                      jammingLevel = JAMMING_LEVEL,
+                     }
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+  gps.set(gpsSettings)
+  local timeOfEvent = os.time()
+  framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until settings are applied
+
+  local expectedMins = {avlConstants.mins.gpsJammingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "GpsJammingStart message has incorrect latitude value")
+  assert_equal("GpsJammingStart", receivedMessages[avlConstants.mins.gpsJammingStart].Name, "GpsJammingStart message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "GpsJammingStart message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "GpsJammingStart message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "GpsJammingStart message has incorrect heading value")
+  assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].JammingRaw), "GpsJammingStart message has incorrect heading value")
+
+  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has not entered GPSJammed state after sending GpsJammingStart message")
 
 end
 
