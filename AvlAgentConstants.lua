@@ -132,6 +132,9 @@ avlConstants = {
                               SM2Time = 95, SM2Distance = 96,
                               SM3Time = 97, SM3Distance = 98,
                               SM4Time = 99, SM4Distance = 100,
+                              
+                              -- Air Blockage
+                              AirBlockageTime = 22
 
                           },
 
