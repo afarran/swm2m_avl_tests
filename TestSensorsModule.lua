@@ -247,6 +247,9 @@ function generic_test_changeSensorValueByAmount(configuration)
   local SAMPLE_INTERVAL = 1
   local AVL_REPORT_MIN = 74
   
+  -- set first value
+  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
+  
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                         {avlConstants.pins[configuration.change_thld_name], CHANGE_THLD},
@@ -255,13 +258,6 @@ function generic_test_changeSensorValueByAmount(configuration)
                         {avlConstants.pins[configuration.source], framework.base64Encode({GPS_SIN, GPS_LAT_PIN}), "data" }
                                              }
                     )
-  
-  -- set init value
-  -- gps.set({  speed = 1, heading = 90, latitude = 0, longitude = 1})
-  -- framework.delay(5)
-  
-  -- set first value
-  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
     
   -- waiting for first change report msg
   local expectedMins = {AVL_RESPONSE_MIN,}
@@ -293,6 +289,9 @@ function generic_test_changeSensorValueByLessThanAmount(configuration)
   local SAMPLE_INTERVAL = 1
   local AVL_REPORT_MIN = 74
   
+  -- set first value
+  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
+  
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                         {avlConstants.pins[configuration.change_thld_name], CHANGE_THLD},
@@ -301,9 +300,6 @@ function generic_test_changeSensorValueByLessThanAmount(configuration)
                         {avlConstants.pins[configuration.source], framework.base64Encode({GPS_SIN, GPS_LAT_PIN}), "data" }
                                              }
                     )
-  
-  -- set first value
-  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
   
   -- message can be received - we establish previous report value for further calculations
   local expectedMins = {AVL_RESPONSE_MIN,}
