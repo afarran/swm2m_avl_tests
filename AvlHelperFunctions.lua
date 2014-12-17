@@ -523,7 +523,7 @@ function avlHelperFunctions.propertiesToTable(propertyList)
   return result
 end
 
-function bytes_to_int(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
+function avlHelperFunctions.bytesToInt(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
     local t={str:byte(1,-1)}
     if endian=="big" then --reverse bytes
         local tt={}
@@ -557,7 +557,7 @@ end
 -- Solution of better accuracy (1mm per 1km) is here: http://www.movable-type.co.uk/scripts/latlong-vincenty.html
 -- Python implementation: https://github.com/geopy/geopy/blob/master/geopy/distance.py
 -- usage: geoDistance(30.19, 71.51, 31.33, 74.21)
-local function geoDistance(lat1, lon1, lat2, lon2)
+function avlHelperFunctions.geoDistance(lat1, lon1, lat2, lon2)
   if lat1 == nil or lon1 == nil or lat2 == nil or lon2 == nil then
     return nil
   end
