@@ -135,6 +135,11 @@ avlConstants = {
                               
                               -- Air Blockage
                               AirBlockageTime = 22
+                              
+                              -- Driver Features
+                              SetDriverIds = 14
+                              GetDriverIds = 15
+                              DefindedDriverIds = 202
 
                           },
 
