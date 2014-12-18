@@ -1548,6 +1548,84 @@ function test_Odometer_WhenOdometerFieldIsSetToBePopulatedInOptionalFieldsInMsgs
   assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
   assert_nil(receivedMessages[avlConstants.mins.position].Odometer, "Position message incorrectly contains Odometer field")
 
+end
+
+
+--- TC checks if Odometer is correctly increased when terminal travels distance above odometerDistanceIncrement and odometer is read from external source .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set externalOdometerSource (PIN 135) to SIN = 20, PIN = 6 (position service, latitude property)
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. ExternalOdometerSource (PIN 135) set to SIN = 20, PIN = 6 (position service, latitude property)
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is increased by value of distance difference betweenn Point#1 and Point#2
+function test_ExternalOdometerSource_WhenTerminalTravelsDistanceAboveOdometerDistanceIncrementForExternalOdometerSource_OdometerIncremented()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1                   -- seconds
+  local stationarySpeedThld = 5                  -- kmh
+  local odometerDistanceIncrement = 100          -- in meters
+  local DISTANCE_INCREMENT = 100000              -- in meters
+  local EXTERNAL_ODOMETER_FACTOR = 0.00000013333 -- that comes from divison of 0,008 for external odometer and 60000 for passing latitude in degrees
+  local gpsSettings = {}                         -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.externalOdometerSource, framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = DISTANCE_INCREMENT*EXTERNAL_ODOMETER_FACTOR,
+                  longitude = 0,                                                   -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  local odometerValueIncrement = odometerValue2 - odometerValue1
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data" }
+                                             }
+                 )
+
+  assert_equal(DISTANCE_INCREMENT, odometerValueIncrement, 10, "Odometer has been increased for incorrect value for external source of odometer")
 
 end
 
