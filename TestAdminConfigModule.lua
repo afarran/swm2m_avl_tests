@@ -125,14 +125,16 @@ function test_GetEventEnable_GetRangeOfEvents_ReturnMessageContainsProperRangeOf
   
   if msg.EnabledEvents then
     for key, value in pairs(msg.EnabledEvents) do
-      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned non requested or duplicated Event')
+      assert_not_nil(requestedEvents[tonumber(value.EventId)], 'Message returned not expected Event')
+      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned or duplicated Event')
       requestedEvents[tonumber(value.EventId)] = true
     end
   end
   
   if msg.DisabledEvents then
     for key, value in pairs(msg.DisabledEvents) do
-      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned non requested or duplicated Event')
+      assert_not_nil(requestedEvents[tonumber(value.EventId)], 'Message returned not expected Event')
+      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned or duplicated Event')
       requestedEvents[tonumber(value.EventId)] = true
     end
   end
@@ -161,14 +163,16 @@ function test_GetEventEnable_GetListOfEvents_ReturnMessageContainsProperListOfEv
   
   if msg.EnabledEvents then
     for key, value in pairs(msg.EnabledEvents) do
-      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned non requested or duplicated Event')
+      assert_not_nil(requestedEvents[tonumber(value.EventId)], 'Message returned not expected Event')
+      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned duplicated Event')
       requestedEvents[tonumber(value.EventId)] = true
     end
   end
   
   if msg.DisabledEvents then
     for key, value in pairs(msg.DisabledEvents) do
-      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned non requested or duplicated Event')
+      assert_not_nil(requestedEvents[tonumber(value.EventId)], 'Message returned not expected Event')
+      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned duplicated Event')
       requestedEvents[tonumber(value.EventId)] = true
     end
   end
@@ -177,6 +181,50 @@ function test_GetEventEnable_GetListOfEvents_ReturnMessageContainsProperListOfEv
     assert_true(value, 'Not all requested events were received')
   end
   
-  
 end
 
+function test_GetEventEnable_GetListAndRangeOfEvents_ReturnMessageContainsProperRangeAndListOfEvents()
+  local START_RANGE = 12
+  local END_RANGE = 32
+  local EVENT_LIST = {2, 14, 6, 5, 23, 18}
+
+  local requestedEvents = {}
+  for i=START_RANGE,END_RANGE do
+    requestedEvents[i] = false
+  end
+  for key, value in pairs(EVENT_LIST) do
+    requestedEvents[value] = false
+  end
+
+	local message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+  message.Fields = { {Name="OperationType",Value=OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents",Value=0},
+                     {Name="Range", Elements= { {Index=0, Fields= {{Name="From",Value=START_RANGE},
+                                                                   {Name="To",Value=END_RANGE}
+                                                                  }}}},
+                     {Name="List",Value=framework.base64Encode(EVENT_LIST)},}
+  gateway.submitForwardMessage(message)
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+  assert_not_nil(msg, 'EventEnableStatus message not received')      
+  
+  if msg.EnabledEvents then
+    for key, value in pairs(msg.EnabledEvents) do
+      assert_not_nil(requestedEvents[tonumber(value.EventId)], 'Message returned not expected Event')
+      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned duplicated Event')
+      requestedEvents[tonumber(value.EventId)] = true
+    end
+  end
+  
+  if msg.DisabledEvents then
+    for key, value in pairs(msg.DisabledEvents) do
+      assert_not_nil(requestedEvents[tonumber(value.EventId)], 'Message returned not expected Event')
+      assert_false(requestedEvents[tonumber(value.EventId)], 'Message returned duplicated Event')
+      requestedEvents[tonumber(value.EventId)] = true
+    end
+  end
+  
+  for key, value in pairs(requestedEvents) do
+    assert_true(value, 'Not all requested events were received')
+  end
+end
