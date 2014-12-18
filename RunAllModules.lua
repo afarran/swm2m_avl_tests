@@ -30,7 +30,7 @@ local function setup()
   lunatest.suite("TestPeriodicReportsModule")
   lunatest.suite("TestSensorsModule")
   lunatest.suite("TestAdminConfigModule")
-  lunatest.suite("TestDriverIdentModule")
+  --lunatest.suite("TestDriverIdentModule")
 
 end
 

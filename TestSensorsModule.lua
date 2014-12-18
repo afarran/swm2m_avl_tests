@@ -42,7 +42,8 @@ end
 function teardown()
   -- disable all sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
-                    {{avlConstants.pins.Sensor1Source, framework.base64Encode(""), "data"},
+                    {
+                     --{avlConstants.pins.Sensor1Source, framework.base64Encode(""), "data"},
                      {avlConstants.pins.Sensor2Source, framework.base64Encode(""), "data"},
                      {avlConstants.pins.Sensor3Source, framework.base64Encode(""), "data"},
                      {avlConstants.pins.Sensor4Source, framework.base64Encode(""), "data"},
@@ -321,7 +322,7 @@ function test_SettingGpsValue()
     assert_equal(GPS_EXPECTED_VALUE * 60000 , sensor1Value , 0, "Problem with gps setting (a sensor source)")
 end
 
-
+-- 666
 -- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
 function off_test_ChangeThresholdWhenReportIntervalZeroForSensor1()
   configuration = {}
