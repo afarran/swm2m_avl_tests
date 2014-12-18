@@ -137,6 +137,8 @@ avlConstants = {
                               funcDigOut4 = 120,
                               funcDigOut5 = 120,
                               funcDigOut = {117, 118, 119, 120},
+                              externalSpeedSource = 134,
+                              externalOdometerSource = 135,
                               deleteData = 201,
                               SM0Time = 91, SM0Distance = 92,
                               SM1Time = 93, SM1Distance = 94,
