@@ -909,7 +909,7 @@ function generic_test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval(se
   assert_not_nil(receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]], 'Sensor did not send Max Start message')
   local SecondSampleTimestamp = msg.EventTime
   
-  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, SENSOR.LPMSAMPLE, 'Message Timestamps do not match LPM sampling interval')   
+  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, SENSOR.LPMSAMPLE, 1, 'Message Timestamps do not match LPM sampling interval')   
     
   
 end
