@@ -2634,4 +2634,79 @@ end
 
 
 
+--- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
+  -- Initial Conditions:
+  --
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
+  -- 2. Set externalSpeedSource (PIN 134) to read latitude property (PIN 6) from position service (SIN 20)
+  -- 3. Simulate terminal in Point#1 with speed equal to 0 in gps simulator and latitude simulating speed above stationarySpeedThld
+  -- 4. Wait until movingDebounceTime (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 5. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. Properties movingDebounceTime and stationarySpeedThld correctly set
+  -- 2. ExternalSpeedSource (PIN 134) set to SIN = 20 and PIN = 6
+  -- 3. Speed in GPS simulator set to 0 and latitude represents value of speed above stationarySpeedThld
+  -- 5. MovingStart message sent from terminal after movingDebounceTime (PIN 3)
+  -- 6. Report fields contains speed calculated from latitude property
+function test_ExternalSpeedSource_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDebounceTimeAndExternalSpeedSourceIsDefined_MovingStartMessageSent()
+
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 10                           -- seconds
+  local STATIONARY_SPEED_THLD = 5                           -- kmh
+  local EXTERNAL_SPEED_SIMULATED = 100                      -- kmh
+  local gpsSettings = {}                                    -- table containing gpsSettings used in TC
+
+
+  -- Point#1 settings
+  gpsSettings[1]={
+                  speed = 0,                                                -- this is left in value 0 - to make sure that speed is read from external source
+                  heading = 90,                                             -- degrees
+                  latitude = EXTERNAL_SPEED_SIMULATED*0.004266,             -- this is source of external speed (factor of 0,004266 comes from calculation 1/60000*256)
+                  longitude = 1,                                            -- degrees
+                 }
+
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
+                            }
+                   )
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- terminal in Point#1 - not moving
+  gps.set(gpsSettings[1])
+
+  -- wait for period of movingDebounceTime
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  -- disabling reading speed from external source
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" }
+                            }
+                   )
+
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+  assert_equal(gpsSettings[1].latitude*234.375, tonumber(receivedMessages[avlConstants.mins.movingStart].Speed), 2, "MovingStart message has incorrect speed value when speed is read from external source")
+
+  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal not in moving state after sending MovingStart message")
+
+end
+
+
 
