@@ -13,6 +13,7 @@ avlConstants = {
                               ignitionON = 4,
                               ignitionOFF = 5,
                               movingStart = 6,
+                              setProperties = 5,
                               getProperties = 6,      -- to mobile
                               movingEnd = 7,
                               setGeoSpeedLimits = 7,  -- to mobile
