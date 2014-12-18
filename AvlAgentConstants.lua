@@ -13,6 +13,7 @@ avlConstants = {
                               ignitionON = 4,
                               ignitionOFF = 5,
                               movingStart = 6,
+                              setProperties = 5,
                               getProperties = 6,      -- to mobile
                               movingEnd = 7,
                               setGeoSpeedLimits = 7,  -- to mobile
@@ -68,11 +69,11 @@ avlConstants = {
                               --Sensor 4
                               Sensor4MinStart = 90, Sensor4MaxStart = 91,
                               Sensor4Change = 92, Sensor4MinEnd = 93, Sensor4MaxEnd = 94,
-                              
+
                               EventEnableStatus = 200,
                               serviceProperties = 201,
-                              
-                               -- Driver Features
+
+                              -- Driver Features
                               SetDriverIds = 14,
                               GetDriverIds = 15,
                               DefindedDriverIds = 202,
@@ -100,6 +101,7 @@ avlConstants = {
                               digPorts = 24,
                               defaultGeoDwellTime = 25,
                               positionMsgInterval = 26,
+                              optionalFieldsInMsgs = 27,
                               gpsJamDebounceTime = 28,
                               lpmTrigger = 31,
                               lpmEntryDelay = 32,
@@ -136,6 +138,8 @@ avlConstants = {
                               funcDigOut4 = 120,
                               funcDigOut5 = 120,
                               funcDigOut = {117, 118, 119, 120},
+                              externalSpeedSource = 134,
+                              externalOdometerSource = 135,
                               deleteData = 201,
                               SM0Time = 91, SM0Distance = 92,
                               SM1Time = 93, SM1Distance = 94,
@@ -145,8 +149,8 @@ avlConstants = {
 
                               -- Air Blockage
                               AirBlockageTime = 22,
-                              
-                             
+
+
 
                     },
 
