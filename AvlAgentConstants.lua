@@ -68,11 +68,11 @@ avlConstants = {
                               --Sensor 4
                               Sensor4MinStart = 90, Sensor4MaxStart = 91,
                               Sensor4Change = 92, Sensor4MinEnd = 93, Sensor4MaxEnd = 94,
-                              
+
                               EventEnableStatus = 200,
                               serviceProperties = 201,
-                              
-                               -- Driver Features
+
+                              -- Driver Features
                               SetDriverIds = 14,
                               GetDriverIds = 15,
                               DefindedDriverIds = 202,
@@ -100,6 +100,7 @@ avlConstants = {
                               digPorts = 24,
                               defaultGeoDwellTime = 25,
                               positionMsgInterval = 26,
+                              optionalFieldsInMsgs = 27,
                               gpsJamDebounceTime = 28,
                               lpmTrigger = 31,
                               lpmEntryDelay = 32,
@@ -145,8 +146,8 @@ avlConstants = {
 
                               -- Air Blockage
                               AirBlockageTime = 22,
-                              
-                             
+
+
 
                     },
 

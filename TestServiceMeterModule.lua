@@ -1442,7 +1442,114 @@ function test_Odometer_WhenTerminalTravelsDistanceAboveOdometerDistanceIncrement
 
 end
 
+--- TC checks if Odometer field is populated when first bit in optionalFieldsInMsgs property is set to 1 .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set 1st bit in optionalFieldsInMsgs (PIN 27) to 1
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Request Position message, verify the content of the message sent in response
+  -- 5. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 6. Request Position message, verify the content of the message sent in response
+  -- 7. Set 1st bit in optionalFieldsInMsgs (PIN 27) to 0
+  -- 8. Request Position message, verify the content of the message sent in response
+  --
+  -- Results:
+  --
+  -- 1. 1st bit in optionalFieldsInMsgs (PIN 27) set to 1
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Received Position message contains Odometer field and the Odometer value is as in Point#1
+  -- 5. Terminal moves to Point#2, Odometer property read
+  -- 6. Received Position message contains Odometer field and the Odometer value is as in Point#2
+  -- 7. 1st bit in optionalFieldsInMsgs (PIN 27) set to 0
+  -- 8. Received Position message does not contain Odometer field
+function test_Odometer_WhenOdometerFieldIsSetToBePopulatedInOptionalFieldsInMsgsProperty_OdometerFieldPopulatedInReports()
 
+  -- properties values to be used in TC
+  local OPTIONAL_FIELDS_IN_MSGS_BITMAP = 1 -- 1 st bit is related to Odometer
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 1000   -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.optionalFieldsInMsgs, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.optionalFieldsInMsgs, OPTIONAL_FIELDS_IN_MSGS_BITMAP},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = 0,                        -- degrees
+                  longitude = 0.09,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  -- sending getPositionMessage message - initial Odometer value expected
+  local getPositionMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.positionRequest}    -- to trigger Position message
+	gateway.submitForwardMessage(getPositionMessage)
+
+  local expectedMins = {avlConstants.mins.position}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
+
+  assert_equal(odometerValue1, tonumber(receivedMessages[avlConstants.mins.position].Odometer)*1000, 1000, "Position message has incorrect Odometer value")
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  -- sending getPositionMessage message - new Odometer value expected
+  getPositionMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.positionRequest}    -- to trigger Position message
+	gateway.submitForwardMessage(getPositionMessage)
+
+  expectedMins = {avlConstants.mins.position}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
+  assert_equal(odometerValue2, tonumber(receivedMessages[avlConstants.mins.position].Odometer)*1000, 1000,  "Position message has incorrect Odometer value")
+
+  -- disabling Odometer reporting
+  OPTIONAL_FIELDS_IN_MSGS_BITMAP = 0 -- 1 st bit is related to Odometer
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.optionalFieldsInMsgs, OPTIONAL_FIELDS_IN_MSGS_BITMAP},
+                                             }
+                   )
+
+  -- sending getPositionMessage message - new Odometer value expected
+  getPositionMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.positionRequest}    -- to trigger Position message
+	gateway.submitForwardMessage(getPositionMessage)
+
+  expectedMins = {avlConstants.mins.position}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
+  assert_nil(receivedMessages[avlConstants.mins.position].Odometer, "Position message incorrectly contains Odometer field")
+
+
+end
 
 
 --
