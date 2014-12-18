@@ -232,6 +232,7 @@ end
 function todo_test_SetProperties_ResponseMessageContainsAllProperties()
   
   -- TODO : separate file with properties values
+  -- TODO : random ranges definition and parser for generating test messages fields
 	local message = {}
 	message.SIN = avlConstants.avlAgentSIN
 	message.MIN = avlConstants.mins.setProperties
