@@ -539,8 +539,8 @@ function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSet
   -- properties values to be used in TC
   configuration.movingDebounceTime = 1          -- seconds
   configuration.stationarySpeedThld = 5         -- kmh
-  configuration.SMTimeTC = 10                  -- hours
-  configuration.SMDistanceTC = 500             -- kilometers
+  configuration.SMTimeTC = 10                   -- hours
+  configuration.SMDistanceTC = 500              -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
@@ -1230,6 +1230,219 @@ function test_Odometer_WhenTerminalTravelsDistanceBelowOdometerDistanceIncrement
   assert_equal(odometerValue1, odometerValue2, "Odometer has been incorrectly increased when travelled distance was below odometerDistanceIncrement value")
 
 end
+
+
+--- TC checks if Odometer is correctly increased when terminal travels distance above odometerDistanceIncrement from one random point to another .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some value
+  -- 2. Simulate terminal in random position in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to random position in Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. OdometerDistanceIncrement set to some value
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is increased by value of distance difference betweenn Point#1 and Point#2
+function test_Odometer_WhenTerminalTravelsDistanceBetweenTwoRandomPoints_OdometerIncremented()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 1000   -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,                       -- terminal in moving state
+                  latitude = lunatest.random_float(-90 , 90),             -- degrees
+                  longitude = lunatest.random_float(-180, 180),          -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = lunatest.random_float(-90 , 90),                       -- degrees
+                  longitude = lunatest.random_float(-180 , 180),                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  local distanceTravelled = avlHelperFunctions.geoDistance(gpsSettings[1].latitude, gpsSettings[1].longitude, gpsSettings[2].latitude, gpsSettings[2].longitude)
+  local odometerValueIncrement = odometerValue2 - odometerValue1
+
+  assert_equal(distanceTravelled*1000, odometerValueIncrement, 30000, "Odometer has been increased for incorrect value")
+
+end
+
+
+
+
+--- TC checks if Odometer is not increased when terminal changes position in stationary state .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some value
+  -- 2. Simulate terminal in Point#1 with speed below stationarySpeedThld
+  -- 3. Read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. OdometerDistanceIncrement set to some value
+  -- 2. Terminal in stationary state in Point#1
+  -- 3. Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is are the same for Point#1 and Point#2
+function test_Odometer_WhenTerminalChangesPositionInStationaryState_OdometerNotIncremented()
+
+  -- properties values to be used in TC
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 10     -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = 0,                          -- terminal in stationary state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = 0,                        -- degrees
+                  longitude = 0.09,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  assert_equal(odometerValue1, odometerValue2, 0, "Odometer has been increased for terminal in stationary state")
+
+end
+
+
+
+--- TC checks if Odometer is correctly increased when terminal travels distance above odometerDistanceIncrement .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some value
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. OdometerDistanceIncrement set to some value
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is increased by value of distance difference betweenn Point#1 and Point#2
+function test_Odometer_WhenTerminalTravelsDistanceAboveOdometerDistanceIncrement_OdometerIncremented()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 1000   -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = 0,                        -- degrees
+                  longitude = 0.09,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  local distanceTravelled = avlHelperFunctions.geoDistance(gpsSettings[1].latitude, gpsSettings[1].longitude, gpsSettings[2].latitude, gpsSettings[2].longitude)
+  local odometerValueIncrement = odometerValue2 - odometerValue1
+
+  assert_equal(distanceTravelled*1000, odometerValueIncrement, 100, "Odometer has been increased for incorrect value")
+
+end
+
+
 
 
 --
