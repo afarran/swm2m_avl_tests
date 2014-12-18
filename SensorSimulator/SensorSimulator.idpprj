@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <FileVersion>
+    <Major>1</Major>
+    <Minor>0</Minor>
+    <Patch>0</Patch>
+  </FileVersion>
+  <SDKVersion>
+    <Major>2</Major>
+    <Minor>1</Minor>
+    <Patch>0</Patch>
+  </SDKVersion>
+  <Name>NewProject</Name>
+  <Services>
+    <Service>
+      <Name>SensorSimulator</Name>
+      <SIN>128</SIN>
+      <Properties>
+        <Property xsi:type="SignedIntProperty">
+          <Name>currentValue</Name>
+          <PIN>1</PIN>
+        </Property>
+        <Property xsi:type="BooleanProperty">
+          <Name>printLog</Name>
+          <Description>Determines whether to print additional log messages</Description>
+          <PIN>250</PIN>
+        </Property>
+      </Properties>
+      <ForwardMessages>
+        <Message>
+          <Name>TimeChanges</Name>
+          <MIN>1</MIN>
+          <Fields>
+            <Field xsi:type="ArrayField">
+              <Name>TimeChanges</Name>
+              <Fields>
+                <Field xsi:type="UnsignedIntField">
+                  <Name>time</Name>
+                  <Size>31</Size>
+                </Field>
+                <Field xsi:type="UnsignedIntField">
+                  <Name>value</Name>
+                  <Size>31</Size>
+                </Field>
+              </Fields>
+              <Size>20</Size>
+            </Field>
+          </Fields>
+        </Message>
+        <Message>
+          <Name>Restart</Name>
+          <MIN>2</MIN>
+        </Message>
+      </ForwardMessages>
+      <SourceFiles>
+        <SourceFile>
+          <Name>main.lua</Name>
+          <Source>--
+-- Service: NewService
+-- Created: 2014-12-11
+--
+
+module(..., package.seeall)
+
+--
+-- Version information (required)
+--
+_VERSION = "1.0.0"
+local stimer = nil
+local timeChanges = {}
+local msgHandler = nil
+local startTime = nil
+--
+-- Run service (required)
+--
+function entry()
+
+  local qtimer = sched.createEventQ(5, '_TIMER', stimer)
+  local messageQueue = sched.createEventQ(5, msgHandler)
+  
+  startTime = 0
+    
+  while true do
+  
+      stimer:arm(10)
+      
+      local result = { sched.waitQ(-1, qtimer, messageQueue) }
+      
+      if result[1] == messageQueue then
+        processMessageQueue(result)
+      elseif result[1] == qtimer then
+        processTimeChange()    
+      end
+         
+  end
+  
+
+end
+
+function processMessageQueue(result)
+    
+    local min = result[3].min
+    local eventName = result[2]
+    
+    -- load time changes
+    if eventName == 'RX_DECODED' and min == 1 then
+      startTime = os.time()
+      timeChanges = result[3].fields.TimeChanges
+      logvar(timeChanges)
+    end
+    
+    -- restart start time
+    if eventName == 'RX_DECODED' and min == 2 then
+      startTime = os.time()
+    end
+    
+end
+
+function processTimeChange()
+    
+    
+    local currentTimePoint
+    local secondsFromStart = os.time() - startTime
+    
+    for i, timePoint in ipairs(timeChanges) do
+      
+      if timePoint.time &lt;= secondsFromStart then 
+        currentTimePoint = timePoint
+      end
+    end
+    
+    if currentTimePoint then
+      properties.currentValue = currentTimePoint.value
+    end
+    
+    logvar(properties.currentValue)
+    
+  
+end
+
+function logvar(value)
+  if properties.printLog then
+    dumpvar(value)
+  end
+
+end
+
+--
+-- Initialize service (required)
+--
+function init()
+  stimer = sys.timer.create()
+  msgHandler = svc.message.register(_SIN)
+end
+
+function setTimeChanges(inputTimeChanges)
+  timeChanges = inputTimeChanges
+end
+
+function clearTimeChanges()
+  timeChanges = {}
+end</Source>
+        </SourceFile>
+      </SourceFiles>
+    </Service>
+  </Services>
+  <PropertyValues>
+    <PropertyValue xsi:type="EnumPropertyValue">
+      <SIN>25</SIN>
+      <PIN>1</PIN>
+      <Value>3</Value>
+    </PropertyValue>
+    <PropertyValue xsi:type="BooleanPropertyValue">
+      <SIN>25</SIN>
+      <PIN>2</PIN>
+      <Value>true</Value>
+    </PropertyValue>
+    <PropertyValue xsi:type="EnumPropertyValue">
+      <SIN>25</SIN>
+      <PIN>4</PIN>
+      <Value>2</Value>
+    </PropertyValue>
+    <PropertyValue xsi:type="EnumPropertyValue">
+      <SIN>25</SIN>
+      <PIN>12</PIN>
+      <Value>5</Value>
+    </PropertyValue>
+    <PropertyValue xsi:type="BooleanPropertyValue">
+      <SIN>25</SIN>
+      <PIN>13</PIN>
+      <Value>true</Value>
+    </PropertyValue>
+    <PropertyValue xsi:type="EnumPropertyValue">
+      <SIN>25</SIN>
+      <PIN>23</PIN>
+      <Value>1</Value>
+    </PropertyValue>
+    <PropertyValue xsi:type="UnsignedIntPropertyValue">
+      <SIN>25</SIN>
+      <PIN>31</PIN>
+      <Value>2000</Value>
+    </PropertyValue>
+  </PropertyValues>
+</Project>

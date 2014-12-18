@@ -37,6 +37,7 @@ lsfConstantsAllTerminals = {
                                                           geofenceInterval = 2,
                                                           geofenceHisteresis = 3,
                                                           -- Position service
+                                                          latitude = 6,
                                                           gpsReadInterval = 15,    -- continunes property, position service
                                                           -- IDP Service
                                                           wakeUpInterval = 11,    -- wake up interval
@@ -96,6 +97,7 @@ lsfConstantsAllTerminals = {
                                                           geofenceInterval = 2,
                                                           geofenceHisteresis = 3,
                                                           -- Position service
+                                                          latitude = 6,
                                                           gpsReadInterval = 15,    -- continunes property, position service
                                                           -- IDP Service
                                                           wakeUpInterval = 11,    -- wake up interval

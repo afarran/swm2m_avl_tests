@@ -439,10 +439,9 @@ function avlHelperFunctions.getTerminalHardwareVersion()
   local getTerminalInfoMessage = {SIN = 16, MIN = 1}
  	-- local getTerminalInfoMessage = {SIN = lsfConstants.sins.system, MIN = lsfConstans.mins.getTerminalInfo}  -- TODO: change function to use this line
   gateway.submitForwardMessage(getTerminalInfoMessage)
-  framework.delay(2)
   -- receiving terminalInfo messge (MIN 1) as the response to the request
-  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16, 1))
-  -- local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstans.mins.getTerminalInfo)) -- TODO: change function to use this line
+  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16,1), nil, 60)
+
   if(terminalInfoMessage.Payload.Fields[1].Value == "IDP-6XX") then return 1
   elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-7XX") then  return 2
   elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-8XX") then return 3
@@ -514,13 +513,87 @@ end
 -- e.g. propList = {{pin = pin1, value = val1}, {pin = pin2, value = val2}}
 -- is converted into result = {pin1 = val1, pin2 = val2}
 -- @tparam propertyList - list of properties received from getProperties method ({{pin, value}, {pin, value}})
--- @treturn - table of properties where pin determines index and value determines pin value
+-- @treturn - table of properties where pin determines index and value determines pin value, table of pins
 function avlHelperFunctions.propertiesToTable(propertyList)
   result = {}
+  pins = {}
   for index, property in ipairs(propertyList) do
     result[tonumber(property.pin)] = property.value
+    pins[index] = tonumber(property.pin)
   end
-  return result
+  return result, pins
+end
+
+function avlHelperFunctions.bytesToInt(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
+    local t={str:byte(1,-1)}
+    if endian=="big" then --reverse bytes
+        local tt={}
+        for k=1,#t do
+            tt[#t-k+1]=t[k]
+        end
+        t=tt
+    end
+    local n=0
+    for k=1,#t do
+        n=n+t[k]*2^((k-1)*8)
+    end
+    if signed then
+        n = (n > 2^(#t*8-1) -1) and (n - 2^(#t*8)) or n -- if last bit set, negative.
+    end
+    return n
+end
+
+-- This uses the ‘haversine’ formula to calculate
+-- the great-circle distance between two points – that is,
+-- the shortest distance over the earth’s surface –
+-- giving an ‘as-the-crow-flies’ distance between the points (ignoring any hills they fly over, of course!).
+-- Haversine
+-- formula: 	a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+-- c = 2 ⋅ atan2( √a, √(1−a) )
+-- d = R ⋅ c
+-- where 	φ is latitude, λ is longitude, R is earth’s radius (mean radius = 6,371km);
+-- note that angles need to be in radians to pass to trig functions!
+--
+-- This solution has accuracy about 3m per 1km
+-- Solution of better accuracy (1mm per 1km) is here: http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+-- Python implementation: https://github.com/geopy/geopy/blob/master/geopy/distance.py
+-- usage: geoDistance(30.19, 71.51, 31.33, 74.21)
+function avlHelperFunctions.geoDistance(lat1, lon1, lat2, lon2)
+  if lat1 == nil or lon1 == nil or lat2 == nil or lon2 == nil then
+    return nil
+  end
+  local dlat = math.rad(lat2-lat1)
+  local dlon = math.rad(lon2-lon1)
+  local sin_dlat = math.sin(dlat/2)
+  local sin_dlon = math.sin(dlon/2)
+  local a = sin_dlat * sin_dlat + math.cos(math.rad(lat1)) * math.cos(math.rad(lat2)) * sin_dlon * sin_dlon
+  local c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+  -- To get miles, use 3963 as the constant (equator again)
+  local d = 6378 * c
+  return d
+end
+
+function avlHelperFunctions.matchParameters(expectedProps, timeout)
+  timeout = timeout or 10
+  local props, pins = avlHelperFunctions.propertiesToTable(expectedProps)
+  local startTime = os.time()
+  
+  local currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+  local currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
+  
+  while (os.time() - startTime < timeout) do
+    local match = true
+    for k, v in pairs(currentPropTable) do
+        if currentPropTable[k] ~= props[k] then match = false end
+    end
+    if match then 
+      return currentProps, currentPropTable, pins
+    end
+      currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+      currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
+  end
+  
+  return nil
 end
 
 return function() return avlHelperFunctions end
