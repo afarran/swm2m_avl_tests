@@ -1,7 +1,7 @@
 Profile =  require("Profile/Profile")
 
 ----------------------------------------------------------------------
--- Profile for device 680
+-- Profile for device 800
 ----------------------------------------------------------------------
 Profile800 = {}
   Profile800.__index = Profile800
@@ -16,4 +16,8 @@ Profile800 = {}
   
   function Profile800:getRandomPortNumber()
     return math.random(1,3)
+  end
+  
+  function Profile800:hasFourIOs()
+    return false
   end

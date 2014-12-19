@@ -13,5 +13,6 @@ local Profile = {}
   end
   
   function Profile:getRandomPortNumber() end
+  function Profile:hasFourIOs() end
   
 return Profile
