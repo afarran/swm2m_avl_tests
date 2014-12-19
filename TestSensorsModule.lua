@@ -25,7 +25,7 @@ local Sensor = {}
                 Change = avlConstants.mins[self.name .. "Change"],
                 SensorInterval = avlConstants.mins.SensorInterval
       }
-    self.pins = {
+    self.pins = { SensorReportingInterval = avlConstants.pins.SensorReportingInterval,
                   Source = avlConstants.pins[self.name .. "Source"],
                   ChangeThld = avlConstants.pins[self.name .. "ChangeThld"],
                   MinThld = avlConstants.pins[self.name .. "MinThld"],
@@ -41,6 +41,7 @@ local Sensor = {}
                        NormalSampleInterval = 0,
                        LpmSampleInterval = 0,
                        ChangeThld = 0,
+                       SensorReportingInterval = 0
                        }
   end
   
@@ -61,6 +62,7 @@ local Sensor = {}
                  {self.pins.MaxReportInterval, pinValues.MaxReportInterval},
                  {self.pins.NormalSampleInterval, pinValues.NormalSampleInterval},
                  {self.pins.LpmSampleInterval, pinValues.LpmSampleInterval},
+                 {self.pins.SensorReportingInterval, pinValues.SensorReportingInterval},
                 }
     
     lsf.setProperties(avlConstants.avlAgentSIN, pinValues)
@@ -228,6 +230,8 @@ end
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
 function teardown()
+  sensorTester:setValueToInitial()
+
   -- disable all sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {
@@ -272,7 +276,6 @@ function teardown()
                                              })
   -- enable gps continuous mode
   lsf.setProperties(lsfConstants.sins.position, {{lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL}})
-  sensorTester:setValueToInitial()
 end
 
 -------------------------
@@ -283,210 +286,106 @@ end
 -- Test for: Periodically sending a message
 -- Testing if report timeout is set properly
 -- Testing if report has proper value
--- Testing Sensor1
-function test_PeriodicallySendingMessageContainingSensor1Values()
-  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor1', source = 'Sensor1Source'})
-end
-
--- Test for: Periodically sending a message
--- Testing if report timeout is set properly
--- Testing if report has proper value
--- Testing Sensor2
-function test_PeriodicallySendingMessageContainingSensor2Values()
-  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor2', source = 'Sensor2Source'})
-end
-
--- Test for: Periodically sending a message
--- Testing if report timeout is set properly
--- Testing if report has proper value
--- Testing Sensor3
-function test_PeriodicallySendingMessageContainingSensor3Values()
-  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor3', source = 'Sensor3Source'})
-end
-
--- Test for: Periodically sending a message
--- Testing if report timeout is set properly
--- Testing if report has proper value
--- Testing Sensor4
-function test_PeriodicallySendingMessageContainingSensor4Values()
-  generic_test_PeriodicallySendingMessageContainingSensorValues({name = 'Sensor4', source = 'Sensor4Source'})
+function test_ConfigurePeriodicalReports_ReceiveMessageContainingSensorValues()
+  RandomSensorRun(generic_test_PeriodicallySendingMessageContainingSensorValues)
 end
 
 -- Test for: Periodically sending a message
 -- Testing if report timeout is set properly
 -- Testing if report has proper value
 -- Test logic
-function generic_test_PeriodicallySendingMessageContainingSensorValues(configuration)
+function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
+  print("Testing test_PeriodicallySendingMessageContainingSensorValues using sensor " .. sensorNo)
+  local sensor = Sensor(sensorNo)
+  local DEFAULT_TIMEOUT = 5*60
 
-    local SENSOR_REPORTING_INTERVAL = 1 -- 60 secs
-    local AVL_RESPONSE_MIN = 74
-    local SENSOR_EXPECTED_VALUE = 0.02
-    local DEFAULT_TIMEOUT = 5*60
-
-
-    -- setting AVL properties
-    lsf.setProperties(avlConstants.avlAgentSIN,{
-                        {avlConstants.pins.SensorReportingInterval, SENSOR_REPORTING_INTERVAL},
-                        {avlConstants.pins[configuration.source], framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
-                                             }
-                    )
-
-    -- set monitored value in position service
-    sensorTester:setValueToInitial()
-
-    -- waiting for periodical report 1
-    local expectedMins = {AVL_RESPONSE_MIN}
+  sensor.pinValues.Source = {SIN = sensorTester:getSin(), PIN = sensorTester:getPin()}
+  sensor.pinValues.SensorReportingInterval = 1 -- 60 secs
+  --set monitored value in position service
+  sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
+  
+  -- waiting for periodical report 1
+    local expectedMins = {sensor.mins.SensorInterval}
     local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, DEFAULT_TIMEOUT+5)
 
     -- set monitored value in position service to expected value
-    sensorTester:setValue(SENSOR_EXPECTED_VALUE)
+    sensorTester:stepUp()
 
     local startTime = os.time()
 
     -- waiting for periodical report 2
-    receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins,60+5)
+    receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins,sensor.pinValues.SensorReportingInterval*60 + 5)
 
     -- checking if timeout between two reports is ok
     local timeDiff = os.time() - startTime
-    assert_equal(timeDiff , 60, 5, "Sensor Reporting Interval test failed - wrong timeout between messages")
+    assert_equal(timeDiff , sensor.pinValues.SensorReportingInterval*60, 5, "Sensor Reporting Interval test failed - wrong timeout between messages")
 
     -- checking if raported value is monitored properly
-    assert_equal(sensorTester:getNormalizedValue() , tonumber(receivedMessages[AVL_RESPONSE_MIN][configuration.name]), 0, "Sensor Reporting Interval test failed - wrong expected value")
+    assert_equal(sensorTester:getNormalizedValue() , tonumber(receivedMessages[sensor.mins.SensorInterval][sensor.name]), 0, "Sensor Reporting Interval test failed - wrong expected value")
 
 end
 
 
---Sending a message when a sensor 1 value has changed by more than set amount
-function test_changeSensor1ValueByAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor1ChangeThld'
-  configuration.min = 77 -- 82, 87, 92
-  configuration.source = 'Sensor1Source'
-  configuration.sample_interval = 'Sensor1NormalSampleInterval'
-  configuration.name = 'Sensor1'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByAmount(configuration)
-end
-
---Sending a message when a sensor 2 value has changed by more than set amount
-function test_changeSensor2ValueByAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor2ChangeThld'
-  configuration.min = 82
-  configuration.source = 'Sensor2Source'
-  configuration.sample_interval = 'Sensor2NormalSampleInterval'
-  configuration.name = 'Sensor2'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByAmount(configuration)
-end
-
---Sending a message when a sensor 3 value has changed by more than set amount
-function test_changeSensor3ValueByAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor3ChangeThld'
-  configuration.min = 87
-  configuration.source = 'Sensor3Source'
-  configuration.sample_interval = 'Sensor3NormalSampleInterval'
-  configuration.name = 'Sensor3'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByAmount(configuration)
-end
-
---Sending a message when a sensor 4 value has changed by more than set amount
-function test_changeSensor4ValueByAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor4ChangeThld'
-  configuration.min = 92
-  configuration.source = 'Sensor4Source'
-  configuration.sample_interval = 'Sensor4NormalSampleInterval'
-  configuration.name = 'Sensor4'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByAmount(configuration)
+--Sending a message when a sensor value has changed by more than set amount
+function test_Sensors_ChangeValueOverChangeThld_ReceiveChangeMsg()
+  local ReportingInterval = 1
+  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
 end
 
 --Sending a message when a sensor value has changed by more than set amount
-function generic_test_changeSensorValueByAmount(configuration)
-  local AVL_RESPONSE_MIN = configuration.min
-  local CHANGE_THLD = 1000
-  local DEFAULT_TIMEOUT = 5*60
-
-  local INIT_VALUE = 0.01
-  local SENSOR_REPORTING_INTERVAL = configuration.reporting_interval
-  local MSG_TIMEOUT = 65
-  local SAMPLE_INTERVAL = 1
-  local AVL_REPORT_MIN = avlConstants.mins.SensorInterval
-
+function generic_test_changeSensorValueByAmount(sensorNo, ReportingInterval)
+  print("Testing test_changeSensorValueByAmount using sensor " .. sensorNo)
+  local sensor = Sensor(sensorNo)
+  
+  sensor.pinValues.ChangeThld = 1000
+  sensor.pinValues.SensorReportingInterval = ReportingInterval
+  sensor.pinValues.NormalSampleInterval = ReportingInterval
+  sensor.pinValues.Source = {SIN = sensorTester:getSin(), PIN = sensorTester:getPin()}
+  
   -- set first value
-  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
-
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                        {avlConstants.pins[configuration.change_thld_name], CHANGE_THLD},
-                        {avlConstants.pins[configuration.sample_interval], SAMPLE_INTERVAL},
-                        {avlConstants.pins.SensorReportingInterval, SENSOR_REPORTING_INTERVAL},
-                        {avlConstants.pins[configuration.source], framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
-                                             }
-                    )
-
-  -- waiting for first change report msg
-  local expectedMins = {AVL_RESPONSE_MIN,}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
-  -- print(framework.dump(receivedMessages))
-
+  sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
+  -- wait for initial change
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.Change}, sensor.pinValues.NormalSampleInterval + 3)    
+  
   -- set second value
-  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE + 2*(CHANGE_THLD/60000) , longitude = 1})
-
+  sensorTester:setValue(sensorTester.currentValue + 2 * sensor.pinValues.ChangeThld / sensorTester.conversion)
+  
   -- waiting for change message
-  expectedMins = {AVL_RESPONSE_MIN,}
-  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
-  -- print(framework.dump(receivedMessages))
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.Change}, GATEWAY_TIMEOUT)
 
-  assert_not_nil(receivedMessages[AVL_RESPONSE_MIN], "Message with report not delivered")
+  assert_not_nil(receivedMessages[sensor.mins.Change], "Message with report not delivered")
   -- checking value (whitch triggered threshold)
-  assert_equal( (INIT_VALUE + 2*(CHANGE_THLD/60000)) * 60000 , tonumber(receivedMessages[AVL_RESPONSE_MIN][configuration.name]), 1, "Problem with triggering change with threshold.")
+  assert_equal(sensorTester:getNormalizedValue() , tonumber(receivedMessages[sensor.mins.Change][sensor.name]), 1, "Problem with triggering change with threshold.")
 end
 
 --Sending a message when a sensor value has changed by less than set amount
-function generic_test_changeSensorValueByLessThanAmount(configuration)
-  local AVL_RESPONSE_MIN = configuration.min
-  local CHANGE_THLD = 1000
-  local DEFAULT_TIMEOUT = 5*60
+function generic_test_changeSensorValueByLessThanAmount(sensorNo, ReportingInterval)
+  print("Testing test_changeSensorValueByLessThanAmount using sensor " .. sensorNo)
 
-  local INIT_VALUE = 0.01
-  local SENSOR_REPORTING_INTERVAL = configuration.reporting_interval
-  local MSG_TIMEOUT = 65
-  local SAMPLE_INTERVAL = 1
-  local AVL_REPORT_MIN = avlConstants.mins.SensorInterval
-
+  local sensor = Sensor(sensorNo)
+  sensor.pinValues.ChangeThld = 1000
+  sensor.pinValues.SensorReportingInterval = ReportingInterval
+  sensor.pinValues.NormalSampleInterval = 1
+  sensor.pinValues.Source = {SIN = sensorTester:getSin(), PIN = sensorTester:getPin()}
+  
   -- set first value
-  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE, longitude = 1})
-
+  sensorTester:setValueToInitial()
+  
   -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                        {avlConstants.pins[configuration.change_thld_name], CHANGE_THLD},
-                        {avlConstants.pins[configuration.sample_interval], SAMPLE_INTERVAL},
-                        {avlConstants.pins.SensorReportingInterval, SENSOR_REPORTING_INTERVAL},
-                        {avlConstants.pins[configuration.source], framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
-                                             }
-                    )
-
-  -- message can be received - we establish previous report value for further calculations
-  local expectedMins = {AVL_RESPONSE_MIN,}
-  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
-  -- print(framework.dump(receivedMessages))
+  sensor:applyPinValues()
+  -- wait for initial change
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.Change}, sensor.pinValues.NormalSampleInterval + 3)    
 
   -- set second value
-  gps.set({  speed = 1, heading = 90, latitude = INIT_VALUE + 0.5*(CHANGE_THLD/60000) , longitude = 1})
-
+  sensorTester:setValue(sensorTester.currentValue + 0.8 * sensor.pinValues.ChangeThld / sensorTester.conversion)
+  
   -- message should not be received
-  expectedMins = {AVL_RESPONSE_MIN,}
-  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, MSG_TIMEOUT+5)
-  -- print(framework.dump(receivedMessages))
-  assert_nil(receivedMessages[AVL_RESPONSE_MIN], "Message should not be delivered (amount less than threshold)")
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.Change}, GATEWAY_TIMEOUT)
+  assert_nil(receivedMessages[sensor.mins.Change], "Message should not be delivered (amount less than threshold)")
 
 end
 
@@ -510,113 +409,17 @@ function test_SettingGpsValue()
     assert_equal(GPS_EXPECTED_VALUE * 60000 , sensor1Value , 0, "Problem with gps setting (a sensor source)")
 end
 
--- 666
 -- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
-function off_test_ChangeThresholdWhenReportIntervalZeroForSensor1()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor1ChangeThld'
-  configuration.min = 77
-  configuration.source = 'Sensor1Source'
-  configuration.sample_interval = 'Sensor1NormalSampleInterval'
-  configuration.name = 'Sensor1'
-  configuration.reporting_interval = 0
-
-  generic_test_changeSensorValueByAmount(configuration)
+function test_ChangeThresholdWhenReportIntervalZeroForSensor()
+  local ReportingInterval = 0
+  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
 end
 
--- Sending a message when a sensor 2 value has changed by more than set amount (when report interval zero)
-function off_test_ChangeThresholdWhenReportIntervalZeroForSensor2()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor2ChangeThld'
-  configuration.min = 82
-  configuration.source = 'Sensor2Source'
-  configuration.sample_interval = 'Sensor2NormalSampleInterval'
-  configuration.name = 'Sensor2'
-  configuration.reporting_interval = 0
-
-  generic_test_changeSensorValueByAmount(configuration)
+-- Sending a message when a sensor value has changed by less than set amount
+function test_changeSensorValueByLessThanChangeThld_NoMessageExpected()
+  ReportingInterval = 1 
+  RandomSensorRun(generic_test_changeSensorValueByLessThanAmount, ReportingInterval)
 end
-
--- Sending a message when a sensor 3 value has changed by more than set amount (when report interval zero)
-function off_test_ChangeThresholdWhenReportIntervalZeroForSensor3()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor3ChangeThld'
-  configuration.min = 77
-  configuration.source = 'Sensor3Source'
-  configuration.sample_interval = 'Sensor3NormalSampleInterval'
-  configuration.name = 'Sensor3'
-  configuration.reporting_interval = 0
-
-  generic_test_changeSensorValueByAmount(configuration)
-end
-
-
-
--- Sending a message when a sensor 4 value has changed by more than set amount (when report interval zero)
-function off_test_ChangeThresholdWhenReportIntervalZeroForSensor4()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor4ChangeThld'
-  configuration.min = 92
-  configuration.source = 'Sensor4Source'
-  configuration.sample_interval = 'Sensor4NormalSampleInterval'
-  configuration.name = 'Sensor4'
-  configuration.reporting_interval = 0
-
-  generic_test_changeSensorValueByAmount(configuration)
-end
-
--- Sending a message when a sensor 1 value has changed by less than set amount
-function test_changeSensor1ValueByLessThanAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor1ChangeThld'
-  configuration.min = 77
-  configuration.source = 'Sensor1Source'
-  configuration.sample_interval = 'Sensor1NormalSampleInterval'
-  configuration.name = 'Sensor1'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByLessThanAmount(configuration)
-end
-
--- Sending a message when a sensor 2 value has changed by more than set amount
-function test_changeSensor2ValueByLessThanAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor2ChangeThld'
-  configuration.min = 82
-  configuration.source = 'Sensor2Source'
-  configuration.sample_interval = 'Sensor2NormalSampleInterval'
-  configuration.name = 'Sensor2'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByLessThanAmount(configuration)
-end
-
--- Sending a message when a sensor 3 value has changed by more than set amount
-function test_changeSensor3ValueByLessThanAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor3ChangeThld'
-  configuration.min = 77
-  configuration.source = 'Sensor3Source'
-  configuration.sample_interval = 'Sensor3NormalSampleInterval'
-  configuration.name = 'Sensor3'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByLessThanAmount(configuration)
-end
-
--- Sending a message when a sensor 4 value has changed by more than set amount
-function test_changeSensor4ValueByLessThanAmount()
-  configuration = {}
-  configuration.change_thld_name = 'Sensor4ChangeThld'
-  configuration.min = 92
-  configuration.source = 'Sensor4Source'
-  configuration.sample_interval = 'Sensor4NormalSampleInterval'
-  configuration.name = 'Sensor4'
-  configuration.reporting_interval = 1
-
-  generic_test_changeSensorValueByLessThanAmount(configuration)
-end
-
 
 -------------------------
 
