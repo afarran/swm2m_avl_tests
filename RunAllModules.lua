@@ -3,6 +3,7 @@ avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent relat
 avlConstants =  require("AvlAgentConstants")
 lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
+profileFactory = require("Profile/ProfileFactory")()
 
 -- global variables used in the tests
 GPS_PROCESS_TIME = 1                                                -- seconds
@@ -13,7 +14,7 @@ GPS_READ_INTERVAL = 1                                               -- used to c
 AVL_SIN = 126                                                       -- AVL SIN is constant
 hardwareVariant = avlHelperFunctions.getTerminalHardwareVersion()   -- 1,2 and 3 for 600, 700 and 800 available
 lsfConstants= lsfConstantsAllTerminals[hardwareVariant]             -- getting constants specific for the terminal under test
-
+profile = profileFactory.create(hardwareVariant)
 
 --- Called before the start of any test suites
 local function setup()
@@ -23,13 +24,13 @@ local function setup()
   --include the following test suites in the feature tests:
   --lunatest.suite("TestGPSModule")
   --lunatest.suite("TestLPMModule")
-  --lunatest.suite("TestDigitalInputsModule")
+  lunatest.suite("TestDigitalInputsModule")
   --lunatest.suite("TestServiceMeterModule")
   --lunatest.suite("TestDigitalOutputsModule")
   --lunatest.suite("TestGeofencesModule")
   --lunatest.suite("TestPeriodicReportsModule")
   --lunatest.suite("TestSensorsModule")
-  lunatest.suite("TestAdminConfigModule")
+  --lunatest.suite("TestAdminConfigModule")
   --lunatest.suite("TestDriverIdentModule")
 
 end

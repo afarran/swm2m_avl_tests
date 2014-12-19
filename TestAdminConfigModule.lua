@@ -262,3 +262,4 @@ function test_SetProperties_ResponseMessageContainsAllProperties()
   --TODO: sent revert message!
   
 end
+

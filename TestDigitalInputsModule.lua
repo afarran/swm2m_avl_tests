@@ -63,18 +63,21 @@ RANDOM_SM = false
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
+  -- ********************************************************
   -- selecting random number of port to be used in TCs
-  math.randomseed(os.time())                -- os.time used as randomseed
-  math.random(1,4)
+  --math.randomseed(os.time())                -- os.time used as randomseed
+  --math.random(1,4)
 
-  -- device profile application
+  -- device profile application TODO: refactor to abstract profile
   -- IDP 800 has 3 IOs so port is selected from range 1-3, IDP 600 has 4 IOs so port is selected from range 1-4
-  if hardwareVariant == 3 then
-    randomPortNumber = math.random(1,3)
-  else
-    randomPortNumber = math.random(1,4)
-  end
-
+  --if hardwareVariant == 3 then
+  --  randomPortNumber = math.random(1,3)
+  --else
+  --  randomPortNumber = math.random(1,4)
+  --end
+  -- ********************************************************
+  
+  randomPortNumber = profile.getRandomPortNumber()
 
 end
 
