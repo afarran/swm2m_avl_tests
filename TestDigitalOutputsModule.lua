@@ -109,6 +109,7 @@ function setup()
                                                }
                     )
 
+  -- device profile application
   -- power service is specific to IDP 800
   if(hardwareVariant == 3) then
     lsf.setProperties(lsfConstants.sins.power,{
@@ -1289,6 +1290,7 @@ end
   -- 10. Digital output port is in low state (lpm trigger is false again)
 function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerSourceIsNotPresent_DigitalOutputPortAssociatedWithLowPowerInHighState()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1391,6 +1393,7 @@ end
   -- 12. Digital output port is in high state (one lpm trigger is active)
 function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOff_DigitalOutputPortAssociatedWithLowPowerInHighStateIfAnyOfTheTriggersIsActive()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1538,6 +1541,7 @@ end
   -- 11. Digital output port is in low state
 function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFunction_DigitalOutputPortChangesAccordingToOnMainPowerState()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800") end
 
@@ -1656,6 +1660,7 @@ end
   -- 7. 4 digital outputs in high state
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
+  -- device profile application
   -- This TC only applies to IDP 600 series terminal
   if(hardwareVariant~=1) then skip("TC related only to IDP 600s") end
 
@@ -1747,6 +1752,7 @@ end
   -- 7. 3 digital outputs in high state
 function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
+  -- device profile application
   -- This TC only applies to IDP 800 series terminal
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1834,7 +1840,8 @@ end
   -- 7. 5 digital outputs in high state
 function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
-  -- This TC only applies to IDP 800 series terminal
+  -- device profile application
+  -- This TC only applies to IDP 700 series terminal - names
   if(hardwareVariant~=2) then skip("TC related only to IDP 700s") end
 
   -- setting the IO properties
@@ -1931,7 +1938,8 @@ end
   -- 7. 4 digital outputs inverted automatically to low state
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
-  -- This TC only applies to IDP 600 series terminal
+  -- device profile application
+  -- This TC only applies to IDP 600 series terminal - 4 digital output lines are affected
   if(hardwareVariant~=1) then skip("TC related only to IDP 600s") end
 
   local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
@@ -2025,6 +2033,7 @@ end
   -- 7. 5 digital outputs inverted automatically to low state
 function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
+  -- device profile application
   -- This TC only applies to IDP 700 series terminal
   if(hardwareVariant~=2) then skip("TC related only to IDP 700s") end
 
@@ -2122,7 +2131,8 @@ end
   -- 7. 3 digital outputs inverted automatically to low state
 function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
-  -- This TC only applies to IDP 600 series terminal
+  -- device profile application
+  -- This TC only applies to IDP 800 series terminal - it has 3 IOs and 3 are affected in this case
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
   local invertTime = 1   -- in minutes, time after which the set digital output state is automatically inverted

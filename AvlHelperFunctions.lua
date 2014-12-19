@@ -285,7 +285,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
                        latitude = 0,                    -- degrees
                        fixType = 3,                     -- valid fix provided
                        simulateLinearMotion = false,   -- terminal not moving
-                       jammingDetect = true,
+                       jammingDetect = false,
                        antennaCutDetect = false,
                      }
   gps.set(gpsSettings)
@@ -348,7 +348,7 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
                       longitude = 0,                       -- degrees
                       latitude = 0,                        -- degrees
                       fixType= 3,                          -- valid fix provided
-                      jammingDetect = true,
+                      jammingDetect = false,
                       antennaCutDetect = false,
                       simulateLinearMotion = false,
                      }
