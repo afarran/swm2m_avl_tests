@@ -140,6 +140,8 @@ end
   device.setIO(1, 1)
   framework.delay(2)
 
+  -- device profile application
+  -- IDP 680 has 4 IOs, IDP 800 has 3 IOs - that should be considered when setting all of them to low state
   -- setting all 4 ports to low stare
   for counter = 1, 4, 1 do
     device.setIO(counter, 0)
@@ -708,6 +710,7 @@ end
   -- 6. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -788,6 +791,7 @@ end
   -- 6. Terminal does not enter LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalNotPutInLpmWhenExternalPowerSourceNotPresentShorterThanLpmEntryDelayPeriod()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -867,6 +871,7 @@ end
   -- 7. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -950,6 +955,7 @@ end
   -- 5. Terminal put out of LPM
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutInLpmAfterIgnitionOffAndPutOutOfLpmAfterIgnitionOn()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1043,6 +1049,7 @@ end
   -- 3. Terminal does not go to to LPM
  function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalIsNotPutIntoLpmByIgnitionOffEvent()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1129,6 +1136,7 @@ end
   -- 6. Terminal doesn not enter LPM
  function test_LPM_WhenLpmTriggerSetToZero_TerminalIsNotPutIntoLpmByIgnitionOffEventOrUnpluggingExternalPowerSource()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1211,6 +1219,7 @@ end
   -- 3. Terminal does not enter LPM
  function test_LPM_WhenLpmTriggerSetToIgnitionOff_TerminalIsNotPutIntoLpmWhenExternalPowerSourceIsNotPresent()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -1286,6 +1295,7 @@ end
   -- 11. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutOutOfLpmWhenBothIgnitionIsOnAndExternalPowerIsPresent()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
