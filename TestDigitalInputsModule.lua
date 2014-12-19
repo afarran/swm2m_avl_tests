@@ -65,12 +65,12 @@ RANDOM_SM = false
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
-  -- ********************************************************
+  -- ******************************************************** ramove that code after tests
   -- selecting random number of port to be used in TCs
   --math.randomseed(os.time())                -- os.time used as randomseed
   --math.random(1,4)
 
-  -- device profile application TODO: refactor to abstract profile
+  -- device profile application
   -- IDP 800 has 3 IOs so port is selected from range 1-3, IDP 600 has 4 IOs so port is selected from range 1-4
   --if hardwareVariant == 3 then
   --  randomPortNumber = math.random(1,3)
@@ -80,6 +80,7 @@ RANDOM_SM = false
   -- ********************************************************
   
   randomPortNumber = profile.getRandomPortNumber()
+  print("RandomPort " .. randomPortNumber)
 
 end
 
@@ -1793,9 +1794,10 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
+    
     -- device profile application
     -- IDP 800 has only 3 IOs
-    if hardwareVariant ~= 3 then
+    if profile.hasFourIOs() then 
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
 
