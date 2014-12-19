@@ -2274,7 +2274,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
+                      jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
@@ -2287,7 +2287,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   local expectedMins = {avlConstants.mins.gpsJammingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  gps.set({jammingDetect = "false"}) -- back to jamming off
+  gps.set({jammingDetect = false}) -- back to jamming off
 
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
@@ -2343,9 +2343,10 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounce
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
-                      jammingLevel = JAMMING_LEVEL,
+                      jammingDetect = true,
                      }
+
+
 
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
@@ -2354,8 +2355,6 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounce
 
   local expectedMins = {avlConstants.mins.gpsJammingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
-
-  gps.set({jammingDetect = "false"}) -- back to jamming off
 
   assert_false(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not expected")
 
@@ -2411,7 +2410,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
+                      jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
@@ -2424,7 +2423,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
 
   -- *** Execute
-  gps.set({jammingDetect = "false"}) -- back to jamming off
+  gps.set({jammingDetect = false}) -- back to jamming off
   local timeOfEvent = os.time()
   framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until GpsJammingEnd is sent
 
@@ -2490,7 +2489,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
+                      jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
@@ -2503,7 +2502,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
 
   -- *** Execute
-  gps.set({jammingDetect = "false"}) -- back to jamming off
+  gps.set({jammingDetect = false}) -- back to jamming off
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until shorter than GPS_JAMMING_DEBOUNCE_TIME
 
   expectedMins = {avlConstants.mins.gpsJammingEnd}
@@ -2512,7 +2511,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_nil(receivedMessages[avlConstants.mins.gpsJammingEnd], "GpsJammingEnd message not expected")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal is unexpectedly left GPSJammed state")
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has unexpectedly left GPSJammed state")
 
 end
 
@@ -2546,7 +2545,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      antennaCutDetect = "false"
+                      antennaCutDetect = false
                      }
 
 
@@ -2556,12 +2555,12 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEvent = os.time()
-  gps.set({antennaCutDetect = "true"}) -- antenna cut from this point
+  gps.set({antennaCutDetect = true}) -- antenna cut from this point
 
   local expectedMins = {avlConstants.mins.antennaCutStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  gps.set({antennaCutDetect = "false"}) -- antenna connected back from this point
+  gps.set({antennaCutDetect = false}) -- antenna connected back from this point
 
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "AntennaCutStart message not received")
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "AntennaCutStart message has incorrect longitude value")
@@ -2605,7 +2604,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaConnectedBack_Antenn
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      antennaCutDetect = "true"
+                      antennaCutDetect = true
                      }
 
 
@@ -2615,7 +2614,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaConnectedBack_Antenn
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEvent = os.time()
-  gps.set({antennaCutDetect = "false" }) -- antenna connected back
+  gps.set({antennaCutDetect = false }) -- antenna connected back
 
   local expectedMins = {avlConstants.mins.antennaCutEnd}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
