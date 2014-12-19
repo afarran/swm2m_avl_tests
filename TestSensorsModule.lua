@@ -191,7 +191,7 @@ local SensorTesterGps = {}
 local sensorTester = SensorTesterGps(-0.05, -0.07, -0.03, 0.01)
 local NEAR_ZERO = 0.0001
 -- Run for all Sensors or only one random per each test
-local RUN_ALL = false
+local RUN_ALL = true
 
 local function RandomSensorRun(func, ...)
   if RUN_ALL then
