@@ -1936,7 +1936,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
     -- device profile application
     -- IDP 800 has only 3 IOs
-    if hardwareVariant ~= 3  then
+    if profile.hasFourIOs()  then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
     end
 
