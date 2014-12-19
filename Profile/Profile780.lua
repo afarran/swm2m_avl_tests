@@ -21,3 +21,11 @@ Profile780 = {}
   function Profile780:hasFourIOs()
     return true
   end
+  
+  function Profile780:hasThreeIOs()
+    return false
+  end
+  
+  function Profile780:hasLine13()
+    return false
+  end

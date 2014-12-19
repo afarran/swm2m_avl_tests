@@ -2187,7 +2187,7 @@ function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHigh
 
   -- device profile application
   -- IDP 800 has 3 IOs
-  if(hardwareVariant==3) then skip("TC related only to IDP 600s and 700s") end
+  if profile.hasThreeIOs() then skip("TC related only to IDP 600s and 700s") end
 
   local configuration = {}
 
@@ -2246,7 +2246,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2331,7 +2331,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   local INPUT_VOLTAGE = 180      -- tenths of volts, external power voltage value
 
@@ -2408,7 +2408,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2479,7 +2479,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2559,7 +2559,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
   local SEATBELT_DEBOUNCE_TIME = 1       -- seconds
 
   -- setting AVL properties
@@ -2655,7 +2655,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   local ODOMETER_DISTANCE_INCREMENT = 10  -- meters
   local MOVING_DEBOUNCE_TIME = 1          -- seconds
@@ -2810,7 +2810,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2880,7 +2880,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2950,7 +2950,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3020,7 +3020,7 @@ end
 
   -- device profile application
   -- line 13 is specific only in IDP 800s
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{

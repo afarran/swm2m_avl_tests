@@ -21,3 +21,12 @@ Profile800 = {}
   function Profile800:hasFourIOs()
     return false
   end
+  
+  function Profile800:hasThreeIOs()
+    return true
+  end
+  
+  function Profile800:hasLine13()
+    return true
+  end
+  

@@ -21,3 +21,11 @@ Profile680 = {}
   function Profile680:hasFourIOs()
     return true
   end
+  
+  function Profile680:hasThreeIOs()
+    return false
+  end
+  
+  function Profile680:hasLine13()
+    return false
+  end
