@@ -1,19 +1,43 @@
-cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
-
 -- PropertiesMessagesGenerator generates message 
 -- with all properties randomly picked 
 -- or with default values.
 PropertiesMessagesGenerator = {
-  message = {}
+  message = {},
+  messageFields = {}
 }
     
 function PropertiesMessagesGenerator:getMessageWithRandomValues()
-      self:initPropertiesDescriptions()
-      print(framework.dump(self.message))
+  self:initPropertiesDescriptions()
+  self:prepareMessage(true)
 end
 
 function PropertiesMessagesGenerator:getMessageWithDefaultValues()
-      print(self.test)
+  self:initPropertiesDescriptions()
+  self:prepareMessage(true)
+end
+
+-- TODO: private method
+function PropertiesMessagesGenerator:prepareMessage(random)
+  math.randomseed(os.time())
+  for i = 1, #self.message.Fields do
+    self.messageFields[i]={}
+    self.messageFields[i].Name = self.message.Fields[i].Name
+    
+    if random == false or self.message.Fields[i].Range == nil   then
+      self.messageFields[i].Value = self.message.Fields[i].Value
+    else
+      if random and #self.message.Fields[i].Range == 1 then
+        self.messageFields[i].Value = self.message.Fields[i].Range[1]
+      elseif random and type(self.message.Fields[i].Range[1]) == "string" then
+        local index = math.random(1,#self.message.Fields[i].Range)
+        self.messageFields[i].Value = self.message.Fields[i].Range[index]
+      elseif random and type(self.message.Fields[i].Range[1]) == "number" then
+        self.messageFields[i].Value = math.random(self.message.Fields[i].Range[1],self.message.Fields[i].Range[2])
+      elseif random then
+        self.messageFields[i].Value = self.message.Fields[i].Value
+      end
+    end
+  end
 end
 
 function PropertiesMessagesGenerator:initPropertiesDescriptions()
@@ -391,5 +415,5 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
 	self.message.Fields[106].Name = "ExternalOdometerSource"
 	self.message.Fields[106].Value = ""
 end
-    
-PropertiesMessagesGenerator:getMessageWithRandomValues()
+
+return function() return PropertiesMessagesGenerator end
