@@ -2183,6 +2183,8 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
 
   -- setting terminals power properties for verification
 
+  -- device profile application
+  -- external battery voltage and external voltage are only applicable to IDP 800
   if (hardwareVariant == 3) then
     device.setPower(3, BATT_VOLTAGE) -- setting battery voltage
      device.setPower(9, EXT_VOLTAGE)  -- setting external power voltage
@@ -2224,6 +2226,8 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].SatCnr), "DiagnosticsInfo message has incorrect SatCnr value")
   assert_equal(99, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].CellRssi), "DiagnosticsInfo message has incorrect CellRssi value")
 
+  -- device profile application
+  -- external battery voltage and external voltage are only applicable to IDP 800
   if (hardwareVariant == 3) then
     assert_equal(BATT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
     assert_equal(EXT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].ExtVoltage), "DiagnosticsInfo has incorrect ExtVoltage value")

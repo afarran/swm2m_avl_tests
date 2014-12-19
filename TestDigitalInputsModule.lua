@@ -67,6 +67,8 @@ RANDOM_SM = false
   math.randomseed(os.time())                -- os.time used as randomseed
   math.random(1,4)
 
+  -- device profile application
+  -- IDP 800 has 3 IOs so port is selected from range 1-3, IDP 600 has 4 IOs so port is selected from range 1-4
   if hardwareVariant == 3 then
     randomPortNumber = math.random(1,3)
   else
@@ -151,9 +153,12 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)
 
+
   ----------------------------------------------------------------------
   -- For IDP 800
   ----------------------------------------------------------------------
+  -- device profile application
+  -- IDP 800 has 3 IOs
   if(hardwareVariant==3) then
      for counter = 1, 3, 1 do
        device.setIO(counter, 0) -- setting all 3 ports to low state
@@ -172,6 +177,8 @@ end
   ----------------------------------------------------------------------
   -- For IDP 680
   ----------------------------------------------------------------------
+  -- device profile application
+  -- IDP 600 has 4 IOs
   if(hardwareVariant==1) then
     for counter = 1, 4, 1 do
        device.setIO(counter, 0) -- setting all 4 ports to low state
@@ -1781,6 +1788,8 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
+    -- device profile application
+    -- IDP 800 has only 3 IOs
     if hardwareVariant ~= 3 then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
@@ -1918,6 +1927,8 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
+    -- device profile application
+    -- IDP 800 has only 3 IOs
     if hardwareVariant ~= 3  then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
     end
@@ -2127,6 +2138,7 @@ end
   -- DigInp4Hi message sent when port changes state from low to high
 function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
 
+  -- device profile application
   -- Dual power source feature is specific to IDP 800
   if(hardwareVariant==3) then skip("TC related only to IDP 600 and 700s") end
 
@@ -2166,7 +2178,8 @@ end
   -- DigInp4Lo message sent when port changes state from high to low
 function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
 
-  -- Dual power source feature is specific to IDP 800
+  -- device profile application
+  -- IDP 800 has 3 IOs
   if(hardwareVariant==3) then skip("TC related only to IDP 600s and 700s") end
 
   local configuration = {}
@@ -2224,6 +2237,7 @@ end
   --
  function test_PowerMain_WhenVirtualLine13ChangesStateTo1_PowerMainMessageSentAndPowerMainStateBecomesTrue()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2308,6 +2322,7 @@ end
   --
  function test_PowerBackup_WhenVirtualLine13ChangesStateTo0_PowerBackupMessageSentAndPowerMainStateBecomesFalse()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2384,6 +2399,7 @@ end
   -- 7. IgnitionOn is true
  function test_Line13_WhenVirtualLine13ChangesStateTo1_IgnitionOnMessageSent()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2454,6 +2470,7 @@ end
   -- 7. IgnitionOn is false
  function test_Line13_WhenVirtualLine13ChangesStateTo0_IgnitionOffMessageSent()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2533,6 +2550,7 @@ end
   -- 12. Message fields contain Point#2 GPS and time information
   function test_Line13_WhenVirtualLine13IsAssociatedWithSeatbeltOffFunction_SeatbeltViolationStartAndSeatbeltViolationEndMessageSentAccordingToStateOfLine13()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
   local SEATBELT_DEBOUNCE_TIME = 1       -- seconds
@@ -2628,6 +2646,7 @@ end
   -- 18. SM0Distance is 111 km and SM0Time is 0 (SM0 has been deactivated after reaching Point#2)
  function test_Line13_WhenVirtualLine13IsAssociatedWithIgnitionAndSM0_IgnitionAndSM0AreActivatedAndDeactivatedAccordingToStateOfLine13()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2782,6 +2801,7 @@ end
   -- 8. SM1Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM1_ServiceMeter1BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2851,6 +2871,7 @@ end
   -- 8. SM2Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM2_ServiceMeter2BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2920,6 +2941,7 @@ end
   -- 8. SM3Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM3_ServiceMeter3BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
@@ -2989,6 +3011,7 @@ end
   -- 8. SM4Active bit in avlStates property is not true
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM4_ServiceMeter4BecomesActiveAndInactiveAccordingToStateOfLine13()
 
+  -- device profile application
   -- line 13 is specific only in IDP 800s
   if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
 
