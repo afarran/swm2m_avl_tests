@@ -2274,7 +2274,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
+                      jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
@@ -2287,7 +2287,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   local expectedMins = {avlConstants.mins.gpsJammingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  gps.set({jammingDetect = "false"}) -- back to jamming off
+  gps.set({jammingDetect = false}) -- back to jamming off
 
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
@@ -2343,9 +2343,10 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounce
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
-                      jammingLevel = JAMMING_LEVEL,
+                      jammingDetect = true,
                      }
+
+
 
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
@@ -2354,8 +2355,6 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounce
 
   local expectedMins = {avlConstants.mins.gpsJammingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
-
-  gps.set({jammingDetect = "false"}) -- back to jamming off
 
   assert_false(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not expected")
 
@@ -2411,7 +2410,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
+                      jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
@@ -2424,7 +2423,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
 
   -- *** Execute
-  gps.set({jammingDetect = "false"}) -- back to jamming off
+  gps.set({jammingDetect = false}) -- back to jamming off
   local timeOfEvent = os.time()
   framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until GpsJammingEnd is sent
 
@@ -2490,7 +2489,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      jammingDetect = "true",
+                      jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
@@ -2503,7 +2502,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
 
   -- *** Execute
-  gps.set({jammingDetect = "false"}) -- back to jamming off
+  gps.set({jammingDetect = false}) -- back to jamming off
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until shorter than GPS_JAMMING_DEBOUNCE_TIME
 
   expectedMins = {avlConstants.mins.gpsJammingEnd}
@@ -2512,7 +2511,7 @@ function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedFo
   assert_nil(receivedMessages[avlConstants.mins.gpsJammingEnd], "GpsJammingEnd message not expected")
 
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal is unexpectedly left GPSJammed state")
+  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).GPSJammed, "Terminal has unexpectedly left GPSJammed state")
 
 end
 
@@ -2546,7 +2545,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      antennaCutDetect = "false"
+                      antennaCutDetect = false
                      }
 
 
@@ -2556,12 +2555,12 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEvent = os.time()
-  gps.set({antennaCutDetect = "true"}) -- antenna cut from this point
+  gps.set({antennaCutDetect = true}) -- antenna cut from this point
 
   local expectedMins = {avlConstants.mins.antennaCutStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  gps.set({antennaCutDetect = "false"}) -- antenna connected back from this point
+  gps.set({antennaCutDetect = false}) -- antenna connected back from this point
 
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "AntennaCutStart message not received")
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "AntennaCutStart message has incorrect longitude value")
@@ -2605,7 +2604,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaConnectedBack_Antenn
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      antennaCutDetect = "true"
+                      antennaCutDetect = true,
                      }
 
 
@@ -2615,7 +2614,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaConnectedBack_Antenn
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
   local timeOfEvent = os.time()
-  gps.set({antennaCutDetect = "false" }) -- antenna connected back
+  gps.set({antennaCutDetect = false }) -- antenna connected back
 
   local expectedMins = {avlConstants.mins.antennaCutEnd}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
@@ -2634,7 +2633,7 @@ end
 
 
 
---- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
+--- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time for external speed source .
   -- Initial Conditions:
   --
   -- * Terminal not moving
@@ -2707,5 +2706,172 @@ function test_ExternalSpeedSource_WhenSpeedAboveStationarySpeedThldForPeriodAbov
 
 end
 
+
+
+
+--- TC checks is speed is considered to be zero if external power source is defined to non existing pair SIN and PIN .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Put terminal into moving state
+  -- 2. Set externalSpeedSource (PIN 134) to read property 0 from service 0 (that is incorrect setting)
+  -- 3. Wait longer than stationaryDebounceTime
+  --
+  -- Results:
+  --
+  -- 1. Terminal moving
+  -- 2. ExternalSpeedSource (PIN 134) set to SIN = 0 and PIN = 0
+  -- 3. AVL speed was 0 - MovingEnd message was sent
+function test_ExternalSpeedSource_WhenExternalSpeedSourceIsIncorrectlyDefined_AVLSpeedIsSetToZero()
+
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1                            -- seconds
+  local STATIONARY_SPEED_THLD = 5                           -- kmh
+  local STATIONARY_DEBOUNCE_TIME = 1                        -- seconds
+  local gpsSettings = {}                                    -- table containing gpsSettings used in TC
+
+
+  -- Point#1 settings
+  gpsSettings[1]={
+                  speed = STATIONARY_SPEED_THLD + 10 ,                      -- to get moving state
+                  heading = 90,                                             -- degrees
+                  latitude = 1,                                             -- degrees
+                  longitude = 1,                                            -- degrees
+                 }
+
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                             {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME},
+                            }
+                   )
+
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- terminal in Point#1 - moving
+  gps.set(gpsSettings[1])
+
+  -- wait for period of movingDebounceTime
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- setting external speed source to incrorrect pair SIN = 0 and PIN = 0, speed should be considered as zero from now
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode({0,0}), "data" }  -- that is incorrect setting, there is no SIN 0, PIN 0  pair
+                            }
+                   )
+
+  framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  -- disabling reading speed from external source
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" }
+                            }
+                   )
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received after setting external speed source to incorrect value")
+
+end
+
+
+
+--- TC checks is speed is considered to be zero if external power source is defined to correct pair SIN and PIN but there is no value in property .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Put terminal into moving state
+  -- 2. Save empty string to externalOdometerSource (PIN 135, SIN 126)
+  -- 3. Set externalSpeedSource (PIN 134) to read property externalOdometerSource (PIN 135) from AVL service (SIN 126) (that is correct setting)
+  -- 4. Wait longer than stationaryDebounceTime
+  --
+  -- Results:
+  --
+  -- 1. Terminal moving
+  -- 2. No valid value inside externalOdometerSource (PIN 135, SIN 126)
+  -- 3. ExternalSpeedSource (PIN 134) set to SIN = 0 and PIN = 0
+  -- 4. AVL speed was 0 - MovingEnd message was sent
+function test_ExternalSpeedSource_WhenExternalSpeedSourceIsCorrectlyDefinedButValueOfPropertyIsNotAvailable_AVLSpeedIsSetToZero()
+
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1                            -- seconds
+  local STATIONARY_SPEED_THLD = 5                           -- kmh
+  local STATIONARY_DEBOUNCE_TIME = 1                        -- seconds
+  local gpsSettings = {}                                    -- table containing gpsSettings used in TC
+
+
+  -- Point#1 settings
+  gpsSettings[1]={
+                  speed = STATIONARY_SPEED_THLD + 10 ,                      -- to get moving state
+                  heading = 90,                                             -- degrees
+                  latitude = 1,                                             -- degrees
+                  longitude = 1,                                            -- degrees
+                 }
+
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                             {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME},
+                             {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data" }  -- this property will be used as external speed source
+                            }
+                   )
+
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- terminal in Point#1 - moving
+  gps.set(gpsSettings[1])
+
+  -- wait for period of movingDebounceTime
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- setting external speed source to  SIN = 126 and PIN = 135 - this is correct setting but there is no value of speed in 135 property
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode({avlConstants.avlAgentSIN, avlConstants.pins.externalOdometerSource}), "data" }
+                            }
+                   )
+
+  framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  -- disabling reading speed from external source
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" }
+                            }
+                   )
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received after setting external speed source to incorrect value")
+
+end
 
 

@@ -1,16 +1,16 @@
-local rev = "$Revision: 1776 $"
-
 --- Lua Services Test Framework.
 -- You may find it convenient to run your test suite from SciTE.
 -- @usage
 -- shell> lua -e "debugLevel = 0|1|2" <test file name>
 -- @usage
--- -- Here, debugLevel 0 is implied
+-- -- debugLevel defaults to 0 if not specified
 -- shell> lua <test file name>
 -- @usage
 -- -- If 'lua' file extension is associated with the lua runtime, you can simply run (in debugLevel 0) like so:
 -- shell> MyTestSuite.lua
 -- @module TestFramework
+
+local rev = "$Revision: 1983 $"
 
 local http = require("socket.http")
 local ltn12 = require("ltn12")
@@ -19,7 +19,7 @@ local io = require("io")
 local json = require("json")
 local cfg = require("TestConfiguration")
 
-local startUTC = nil
+local startUTC = os.time()
 local testNum = 0
 local b64map='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'	--needed for b64 encoding.
 local lastForwardID = 0
@@ -34,8 +34,6 @@ local lsf = {}
 local device = {}
 local gps = {}
 local tf = {}
-
-local firstCallHouseKeeping
 
 gateway.returnMsgList = {}
 cfg.PORTMAP = {}
@@ -67,7 +65,7 @@ function printfLineDate(...)
 	printfLine(...)
 end
 
-function dummyFunc() end
+function doNothing() end
 
 --------------------Local Framework Functions--------------------
 
@@ -110,7 +108,7 @@ end
 -- @within tf
 
 local function escape(s)
-	s = string.gsub(s, "[&=+:%%%c]", function(c)
+	s = string.gsub(tostring(s), "[&=+:%%%c]", function(c)
 		return string.format("%%%02X", string.byte(c))
 	end)
 	s = string.gsub(s, " ", "+")
@@ -125,8 +123,9 @@ local function encode(t)
 	return table.concat(b, "&")
 end
 
+local firstCallHouseKeeping
+
 local function webServiceGet(fullURL, decode)
-	firstCallHouseKeeping()
 	local encoded = json.encode(nil)
 	local source = ltn12.source.string(encoded);
 	local response = {}
@@ -154,18 +153,16 @@ local function webServiceGet(fullURL, decode)
 	end
 end
 
-local function webServiceGetRsc(url, resource, params, decode)
+local function webServiceGetResource(url, resource, params, decode)
 	params = params == nil and "" or "?" .. encode(params)
 	return webServiceGet(url .. "/" .. resource .. ".json/" .. params, decode)
 end
 
--- returns a resouce value; the resource must be published by the web service (like info_utc_time) <br />
+-- returns a resource value; the resource must be published by the web service (like info_utc_time)
 -- See document N201 for list of gateway web resources.
-local function getGatewayResource(
-			resource, 			-- string: resource to get from gateway
-			params				-- table: table of parameters to pass to the gateway in a GET request
-		)
-	local returnVal, code = webServiceGetRsc(cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX, resource, params)
+local function gatewayGetResource(resource, params)
+	firstCallHouseKeeping()
+	local returnVal, code = webServiceGetResource(cfg.GATEWAY_URL .. cfg.GATEWAY_SUFFIX, resource, params)
 	if not returnVal then
 		error("Gateway unreachable. HTTP Error code: " .. tostring(code))
 	end
@@ -208,7 +205,7 @@ local function recordAndPrintMsg(msg)
 	elseif msg.SIN == 26 and msg.Payload.MIN == 1 and msg.Payload.success=="False" then
 		print("Invalid shell command: " .. tf.dump(msg))
 	else
-		if tf.trace2 == dummyFunc then
+		if tf.trace2 == doNothing then
 			tf.trace1("Received: " ..  oneLineDump(msg.Payload))
 		else
 			tf.trace2("Received: " .. tf.dump(msg.Payload))
@@ -246,7 +243,7 @@ local function getSettingsTable(settings)
 		sTable[i]={}
 		settings[i][3] = settings[i][3] and settings[i][3] or "unsignedint"
 		assert(settings[i][1] ~= nil and settings[i][2] ~= nil and settings[i][3] ~= nil, "settings must be array of {1=pin, 2=value, 3=valType}")
-		assert(checkValueType(settings[i][3]), "Value type must one one of: unsignedint, signedint, string, boolean, enum, data; is " .. tostring(valType))
+		assert(checkValueType(settings[i][3]), "Value type must one of: unsignedint, signedint, string, boolean, enum, data; is " .. tostring(valType))
 		sTable[i].Index=i-1
 		sTable[i].Fields={{Name="pin",Value=settings[i][1]},
 			{Name="value",Value=settings[i][2],Type=settings[i][3]}}
@@ -325,7 +322,7 @@ end
 
 -- Returns a number representing current gateway time
 local function getGatewayTime()
-	local decoded = getGatewayResource("info_utc_time")
+	local decoded = gatewayGetResource("info_utc_time")
 	return ISOToEpoch(decoded)
 end
 
@@ -341,7 +338,7 @@ function firstCallHouseKeeping()
 		local gatewayTime = getGatewayTime()
 		local localTime = os.time()
 		timeOffset = gatewayTime - localTime
-		gatewayVersion = getGatewayResource("info_version")
+		gatewayVersion = gatewayGetResource("info_version")
 		gateway.setHighWaterMark()
 		gateway.submitForwardMessage{SIN = 16, MIN = 1}
 		local msg = gateway.getReturnMessage(tf.checkMessageType(16, 1))
@@ -412,8 +409,8 @@ end
 -- @within tf
 function tf.checkMessageType(sin, min)
 	return function(msg)
-		if msg then
-			return msg.Payload.SIN == sin and msg.Payload.MIN == min
+		if msg and msg.Payload and msg.Payload.SIN == sin and msg.Payload.MIN == min then
+			return true
 		end
 		return false
 	end
@@ -538,7 +535,6 @@ function tf.collapseMessage(tbl)
 	return t2
 end
 
-
 --- Filter the return messages that conform to a check function
 -- @tparam table msgs output of getReturnMessages()
 -- @tparam function checkFunction function that determines whether each message is of the type that is being checked for
@@ -569,7 +565,7 @@ function tf.printResults(testSuiteSuccess)
 	end
 	print()
 	print("--------------------------------")
-	msgTypes = {}
+	local msgTypes = {}
 	local printTitle = true
 	for k,v in ipairs(gateway.returnMsgList) do
 		v.name = v.name and v.name or "<Unnamed>"
@@ -580,7 +576,7 @@ function tf.printResults(testSuiteSuccess)
 		print("Received " .. tostring(v) .. " " .. k .. " messages.")
 	end
 	print("")
-	local diff = os.time() - testStartTime
+	local diff = os.difftime(os.time(), testStartTime)
 	print("Time to run tests: " .. os.date("!%H:%M:%S", diff) .. ".")
 	print("")
 	printf("Framework version: %s \n", tf.version)
@@ -631,7 +627,7 @@ function gateway.submitForwardMessage(payload, raw)
 		method = "POST", headers = headers, source = source, sink = sink
 	}
 	if not raw then
-		if tf.trace2 == dummyFunc then
+		if tf.trace2 == doNothing then
 			tf.trace1("Submitted: " .. oneLineDump(payload))
 		else
 			tf.trace2("Submitted: " .. tf.dump(tf.collapseMessage(payload)))
@@ -667,8 +663,8 @@ function gateway.submitForwardMessage(payload, raw)
 	return nil
 end
 
---- Polls the gateway every 3 seconds; records every message retrieved from gateway; and returns the first instance of message that matches criteria.<br /><br />
--- NOTE: table hierarchy of each message is collapsed to a simpler table before being returned by calling tf.collapseMessage()
+--- Retrieves return messages from the gateway, and returns the first one that matches criteria specified by the checkFunction.<br /><br />
+-- NOTE: Use tf.checkMessageType(sin, min) as the checkFunction to match return message by SIN and MIN only.
 -- @tparam function checkFunction function to call to determine if criteria matches; should throw exception if criteria doesn't match
 -- @tparam[opt=nil] ?AnyType checkParam callback function parameter; use table if >1 parameter needed
 -- @tparam[opt=DEFAULT] ?number timeout parameter to control the timeout for this function
@@ -677,11 +673,7 @@ end
 -- -- See TestSuiteExample* for more details...
 -- gateway.getReturnMessage(<your own callback or tf.checkMessageType>)
 -- @within gateway
-function gateway.getReturnMessage(
-			checkFunction,
-			checkParam,
-			timeout
-		)
+function gateway.getReturnMessage(checkFunction, checkParam, timeout)
 	assert(checkFunction, "checkFunction not provided to getReturnMessage")
 	time1 = os.time()
 	timeout = timeout and timeout or cfg.GATEWAY_TIMEOUT
@@ -701,7 +693,7 @@ function gateway.getReturnMessage(
 			checkFunction(nil, checkParam)
 			break;
 		end
-		tf.delay(0.1)
+		tf.delay(3)
 	end
 	return nil
 end
@@ -920,8 +912,11 @@ local function configureDevice(device, typ, port, value)
 end
 
 --- Write 0 or 1 to the external device port.
--- @number port range 1-4; IDP terminal I/O port
--- @number value the value to write to the port (digital: 0|1, analog: 0-3000)
+-- @tparam number port<br/>
+-- 1, 2, 3, 4 - I/O port (value: digital [0, 1], analog [0, 3000])<br/>
+-- 30 - Temperature (value: [-99, 85] degrees Celsius)<br/>
+-- 31 - Power (value: [24000, 33000] millivolts)
+-- @number value the value to write
 -- @usage  -- switch on port 1 (line must be configured as digital input)
 -- device.setIO(1, 1)
 -- @within device
@@ -929,8 +924,8 @@ function device.setIO(port, value)
 	if type(value) == "boolean" then
 		value = value and "1" or "0"
 	end
-	tf.trace1("set device port %d value to %s", port, tostring(value))
-	return configureDevice("GPIO", "value", port, value)
+	tf.trace1("set device port %s value to %s", tostring(port), tostring(value))
+	return configureDevice("GPIO", "value", cfg.PORTMAP[port], value)
 end
 
 -- For Raspberry Pi only: Configure external device port function.
@@ -970,12 +965,14 @@ end
 --- Configure power service parameters
 -- @usage -- set battery voltage to 15V
 -- device.setPower(3, 15000)
--- @tparam number id power service property ID to change (corresponds to PID of power service)
---
--- 3 - battery voltage, 4 - battery temp, 8 - external power present
---
--- 9 - external power voltage, 18 - pre-load voltage, 19 - post-load voltage
--- @tparam number value to assign (0|1 for boolean values)
+-- @tparam number id power service property (corresponds to PID of power service)<br/>
+-- 3 - battery voltage (value: [0, 32000] millivolts)<br/>
+-- 4 - battery temperature (value: [-90, 85] degrees Celsius)<br/>
+-- 8 - external power present (value: [0, 1])<br/>
+-- 9 - external power voltage (value: [0, 33000] millivolts)<br/>
+-- 18 - pre-load voltage (value: [0, 32000] millivolts)<br/>
+-- 19 - post-load voltage (value: [0, 32000] millivolts)
+-- @number value the value to write
 -- @within device
 function device.setPower(id, value)
 	-- TODO: error checking.
@@ -983,12 +980,13 @@ function device.setPower(id, value)
 end
 
 --- Get external device IO port value.
--- @number port range 1-4, 30 (temperature), 31 (power)
---
--- Note: can also pass strings "temperature" and "power"
--- @treturn number I/O port value, or temperature in *C or power in millivolts
+-- @tparam number port<br/>
+-- 1, 2, 3, 4 - I/O port (return value: digital [0, 1], analog millivolts [0, 3000])<br/>
+-- 30 - Temperature (return value: [-99, 85] degrees Celsius)<br/>
+-- 31 - Power (return value: [24000, 33000] millivolts)
+-- @treturn number I/O port value
 -- @usage local port1value = device.getIO(1)
--- @usage local temp = device.getIO("temperature")
+-- @usage local temp = device.getIO(30)
 -- @usage local power = device.getIO(31)
 -- @within device
 function device.getIO(port)
@@ -1005,12 +1003,14 @@ function device.getAccel(id)
 end
 
 --- Get external device port value.
--- @number id power service property ID to change (corresponds to PID of power service)
---
--- 3 - battery voltage, 4 - battery temp, 8 - external power present
---
--- 9 - external power voltage, 18 - pre-load voltage, 19 - post-load voltage
--- @treturn number 0|1 for boolean values, *C for temperatures, millivolts for voltage values
+-- @number id power service property (corresponds to PID of power service)<br/>
+-- 3 - battery voltage (return value: [0, 32000] millivolts)<br/>
+-- 4 - battery temperature (return value: [-90, 85] degrees Celsius)[<br/>
+-- 8 - external power present (return value: [0, 1])<br/>
+-- 9 - external power voltage (return value: [0, 33000] millivolts)<br/>
+-- 18 - pre-load voltage (return value: [0, 32000] millivolts)<br/>
+-- 19 - post-load voltage (return value: [0, 32000] millivolts)
+-- @treturn number
 -- @usage local batteryTemp = device.getPower(4)
 -- @within device
 function device.getPower(id)
@@ -1019,15 +1019,15 @@ end
 
 ---------------------GPS Simulator Functions---------------------
 
-local function setGPS(resource, params)
-	return webServiceGetRsc(cfg.GPS_URL, resource, params, false)
+local function gpsGetResource(resource, params)
+	return webServiceGetResource(cfg.GPS_URL, resource, params, false)
 end
 
 -- set GPS simulator fix type
 -- fixType valid values: (0, 1, 2, 3) = (no time, no fix, 2d fix, 3d fix)
 local function gpsSetFixType(fixType)
 	assert(fixType >= 0 and fixType <= 3, "ERROR - gpsSetFixType: fix type should be between 0 and 3.")
-	local retval, code = setGPS("set_fix_type", {fix_type = fixType})
+	local retval, code = gpsGetResource("set_fix_type", {fix_type = fixType})
 	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
 end
 
@@ -1041,71 +1041,132 @@ local function gpsSetLocation(
 	assert(type(longitude) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": longitude should be a number")
 	assert(altitude == nil or type(altitude) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": altitude should be a number")
 	altitude=altitude and altitude or 0
-	local retval, code = setGPS("set_location", {latitude = latitude, longitude = longitude, altitude = altitude})
+	local retval, code = gpsGetResource("set_location", {
+		latitude = latitude,
+		longitude = longitude,
+		altitude = altitude
+	})
 	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
 end
 
 -- set speed and heading on the GPS simulator
 local function gpsSetSpeedHeading(
-			speed,				-- number: speed GPS speed in km/h
-			heading,			-- integer: heading in degrees valid range [0 - 360]
-			linMotion			-- ?bool: whether to update the lat/long values according to the movement and heading
+			speed,			-- number: speed GPS speed in km/h
+			heading,		-- integer: heading in degrees valid range [0 - 360]
+			linearMotion	-- ?bool: whether to update the lat/long values according to the movement and heading
 		)
-	if linMotion == nil then
-		linMotion = true
+	if linearMotion == nil then
+		linearMotion = true
 	end
 	assert(type(speed) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": speed should be a number")
 	assert(type(heading) == "number", "ERROR - " .. debug.getinfo(1, "n").name .. ": heading should be a number")
-	assert(type(linMotion) == "boolean", "ERROR - " .. debug.getinfo(1, "n").name .. ": linMotion should be true or false")
-	local retval, code = setGPS("set_speed_heading", {speed = speed, heading = heading, simulate_linear_motion = tostring(linMotion)})
+	assert(type(linearMotion) == "boolean", "ERROR - " .. debug.getinfo(1, "n").name .. ": linearMotion should be true or false")
+	local retval, code = gpsGetResource("set_speed_heading", {
+		speed = speed,
+		heading = heading,
+		simulate_linear_motion = linearMotion
+	})
 	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
-
 end
-local lastVals = {latitude = 0, longitude = 0, altitude = 0, speed = 0, heading = 0, simulateLinearMotion = false, fixType = 3}
-local acceptedKeys = {latitude = gpsSetLocation, longitude = gpsSetLocation, altitude = gpsSetLocation,
-		speed = gpsSetSpeedHeading, heading = gpsSetSpeedHeading, simulateLinearMotion = gpsSetSpeedHeading,
-		fixType = gpsSetFixType}
+
+-- set jamming detection on the GPS simulator
+local function gpsSetJamming(jammingStatus, jammingLevel, jammingDetect, antennaCutDetect)
+	local retval, code = gpsGetResource("set_jamming", {
+		jammingStatus = jammingStatus,
+		jammingLevel = jammingLevel,
+		jammingDetect = tostring(jammingDetect),
+		antennaCutDetect = tostring(antennaCutDetect)
+	})
+	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
+end
+
+-- set satellite blockage status on the GPS simulator
+local function gpsSetBlockage(blocked)
+	local retval, code = gpsGetResource("set_blockage", { blocked = blocked } );
+	if not retval and code then print("GPS Server responded with code " .. tostring(code)) end
+end
+
+local gpsValues = {
+	latitude = 0,
+	longitude = 0,
+	altitude = 0,
+	speed = 0,
+	heading = 0,
+	simulateLinearMotion = false,
+	fixType = 3,
+	jammingStatus = 1,
+	jammingLevel = 0,
+	jammingDetect = false,
+	antennaCutDetect = false,
+	blockage = false
+}
+
+local gpsKeys = {
+	latitude = gpsSetLocation,
+	longitude = gpsSetLocation,
+	altitude = gpsSetLocation,
+	speed = gpsSetSpeedHeading,
+	heading = gpsSetSpeedHeading,
+	simulateLinearMotion = gpsSetSpeedHeading,
+	fixType = gpsSetFixType,
+	jammingStatus = gpsSetJamming,
+	jammingLevel = gpsSetJamming,
+	jammingDetect = gpsSetJamming,
+	antennaCutDetect = gpsSetJamming,
+	blockage = gpsSetBlockage
+}
 
 --- set one ore more of: {fixType, latitude, longitude, altitude, speed, heading, and simulateLinearMotion} on the GPS simulator
 -- <b>Allowed values:</b>
 -- <ul>
 -- <li>fixType: (0, 1, [2|3]) = (no time, no fix, valid fix) </li>
--- <li>latitude: number - valid range [-90.0, 90.0] </li>
--- <li>longitude: number - valid range [-180.0, 180.0]</li>
--- <li>altitude: number - meters above sea level</li>
--- <li>speed: number - speed in km/h, valid range: [0.0, 200.0]</li>
--- <li>heading: integer - heading in degrees valid range [0 - 360]</li>
--- <li>simulateLinearMotion: bool - whether or not the lat/long values change due to movement</li>
+-- <li>latitude: decimal degrees [-90.0, 90.0] </li>
+-- <li>longitude: decimal degrees [-180.0, 180.0]</li>
+-- <li>altitude: meters above sea level [-10000, 200000]</li>
+-- <li>speed: decimal km/h [0.0, 200.0]</li>
+-- <li>heading: integer degrees [0, 360]</li>
+-- <li>simulateLinearMotion: (true, false) - enable latitude/longitude to update based on speed/heading</li>
+-- <li>jammingStatus: (0, 1, 2, 3) = (unknown, OK, warning, critical)</li>
+-- <li>jammingLevel: integer [0, 255]</li>
+-- <li>jammingDetect: (true, false) - true if GPS signal jamming is detected</li>
+-- <li>antennaCutDetect: (true, false) - true if external antenna is not connected</li>
+-- <li>blockage: (true, false) - true if simulating loss of satellite communications</li>
 -- </ul>
 -- @param parameters a table of GPS settings
 -- @usage
--- -- This sets the speed to 50km/h, heading to East, and updates lat/long according to movement
+-- -- This sets the speed to 50km/h, heading to East, and enables updates to position based on speed and heading
 -- gps.set({speed=50, heading=90, simulateLinearMotion=true})
 -- @within gps
 function gps.set(parameters)
 	local callFunction = {}
 	for k1, v1 in pairs(parameters) do
 		local found = false
-		for k2, v2 in pairs(acceptedKeys) do
+		for k2, v2 in pairs(gpsKeys) do
 			if k1 == k2 then
 				callFunction[v2] = true
-				lastVals[k1] = v1
+				gpsValues[k1] = v1
 				found = true
 				break
 			end
 		end
 		if not found then
 			tf.trace0("*** Unknown parameter passed to gps.set(): %s. Accepted parameters:", k1)
-			tf.trace0("fixType, latitude, longitude, altitude, speed, heading, simulateLinearMotion")
+			for k, v in pairs(gpsKeys) do
+				tf.trace0(k)
+			end
 		end
 	end
 	for k, _ in pairs(callFunction) do
 		if k == gpsSetFixType then
-			k(lastVals.fixType)
+			k(gpsValues.fixType)
 		elseif k == gpsSetLocation then
-			k(lastVals.latitude, lastVals.longitude, lastVals.altitude)
+			k(gpsValues.latitude, gpsValues.longitude, gpsValues.altitude)
 		elseif k == gpsSetSpeedHeading then
-			k(lastVals.speed, lastVals.heading, lastVals.simulateLinearMotion)
+			k(gpsValues.speed, gpsValues.heading, gpsValues.simulateLinearMotion)
+		elseif k == gpsSetJamming then
+			k(gpsValues.jammingStatus, gpsValues.jammingLevel, gpsValues.jammingDetect, gpsValues.antennaCutDetect)
+		elseif k == gpsSetBlockage then
+			k(gpsValues.blockage)
 		end
 	end
 end
@@ -1117,18 +1178,13 @@ if debugLevel == 2 then
 	print("tf.trace1 ON, tf.trace2 ON")
 elseif debugLevel == 1 then
 	tf.trace1 = printfLineDate
-	tf.trace2 = dummyFunc
+	tf.trace2 = doNothing
 	print("tf.trace1 ON, tf.trace2 OFF")
 else
-	tf.trace1 = dummyFunc
-	tf.trace2 = dummyFunc
+	tf.trace1 = doNothing
+	tf.trace2 = doNothing
 	print("tf.trace1 OFF, tf.trace2 OFF")
 end
 tf.trace0 = printfLineDate
-
--- turn off buffering so that output will appear immediately
--- when using PowerShell to tee the output, e.g.
--- lua TestCases.lua | Tee-Object -file logfile.txt
-io.output():setvbuf("no") 
 
 return function() return cfg, tf, gateway, lsf, device, gps end
