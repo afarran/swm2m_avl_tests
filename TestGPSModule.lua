@@ -117,13 +117,15 @@ function teardown()
 
   -- enabling the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
-                                                   {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL}
+                                                   {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},
                                                }
                     )
 
-  -- not to get LongDriving reports
+  -- disabling long driving reports and reading odometer and speed from external source
   lsf.setProperties(AVL_SIN,{
                              {avlConstants.pins.maxDrivingTime, 0},
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" },
+                             {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data"},
                             }
                    )
 
@@ -2632,8 +2634,6 @@ end
 
 
 
-
-
 --- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
   -- Initial Conditions:
   --
@@ -2693,6 +2693,7 @@ function test_ExternalSpeedSource_WhenSpeedAboveStationarySpeedThldForPeriodAbov
 
   local expectedMins = {avlConstants.mins.movingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
 
   -- disabling reading speed from external source
   lsf.setProperties(AVL_SIN,{
@@ -2702,8 +2703,6 @@ function test_ExternalSpeedSource_WhenSpeedAboveStationarySpeedThldForPeriodAbov
 
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
   assert_equal(gpsSettings[1].latitude*234.375, tonumber(receivedMessages[avlConstants.mins.movingStart].Speed), 2, "MovingStart message has incorrect speed value when speed is read from external source")
-
-  local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "Terminal not in moving state after sending MovingStart message")
 
 end
