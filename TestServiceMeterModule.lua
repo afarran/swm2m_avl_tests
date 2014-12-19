@@ -127,6 +127,21 @@ end
 --- teardown function executed after each unit test
 function teardown()
 
+  -- enabling the continues mode of position service (SIN 20, PIN 15)
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                   {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},
+                                               }
+                    )
+  -- disabling long driving reports and reading odometer and speed from external source
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.maxDrivingTime, 0},
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" },
+                             {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data"},
+                            }
+                   )
+
+
+
   -- setting all digital ports to low level
   if(hardwareVariant == 3) then
     for counter = 1, 3, 1 do
