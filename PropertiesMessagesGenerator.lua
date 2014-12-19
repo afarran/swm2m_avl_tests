@@ -1,11 +1,11 @@
--- PropertiesMessagesGenerator generates message 
--- with all properties randomly picked 
+-- PropertiesMessagesGenerator generates message
+-- with all properties randomly picked
 -- or with default values.
 local PropertiesMessagesGenerator = {
   message = {},
   messageFields = {}
 }
-    
+
 function PropertiesMessagesGenerator:getMessageWithRandomValues()
   self:initPropertiesDescriptions()
   self:prepareMessage(true)
@@ -24,7 +24,7 @@ function PropertiesMessagesGenerator:prepareMessage(random)
   for i = 1, #self.message.Fields do
     self.messageFields[i]={}
     self.messageFields[i].Name = self.message.Fields[i].Name
-    
+
     if random == false or self.message.Fields[i].Range == nil   then
       self.messageFields[i].Value = self.message.Fields[i].Value
     else
@@ -50,7 +50,7 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
   self.message.Fields[1].Range = {0,0}  -- Always zero!!
 	self.message.Fields[2] = {}
 	self.message.Fields[2].Name = "StationarySpeedThld"
-	self.message.Fields[2].Value = 5
+	self.message.Fields[2].Value = 8
   self.message.Fields[2].Range = {5,10}
 	self.message.Fields[3] = {}
 	self.message.Fields[3].Name = "StationaryDebounceTime"
@@ -91,7 +91,7 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
 	self.message.Fields[12] = {}
 	self.message.Fields[12].Name = "MovingIntervalSat"
 	self.message.Fields[12].Value = 900
-  self.message.Fields[12].Range = {600,900} 
+  self.message.Fields[12].Range = {600,900}
 	self.message.Fields[13] = {}
 	self.message.Fields[13].Name = "SmReportingHour"
 	self.message.Fields[13].Value = 0
@@ -348,7 +348,7 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
 	self.message.Fields[84].Value = 32767
 	self.message.Fields[85] = {}
 	self.message.Fields[85].Name = "HarshBrakingThld"
-	self.message.Fields[85].Value = 1000
+	self.message.Fields[85].Value = 500
 	self.message.Fields[86] = {}
 	self.message.Fields[86].Name = "MinHarshBrakingTime"
 	self.message.Fields[86].Value = 1000
@@ -391,7 +391,7 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
 	self.message.Fields[99] = {}
 	self.message.Fields[99].Name = "FuncDigOut5"
 	self.message.Fields[99].Value = "None"
-	self.message.Fields[100] = {}
+  self.message.Fields[100] = {}
 	self.message.Fields[100].Name = "DriverIdPort"
 	self.message.Fields[100].Value = "rs232aux"
 	self.message.Fields[101] = {}
@@ -416,6 +416,23 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
 	self.message.Fields[106] = {}
 	self.message.Fields[106].Name = "ExternalOdometerSource"
 	self.message.Fields[106].Value = ""
+  self.message.Fields[107] = {}
+	self.message.Fields[107].Name = "FuncDigOut6"
+	self.message.Fields[107].Value = "None"
+	self.message.Fields[108] = {}
+	self.message.Fields[108].Name = "ParamSaveInterval"
+	self.message.Fields[108].Value = 60
+  self.message.Fields[109] = {}
+	self.message.Fields[109].Name = "ParamSaveIntervalLpm"
+	self.message.Fields[109].Value = 120
+	self.message.Fields[110] = {}
+	self.message.Fields[110].Name = "ParamSaveThrtlInterval"
+	self.message.Fields[110].Value = 1
+	self.message.Fields[111] = {}
+	self.message.Fields[111].Name = "MaxBatteryTime"
+	self.message.Fields[111].Value = 1
+
+
 end
 
 return function() return PropertiesMessagesGenerator end
