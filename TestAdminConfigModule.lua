@@ -5,7 +5,8 @@
 
 module("TestAdminConfigModule", package.seeall)
 
-   
+local propertiesMG =  require("PropertiesMessagesGenerator")()
+
 -- Setup and Teardown
 
 --- suite_setup
@@ -229,18 +230,35 @@ function test_GetEventEnable_GetListAndRangeOfEvents_ReturnMessageContainsProper
   end
 end
 
-function todo_test_SetProperties_ResponseMessageContainsAllProperties()
+function test_SetProperties_ResponseMessageContainsAllProperties()
   
-  -- TODO : separate file with properties values
-  -- TODO : random ranges definition and parser for generating test messages fields
-	-- gateway.submitForwardMessage(message)
+  local MESSAGE_TIMEOUT = 10
   
-  --local message2 = {SIN = 126, MIN = 6}
-	--gateway.submitForwardMessage(message2)
+  local message = {}
+	message.SIN = avlConstants.avlAgentSIN
+	message.MIN = avlConstants.mins.setProperties
+  message.Fields = propertiesMG:getMessageWithDefaultValues()
+  -- message.Fields = propertiesMG:getMessageWithRandomValues() --TODO: check randomization
+  message.Fields[1].Value = 0 -- never save pernamently!
+  
+  gateway.submitForwardMessage(message)
+  
+  local message2 = {SIN = avlConstants.avlAgentSIN , MIN = avlConstants.mins.getProperties}
+	gateway.submitForwardMessage(message2)
 
-  --local receivedMessages = avlHelperFunctions.matchReturnMessages({201}, 10)
-  --local msg = receivedMessages[201]
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.serviceProperties}, MESSAGE_TIMEOUT)
+  local msg = receivedMessages[avlConstants.mins.serviceProperties]
   
-  --assert_equal(tonumber(msg.AccidentAccelDataCapture), 1)
+  -- checking values
+  for i = 1, #message.Fields do
+    local name = message.Fields[i].Name
+    local value = message.Fields[i].Value
+    if msg[name] and value then
+      --print(""..msg[name].." / "..value)
+      assert_equal(tonumber(msg[name]), tonumber(value))
+    end
+  end
+  
+  --TODO: sent revert message!
   
 end

@@ -1,7 +1,7 @@
 -- PropertiesMessagesGenerator generates message 
 -- with all properties randomly picked 
 -- or with default values.
-PropertiesMessagesGenerator = {
+local PropertiesMessagesGenerator = {
   message = {},
   messageFields = {}
 }
@@ -9,11 +9,13 @@ PropertiesMessagesGenerator = {
 function PropertiesMessagesGenerator:getMessageWithRandomValues()
   self:initPropertiesDescriptions()
   self:prepareMessage(true)
+  return self.messageFields
 end
 
 function PropertiesMessagesGenerator:getMessageWithDefaultValues()
   self:initPropertiesDescriptions()
-  self:prepareMessage(true)
+  self:prepareMessage(false)
+  return self.messageFields
 end
 
 -- TODO: private method
@@ -45,7 +47,7 @@ function PropertiesMessagesGenerator:initPropertiesDescriptions()
   self.message.Fields[1] = {}
 	self.message.Fields[1].Name = "SaveChanges"
 	self.message.Fields[1].Value = 0
-  self.message.Fields[1].Range = {0}  -- Always zero!!
+  self.message.Fields[1].Range = {0,0}  -- Always zero!!
 	self.message.Fields[2] = {}
 	self.message.Fields[2].Name = "StationarySpeedThld"
 	self.message.Fields[2].Value = 5
