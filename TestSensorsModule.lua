@@ -7,6 +7,67 @@ module("TestSensorsModule", package.seeall)
 
 -------------------------------------------------------------------------------------
 
+local Sensor = {}
+  Sensor.__index = Sensor
+  setmetatable(Sensor, {
+    __call = function(cls, ...)
+      local self = setmetatable({}, cls)
+      self:_init(...)
+      return self
+    end,})
+  
+  function Sensor:_init(number)
+    self.name = "Sensor".. number
+    self.mins = {MaxStart = avlConstants.mins[self.name .. "MaxStart"],
+                MaxEnd = avlConstants.mins[self.name .. "MaxEnd"],
+                MinStart = avlConstants.mins[self.name .. "MinStart"],
+                MinEnd = avlConstants.mins[self.name .. "MinEnd"],
+                Change = avlConstants.mins[self.name .. "Change"],
+                SensorInterval = avlConstants.mins.SensorInterval
+      }
+    self.pins = {
+                  Source = avlConstants.pins[self.name .. "Source"],
+                  ChangeThld = avlConstants.pins[self.name .. "ChangeThld"],
+                  MinThld = avlConstants.pins[self.name .. "MinThld"],
+                  MaxThld = avlConstants.pins[self.name .. "MaxThld"],
+                  MaxReportInterval = avlConstants.pins[self.name .. "MaxReportInterval"],
+                  NormalSampleInterval = avlConstants.pins[self.name .. "NormalSampleInterval"],
+                  LpmSampleInterval = avlConstants.pins[self.name .. "LpmSampleInterval"],}
+    
+    self.pinValues = {MinThld = 0,
+                       MaxThld = 0,
+                       Source = {},
+                       MaxReportInterval = 0,
+                       NormalSampleInterval = 0,
+                       LpmSampleInterval = 0,
+                       ChangeThld = 0,
+                       }
+  end
+  
+  function Sensor:setPinValues(pinValues)
+    self.pinValues = pinValues
+  end
+  
+  function Sensor:applyPinValues(pinValues)
+    if pinValues then
+      self.pinValues = pinValues
+    else
+      pinValues = self.pinValues
+    end
+    pinValues = {{self.pins.Source, framework.base64Encode({pinValues.Source.SIN, pinValues.Source.PIN}), "data"},
+                 {self.pins.ChangeThld, pinValues.ChangeThld},
+                 {self.pins.MinThld, pinValues.MinThld, "signedint"},
+                 {self.pins.MaxThld, pinValues.MaxThld, "signedint"},
+                 {self.pins.MaxReportInterval, pinValues.MaxReportInterval},
+                 {self.pins.NormalSampleInterval, pinValues.NormalSampleInterval},
+                 {self.pins.LpmSampleInterval, pinValues.LpmSampleInterval},
+                }
+    
+    lsf.setProperties(avlConstants.avlAgentSIN, pinValues)
+  end
+
+-----------------------------------------------
+
 local SensorTester = {}
   SensorTester.__index = SensorTester
   setmetatable(SensorTester, {
@@ -41,22 +102,26 @@ local SensorTester = {}
     self.currentValue = value
   end
   
+  function SensorTester:getNormalized(val)
+    return val * self.conversion
+  end
+  
   function SensorTester:getNormalizedValue()
     if not self.currentValue then return nil end
-    return self.currentValue * self.conversion
+    return self:getNormalized(self.currentValue)
   end
   
   function SensorTester:getNormalizedPreviousValue()
     if not self.previousValue then return nil end
-    return self.previousValue * self.conversion
+    return self:getNormalized(self.previousValue)
   end
   
-  function SensorTester:setValueToMax(diff)
-    self:setValue(self.max + diff)
+  function SensorTester:setValueToMax(offset)
+    self:setValue(self.max + offset)
   end
   
-  function SensorTester:setValueToMin(diff)
-    self:setValue(self.min + diff)
+  function SensorTester:setValueToMin(offset)
+    self:setValue(self.min + offset)
   end
     
   function SensorTester:stepUp(times)
@@ -111,8 +176,33 @@ local SensorTesterGps = {}
     framework.delay(GPS_READ_INTERVAL)
   end
   
+  function SensorTesterGps:setup()
+    lsf.setProperties(lsfConstants.sins.position,{{lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},})
+    framework.delay(GPS_READ_INTERVAL)
+  end
+  
+  function SensorTesterGps:teardown()
+    lsf.setProperties(lsfConstants.sins.position,{{lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},})
+    framework.delay(GPS_READ_INTERVAL)
+  end
+  
 local sensorTester = SensorTesterGps(-0.05, -0.07, -0.03, 0.01)
 local NEAR_ZERO = 0.0001
+-- Run for all Sensors or only one random per each test
+local RUN_ALL = false
+
+local function RandomSensorRun(func, ...)
+  if RUN_ALL then
+    for i=1,4 do
+      func(i, ...)
+      teardown()
+      setup()
+    end
+    teardown()
+  else
+    return func(math.random(1,4), ...)
+  end
+end
 
 -------------------------------------------------------------------------------------
   
@@ -122,30 +212,17 @@ local NEAR_ZERO = 0.0001
  -- suite_setup description
 
 function suite_setup()
-
-
-  lsf.setProperties(lsfConstants.sins.position,{
-                                                {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},
-                                               }
-                    )
-  framework.delay(5)
-
+  sensorTester:setup()
 end
 
 -- executed after each test suite
 function suite_teardown()
-
-  lsf.setProperties(lsfConstants.sins.position,{
-                                                {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},
-                                               }
-                    )
-
+  sensorTester:teardown()
 end
 
 --- setup function
   -- setup function description
 function setup()
-
 end
 
 -----------------------------------------------------------------------------------------------
@@ -195,7 +272,7 @@ function teardown()
                                              })
   -- enable gps continuous mode
   lsf.setProperties(lsfConstants.sins.position, {{lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL}})
-
+  sensorTester:setValueToInitial()
 end
 
 -------------------------
@@ -255,14 +332,14 @@ function generic_test_PeriodicallySendingMessageContainingSensorValues(configura
                     )
 
     -- set monitored value in position service
-    gps.set({  speed = 1, heading = 90, latitude = 1, longitude = 1})
+    sensorTester:setValueToInitial()
 
     -- waiting for periodical report 1
     local expectedMins = {AVL_RESPONSE_MIN}
     local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, DEFAULT_TIMEOUT+5)
 
     -- set monitored value in position service to expected value
-    gps.set({  speed = 1, heading = 90, latitude = SENSOR_EXPECTED_VALUE, longitude = 2})
+    sensorTester:setValue(SENSOR_EXPECTED_VALUE)
 
     local startTime = os.time()
 
@@ -274,7 +351,7 @@ function generic_test_PeriodicallySendingMessageContainingSensorValues(configura
     assert_equal(timeDiff , 60, 5, "Sensor Reporting Interval test failed - wrong timeout between messages")
 
     -- checking if raported value is monitored properly
-    assert_equal(SENSOR_EXPECTED_VALUE * 60000 , tonumber(receivedMessages[AVL_RESPONSE_MIN][configuration.name]), 0, "Sensor Reporting Interval test failed - wrong expected value")
+    assert_equal(sensorTester:getNormalizedValue() , tonumber(receivedMessages[AVL_RESPONSE_MIN][configuration.name]), 0, "Sensor Reporting Interval test failed - wrong expected value")
 
 end
 
@@ -546,50 +623,38 @@ end
 -- Check if Message is sent if sensor value goes above threshold and then goes back below it
 function generic_test_Sensors_SendMessageWhenValueAboveThreshold(sensorNo)
   print("Testing test_Sensors_SendMessageWhenValueAboveThreshold using sensor " .. sensorNo)
-  local SENSOR_NO = sensorNo
-  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = sensorTester:getSin(), PIN = sensorTester:getPin(), 
-                  MAX = sensorTester.max * sensorTester.conversion, MIN = sensorTester.min * sensorTester.conversion, 
-                  INITIAL = sensorTester.initial * sensorTester.conversion, 
-                  CHANGE = 0, SAMPLE = 1, LPMSAMPLE = 3}
-  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
-                  MaxEnd = SENSOR.NAME .. "MaxEnd",
-                  MinStart = SENSOR.NAME .. "MinStart",
-                  MinEnd = SENSOR.NAME .. "MinEnd",
-                  Source = SENSOR.NAME .. "Source",
-                  ChangeThld = SENSOR.NAME .. "ChangeThld",
-                  MinThld = SENSOR.NAME .. "MinThld",
-                  MaxThld = SENSOR.NAME .. "MaxThld",
-                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
-                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",}
+  local sensor = Sensor(sensorNo)
+  
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = 1
+  sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
   
-  -- configure sensor
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
-                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
-                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
-                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},
-                    })
-
+  sensor:applyPinValues()
+  
+  framework.delay(sensor.pinValues.NormalSampleInterval)
   sensorTester:setValueToMax(sensorTester.step)
 
   -- wait for min start message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart]}, GATEWAY_TIMEOUT)
-  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MaxStart]
   assert_not_nil(msg, 'Sensor did not send Max Start message')
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
   local FirstSampleTime = tonumber(msg.EventTime)
 
   sensorTester:setValueToMax(-sensorTester.step)
   -- wait for min end message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxEnd]}, GATEWAY_TIMEOUT)
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxEnd]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxEnd}, GATEWAY_TIMEOUT)
+  msg = receivedMessages[sensor.mins.MaxEnd]
   assert_not_nil(msg, 'Sensor did not send Max End message')
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMax), NEAR_ZERO, "SensorMax has incorrect value")
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
   local SecondSampleTime = tonumber(msg.EventTime)
   assert_gt(FirstSampleTime, SecondSampleTime, 'Message EventTime is too small')
 
@@ -598,49 +663,37 @@ end
 -- Check if Message is sent if sensor value goes below threshold and then goes back above it
 function generic_test_Sensors_SendMessageWhenValueBelowThreshold(sensorNo)
   print("Testing test_Sensors_SendMessageWhenValueBelowThreshold using sensor " .. sensorNo)
-  local SENSOR_NO = sensorNo
-  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = sensorTester:getSin(), PIN = sensorTester:getPin(), 
-                  MAX = sensorTester.max * sensorTester.conversion, MIN = sensorTester.min * sensorTester.conversion, 
-                  INITIAL = sensorTester.initial * sensorTester.conversion, 
-                  CHANGE = 0, SAMPLE = 1, LPMSAMPLE = 3}
-  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
-                  MaxEnd = SENSOR.NAME .. "MaxEnd",
-                  MinStart = SENSOR.NAME .. "MinStart",
-                  MinEnd = SENSOR.NAME .. "MinEnd",
-                  Source = SENSOR.NAME .. "Source",
-                  ChangeThld = SENSOR.NAME .. "ChangeThld",
-                  MinThld = SENSOR.NAME .. "MinThld",
-                  MaxThld = SENSOR.NAME .. "MaxThld",
-                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
-                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",}
+  local sensor = Sensor(sensorNo)
+  
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = 1
+  sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
 
-  -- configure sensor
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
-                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
-                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
-                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},
-                    })
-
+  framework.delay(sensor.pinValues.NormalSampleInterval)
   sensorTester:setValueToMin(-sensorTester.step)
   -- wait for min start message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MinStart]}, GATEWAY_TIMEOUT)
-  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MinStart]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MinStart]
   assert_not_nil(msg, 'Sensor did not send Min Start message')
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
   local FirstSampleTime = tonumber(msg.EventTime)
 
   sensorTester:setValueToMin(sensorTester.step)
   -- wait for min end message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MinEnd]}, GATEWAY_TIMEOUT)
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MinEnd]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinEnd}, GATEWAY_TIMEOUT)
+  msg = receivedMessages[sensor.mins.MinEnd]
   assert_not_nil(msg, 'Sensor did not send Min End message')
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMin), NEAR_ZERO, "SensorMin has incorrect value")
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
   local SecondSampleTime = tonumber(msg.EventTime)
   assert_gt(FirstSampleTime, SecondSampleTime, 'Message EventTime is too small')
 end
@@ -648,265 +701,184 @@ end
 -- Check if correnct Messages are sent if sensor value goes below min threshold and then jumps above max threshold
 function generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold(sensorNo)
   print("Testing test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold using sensor " .. sensorNo)
-  local SENSOR_NO = sensorNo
-  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = sensorTester:getSin(), PIN = sensorTester:getPin(), 
-                  MAX = sensorTester.max * sensorTester.conversion, MIN = sensorTester.min * sensorTester.conversion, 
-                  INITIAL = sensorTester.initial * sensorTester.conversion, 
-                  CHANGE = 0, SAMPLE = 1, LPMSAMPLE = 3}
-  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
-                  MaxEnd = SENSOR.NAME .. "MaxEnd",
-                  MinStart = SENSOR.NAME .. "MinStart",
-                  MinEnd = SENSOR.NAME .. "MinEnd",
-                  Source = SENSOR.NAME .. "Source",
-                  ChangeThld = SENSOR.NAME .. "ChangeThld",
-                  MinThld = SENSOR.NAME .. "MinThld",
-                  MaxThld = SENSOR.NAME .. "MaxThld",
-                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
-                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",}
+  local sensor = Sensor(sensorNo)
+  
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = 1
+  sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
 
-  -- configure sensor
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
-                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
-                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
-                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},
-                    })
-
+  framework.delay(sensor.pinValues.NormalSampleInterval)
+  
   sensorTester:setValueToMin(-sensorTester.step)
   -- wait for min start message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MinStart]}, GATEWAY_TIMEOUT)
-  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MinStart]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MinStart]
   assert_not_nil(msg, 'Sensor did not send Min Start message')
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
 
   sensorTester:setValueToMax(sensorTester.step)
   -- wait for min end message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MinEnd],
-                                                             avlConstants.mins[SENSOR.props.MaxStart]}, GATEWAY_TIMEOUT)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinEnd, sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
   -- check if min end message was sent
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MinEnd]]
+  msg = receivedMessages[sensor.mins.MinEnd]
   assert_not_nil(msg, 'Sensor did not send Min End message')
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMin), NEAR_ZERO, "SensorMin has incorrect value")
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
 
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  msg = receivedMessages[sensor.mins.MaxStart]
   assert_not_nil(msg, 'Sensor did not send Max Start message')
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
 
 end
 
 -- Check if correnct Messages are sent if sensor value goes above max threshold and then jumps below min threshold
 function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sensorNo)
   print("Testing test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold using sensor " .. sensorNo)
-  local SENSOR_NO = sensorNo
-
-  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = sensorTester:getSin(), PIN = sensorTester:getPin(), 
-                  MAX = sensorTester.max * sensorTester.conversion, MIN = sensorTester.min * sensorTester.conversion, 
-                  INITIAL = sensorTester.initial * sensorTester.conversion, 
-                  CHANGE = 0, SAMPLE = 1, LPMSAMPLE = 3}
+  local sensor = Sensor(sensorNo)
   
-  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
-                  MaxEnd = SENSOR.NAME .. "MaxEnd",
-                  MinStart = SENSOR.NAME .. "MinStart",
-                  MinEnd = SENSOR.NAME .. "MinEnd",
-                  Source = SENSOR.NAME .. "Source",
-                  ChangeThld = SENSOR.NAME .. "ChangeThld",
-                  MinThld = SENSOR.NAME .. "MinThld",
-                  MaxThld = SENSOR.NAME .. "MaxThld",
-                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
-                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",}
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = 1
+  sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
 
-  -- configure sensor
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
-                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
-                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
-                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},
-                    })
-
+  framework.delay(sensor.pinValues.NormalSampleInterval)
+  
   sensorTester:setValueToMax(sensorTester.step)
   -- wait for max start message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart]}, GATEWAY_TIMEOUT)
-  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MaxStart]
   assert_not_nil(msg, 'Sensor did not send Max Start message')
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
-  sensorTester:setValueToMin(sensorTester.min)
+  sensorTester:setValueToMin(-sensorTester.step)
   -- wait for min end message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MinStart],
-                                                             avlConstants.mins[SENSOR.props.MaxEnd]}, GATEWAY_TIMEOUT)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinStart,
+                                                             sensor.mins.MaxEnd}, GATEWAY_TIMEOUT)
   -- check if min end message was sent
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxEnd]]
-  assert_not_nil(msg, 'Sensor did not send Min End message')
+  msg = receivedMessages[sensor.mins.MaxEnd]
+  assert_not_nil(msg, 'Sensor did not send Max End message')
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMax), NEAR_ZERO, "SensorMax has incorrect value")
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MinStart]]
-  assert_not_nil(msg, 'Sensor did not send Max Start message')
-  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[SENSOR.NAME]), NEAR_ZERO, SENSOR.NAME.. " has incorrect value")
+  msg = receivedMessages[sensor.mins.MinStart]
+  assert_not_nil(msg, 'Sensor did not send Min Start message')
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
 end
 
-function test_Sensors_SendMessageWhenValueAboveThreshold()
-  return generic_test_Sensors_SendMessageWhenValueAboveThreshold(math.random(1,4))
+function test_Sensors_ValueAboveAndBelowMaxThreshold_MaxStartMaxEndReceived()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveThreshold)
 end
 
-function test_Sensors_SendMessageWhenValueBelowThreshold()
-  return generic_test_Sensors_SendMessageWhenValueBelowThreshold(math.random(1,4))
+function test_Sensors_ValueBelowAndAboveMinThreshold_MinStartMinEndReceived()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowThreshold)
 end
 
-function test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold()
-  return generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold(math.random(1,4))
+function test_Sensors_ValueBelowMinThenAboveMaxThreshold_MinStartMinEndMaxStartReceived()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold)
 end
 
-function test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold()
-  return generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(math.random(1,4))
+function test_Sensors_ValueAboveMaxThenBelowMinThreshold_MaxStartMaxEndMinStartReceived()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold)
 end
 
 -- Check if correnct Messages are sent if sensor value goes above max threshold and then jumps below min threshold
-function generic_test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval(sensorNo)
+function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval(sensorNo)
   print("Testing test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval using sensor " .. sensorNo)
-  local SENSOR_NO = sensorNo
-
-  local GPSCONV = 60000
-  local INITIAL = 0.05
-  local MIN = 0.03
-  local MAX = 0.07
+  local sensor = Sensor(sensorNo)
   local INITIAL_SAMPLE_INTERVAL = 1
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = INITIAL_SAMPLE_INTERVAL
+  sensor.pinValues.LpmSampleInterval = 15
+  
+  sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
+  
+  -- to make sure the test starts from initial point
+  framework.delay(sensor.pinValues.NormalSampleInterval)
+  sensor.pinValues.NormalSampleInterval = 7
+  sensor:applyPinValues()
+  framework.delay(sensor.pinValues.NormalSampleInterval)
 
-  local GPSFIX = {INITIAL = {speed = 0, heading = 0, latitude = INITIAL, longitude = 0},
-                  ABOVE_MAX = {speed = 0, heading = 0, latitude = MAX + 0.01, longitude = 0},
-                  MAX = {speed = 0, heading = 0, latitude = MAX, longitude = 0},
-                  BELOW_MAX = {speed = 0, heading = 0, latitude = MAX - 0.01, longitude = 0},
-                  ABOVE_MIN = {speed = 0, heading = 0, latitude = MIN + 0.01, longitude = 0},
-                  MIN = {speed = 0, heading = 0, latitude = MIN, longitude = 0},
-                  BELOW_MIN = {speed = 0, heading = 0, latitude = MIN - 0.01, longitude = 0},
-                 }
-
-  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = 20, PIN = 6, MAX = MAX * GPSCONV, MIN = MIN * GPSCONV,
-                  INITIAL = INITIAL * GPSCONV, CHANGE = 0, SAMPLE = 10, LPMSAMPLE = 15}
-  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
-                  MaxEnd = SENSOR.NAME .. "MaxEnd",
-                  MinStart = SENSOR.NAME .. "MinStart",
-                  MinEnd = SENSOR.NAME .. "MinEnd",
-                  Source = SENSOR.NAME .. "Source",
-                  ChangeThld = SENSOR.NAME .. "ChangeThld",
-                  MinThld = SENSOR.NAME .. "MinThld",
-                  MaxThld = SENSOR.NAME .. "MaxThld",
-                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
-                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",}
-
-  gps.set(GPSFIX.INITIAL)
-  framework.delay(GPS_READ_INTERVAL)
-
-  -- configure sensor
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
-                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
-                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
-                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], INITIAL_SAMPLE_INTERVAL},
-                    })
-
-  framework.delay(INITIAL_SAMPLE_INTERVAL)
-  lsf.setProperties(avlConstants.avlAgentSIN, {{avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},})
-  framework.delay(INITIAL_SAMPLE_INTERVAL)
-
-  gps.set(GPSFIX.ABOVE_MAX)
+  sensorTester:setValueToMax(sensorTester.step)
   -- wait for max start message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart]}, GATEWAY_TIMEOUT)
-  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MaxStart]
   assert_not_nil(msg, 'Sensor did not send Max Start message')
-  assert_equal(GPSFIX.ABOVE_MAX.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
   local FirstSampleTimestamp = msg.EventTime
 
   -- Check if Max End message is send after time determined by Sample Interval
-  gps.set(GPSFIX.BELOW_MAX)
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxEnd],}, 1.5 * SENSOR.SAMPLE)
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxEnd]]
+  sensorTester:setValueToMax(-sensorTester.step)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxEnd,}, 1.5 * sensor.pinValues.NormalSampleInterval)
+  msg = receivedMessages[sensor.mins.MaxEnd]
   local SecondSampleTimestamp = msg.EventTime
-  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, SENSOR.SAMPLE, 1, 'Message Timestamps do not match sampling interval')
+  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, sensor.pinValues.NormalSampleInterval, 1, 'Message Timestamps do not match sampling interval')
 
   -- Check if going above max and below max during single sampling time frame will not generate an event
-  gps.set(GPSFIX.ABOVE_MAX)
+  sensorTester:setValueToMax(sensorTester.step)
   framework.delay(INITIAL_SAMPLE_INTERVAL)
-  gps.set(GPSFIX.BELOW_MAX)
+  sensorTester:setValueToMax(-sensorTester.step)
   framework.delay(INITIAL_SAMPLE_INTERVAL)
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart],
-                                                             avlConstants.mins[SENSOR.props.MaxEnd]}, 1.5 * SENSOR.SAMPLE)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart,
+                                                             sensor.mins.MaxEnd}, 1.5 * sensor.pinValues.NormalSampleInterval)
   -- check if MaxStart or MaxEnd message was sent
-  assert_nil(receivedMessages[avlConstants.mins[SENSOR.props.MaxEnd]], 'Sensor send Max End message')
-  assert_nil(receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]], 'Sensor send Max Start message')
+  assert_nil(receivedMessages[sensor.mins.MaxEnd], 'Sensor send Max End message')
+  assert_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor send Max Start message')
 
 end
 
-function test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval()
-  return generic_test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval(math.random(1,4))
+function test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval()
+  RandomSensorRun(generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval)
 end
 
-function generic_test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval(sensorNo)
-  print("Testing test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval using sensor " .. sensorNo)
-  local SENSOR_NO = sensorNo
-
-  local GPSCONV = 60000
-  local INITIAL = 0.05
-  local MIN = 0.03
-  local MAX = 0.07
+function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval(sensorNo)
+  print("Testing test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval using sensor " .. sensorNo)
+  local sensor = Sensor(sensorNo)
   local INITIAL_SAMPLE_INTERVAL = 1
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = INITIAL_SAMPLE_INTERVAL
+  sensor.pinValues.LpmSampleInterval = 7
 
-  local GPSFIX = {INITIAL = {speed = 0, heading = 0, latitude = INITIAL, longitude = 0},
-                  ABOVE_MAX = {speed = 0, heading = 0, latitude = MAX + 0.01, longitude = 0},
-                  MAX = {speed = 0, heading = 0, latitude = MAX, longitude = 0},
-                  BELOW_MAX = {speed = 0, heading = 0, latitude = MAX - 0.01, longitude = 0},
-                  ABOVE_MIN = {speed = 0, heading = 0, latitude = MIN + 0.01, longitude = 0},
-                  MIN = {speed = 0, heading = 0, latitude = MIN, longitude = 0},
-                  BELOW_MIN = {speed = 0, heading = 0, latitude = MIN - 0.01, longitude = 0},
-                 }
+  sensorTester:setValueToInitial()
+  
+  sensor:applyPinValues()
 
-  local SENSOR = {NAME = "Sensor"..SENSOR_NO, SIN = 20, PIN = 6, MAX = MAX * GPSCONV, MIN = MIN * GPSCONV,
-                  INITIAL = INITIAL * GPSCONV, CHANGE = 0, SAMPLE = 1, LPMSAMPLE = 10}
-  SENSOR.props = {MaxStart = SENSOR.NAME .. "MaxStart",
-                  MaxEnd = SENSOR.NAME .. "MaxEnd",
-                  MinStart = SENSOR.NAME .. "MinStart",
-                  MinEnd = SENSOR.NAME .. "MinEnd",
-                  Source = SENSOR.NAME .. "Source",
-                  ChangeThld = SENSOR.NAME .. "ChangeThld",
-                  MinThld = SENSOR.NAME .. "MinThld",
-                  MaxThld = SENSOR.NAME .. "MaxThld",
-                  MaxReportInterval = SENSOR.NAME .. "MaxReportInterval",
-                  NormalSampleInterval = SENSOR.NAME .. "NormalSampleInterval",
-                  LpmSampleInterval = SENSOR.NAME .. "LpmSampleInterval",}
-
-  gps.set(GPSFIX.INITIAL)
-  framework.delay(GPS_READ_INTERVAL)
-
-  -- configure sensor
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    { {avlConstants.pins[SENSOR.props.Source], framework.base64Encode({SENSOR.SIN, SENSOR.PIN}), "data"},
-                      {avlConstants.pins[SENSOR.props.ChangeThld], SENSOR.CHANGE},
-                      {avlConstants.pins[SENSOR.props.MinThld], SENSOR.MIN, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxThld], SENSOR.MAX, "signedint"},
-                      {avlConstants.pins[SENSOR.props.MaxReportInterval], 0},
-                      {avlConstants.pins[SENSOR.props.NormalSampleInterval], SENSOR.SAMPLE},
-                      {avlConstants.pins[SENSOR.props.LpmSampleInterval], SENSOR.LPMSAMPLE},
-                    })
-
-  framework.delay(SENSOR.SAMPLE)
-  gps.set(GPSFIX.ABOVE_MAX)
+  framework.delay(sensor.pinValues.NormalSampleInterval)
+  sensorTester:setValueToMax(sensorTester.step)
   -- wait for max start message
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart]}, GATEWAY_TIMEOUT)
-  local msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MaxStart]
   assert_not_nil(msg, 'Sensor did not send Max Start message')
-  assert_equal(GPSFIX.ABOVE_MAX.latitude * GPSCONV, tonumber(msg[SENSOR.NAME]), 0.001, SENSOR.NAME.. " has incorrect value")
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
   --* Go into LPM mode
 
@@ -942,28 +914,27 @@ function generic_test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval(se
   --* End of Setting LPM
 
   -- Check if Max End message is send after time determined by Sample Interval
-  local CONTINUOUS_PIN = 15
-  --re enable continuous gps mode
-  lsf.setProperties(lsfConstants.sins.position,{{CONTINUOUS_PIN, 1 },})
-  gps.set(GPSFIX.BELOW_MAX)
 
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxEnd],}, 1.5 * SENSOR.LPMSAMPLE)
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxEnd]]
+  --re enable continuous gps mode
+  sensorTester:setup()
+  
+  sensorTester:setValueToMax(-sensorTester.step)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxEnd,}, 1.5 * sensor.pinValues.LpmSampleInterval)
+  msg = receivedMessages[sensor.mins.MaxEnd]
   assert_not_nil(msg, 'Message Max end not received')
   local FirstSampleTimestamp = msg.EventTime
 
-
-  gps.set(GPSFIX.ABOVE_MAX)
-  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins[SENSOR.props.MaxStart],}, 1.5 * SENSOR.LPMSAMPLE)
-  msg = receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]]
-  assert_not_nil(receivedMessages[avlConstants.mins[SENSOR.props.MaxStart]], 'Sensor did not send Max Start message')
+  sensorTester:setValueToMax(sensorTester.step)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart,}, 1.5 * sensor.pinValues.LpmSampleInterval)
+  msg = receivedMessages[sensor.mins.MaxStart]
+  assert_not_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor did not send Max Start message')
   local SecondSampleTimestamp = msg.EventTime
   
-  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, SENSOR.LPMSAMPLE, 1, 'Message Timestamps do not match LPM sampling interval')   
+  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, sensor.pinValues.LpmSampleInterval, 1, 'Message Timestamps do not match LPM sampling interval')   
     
   
 end
 
-function test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval()
-  return generic_test_Sensors_SendMessageMaxMinDependingOnLPMSamplingInterval(math.random(1,4))
+function test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval()
+  RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
 end
