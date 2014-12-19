@@ -285,6 +285,8 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
                        latitude = 0,                    -- degrees
                        fixType = 3,                     -- valid fix provided
                        simulateLinearMotion = false,   -- terminal not moving
+                       jammingDetect = true,
+                       antennaCutDetect = false,
                      }
   gps.set(gpsSettings)
 
@@ -346,6 +348,9 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
                       longitude = 0,                       -- degrees
                       latitude = 0,                        -- degrees
                       fixType= 3,                          -- valid fix provided
+                      jammingDetect = true,
+                      antennaCutDetect = false,
+                      simulateLinearMotion = false,
                      }
   gps.set(gpsSettings) -- applying settings of gps simulator
 
@@ -577,22 +582,22 @@ function avlHelperFunctions.matchParameters(expectedProps, timeout)
   timeout = timeout or 10
   local props, pins = avlHelperFunctions.propertiesToTable(expectedProps)
   local startTime = os.time()
-  
+
   local currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
   local currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
-  
+
   while (os.time() - startTime < timeout) do
     local match = true
     for k, v in pairs(currentPropTable) do
         if currentPropTable[k] ~= props[k] then match = false end
     end
-    if match then 
+    if match then
       return currentProps, currentPropTable, pins
     end
       currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
       currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
   end
-  
+
   return nil
 end
 

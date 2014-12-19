@@ -2604,7 +2604,7 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaConnectedBack_Antenn
                       heading = 90,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
-                      antennaCutDetect = true
+                      antennaCutDetect = true,
                      }
 
 
@@ -2633,7 +2633,7 @@ end
 
 
 
---- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time .
+--- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time for external speed source .
   -- Initial Conditions:
   --
   -- * Terminal not moving
@@ -2706,5 +2706,91 @@ function test_ExternalSpeedSource_WhenSpeedAboveStationarySpeedThldForPeriodAbov
 
 end
 
+
+
+
+--- TC checks if MovingStart message is sent when speed is above stationary threshold for period above moving debounce time for external speed source .
+  -- Initial Conditions:
+  --
+  -- * Terminal not moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set movingDebounceTime (PIN 3) and stationarySpeedThld (PIN 1)
+  -- 2. Set externalSpeedSource (PIN 134) to read latitude property (PIN 6) from position service (SIN 20)
+  -- 3. Simulate terminal in Point#1 with speed equal to 0 in gps simulator and latitude simulating speed above stationarySpeedThld
+  -- 4. Wait until movingDebounceTime (PIN 1) passes and receive MovingStart message (MIN 6)
+  -- 5. Check the content of the received message
+  --
+  -- Results:
+  --
+  -- 1. Properties movingDebounceTime and stationarySpeedThld correctly set
+  -- 2. ExternalSpeedSource (PIN 134) set to SIN = 20 and PIN = 6
+  -- 3. Speed in GPS simulator set to 0 and latitude represents value of speed above stationarySpeedThld
+  -- 5. MovingStart message sent from terminal after movingDebounceTime (PIN 3)
+  -- 6. Report fields contains speed calculated from latitude property
+function test_ExternalSpeedSource_WhenExternalSpeedSourceIsIncorrectlyDefined_AVLSpeedIsSetToZero()
+
+  -- *** Setup
+  local MOVING_DEBOUNCE_TIME = 1                            -- seconds
+  local STATIONARY_SPEED_THLD = 5                           -- kmh
+  local STATIONARY_DEBOUNCE_TIME = 1                        -- seconds
+  local gpsSettings = {}                                    -- table containing gpsSettings used in TC
+
+
+  -- Point#1 settings
+  gpsSettings[1]={
+                  speed = STATIONARY_SPEED_THLD + 10 ,                      -- to get moving state
+                  heading = 90,                                             -- degrees
+                  latitude = 1,                                             -- degrees
+                  longitude = 1,                                            -- degrees
+                 }
+
+
+  -- applying properties of the service
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                             {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                             {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME},
+                            }
+                   )
+
+
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- terminal in Point#1 - moving
+  gps.set(gpsSettings[1])
+
+  -- wait for period of movingDebounceTime
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- setting external speed source to incrorrect pair SIN = 0 and PIN = 0, speed should be considered as zero from now
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode({0,0}), "data" }  -- that is incorrect setting, there is no SIN 0, PIN 0  pair
+                            }
+                   )
+
+  framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+  local expectedMins = {avlConstants.mins.movingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  -- disabling reading speed from external source
+  lsf.setProperties(AVL_SIN,{
+                              {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" }
+                            }
+                   )
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received after setting external speed source to incorrect value")
+
+end
 
 
