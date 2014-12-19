@@ -52,11 +52,13 @@ RANDOM_SM = false
                                                     {avlConstants.pins.lpmTrigger, 0},
                                                   }
                     )
-  -- setting the power properties
-  lsf.setProperties(lsfConstants.sins.power,{
-                                                {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
-                                         }
-                   )
+  if hardwareVariant == 3 then
+    -- setting the power properties
+    lsf.setProperties(lsfConstants.sins.power,{
+                                                  {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
+                                           }
+                     )
+  end
 
   framework.delay(2)
   -- checking the state of terminal
