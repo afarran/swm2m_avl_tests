@@ -141,11 +141,7 @@ end
   framework.delay(2)
 
   -- device profile application
-  -- IDP 680 has 4 IOs, IDP 800 has 3 IOs - that should be considered when setting all of them to low state
-  -- setting all 4 ports to low stare
-  for counter = 1, 4, 1 do
-    device.setIO(counter, 0)
-  end
+  profile:setupIOInLPM(device)
   framework.delay(3)
 
   -- reading avlStates property
@@ -711,8 +707,7 @@ end
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0    -- in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
@@ -792,8 +787,7 @@ end
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalNotPutInLpmWhenExternalPowerSourceNotPresentShorterThanLpmEntryDelayPeriod()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 1    -- in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
@@ -872,8 +866,7 @@ end
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0    -- in minutes
   local lpmTrigger = 3       -- 3 is for IgnitionOn and Built-in battery
@@ -956,8 +949,7 @@ end
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutInLpmAfterIgnitionOffAndPutOutOfLpmAfterIgnitionOn()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery
@@ -1050,8 +1042,7 @@ end
  function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalIsNotPutIntoLpmByIgnitionOffEvent()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 2      -- 2 is for Built-in Battery
@@ -1137,8 +1128,7 @@ end
  function test_LPM_WhenLpmTriggerSetToZero_TerminalIsNotPutIntoLpmByIgnitionOffEventOrUnpluggingExternalPowerSource()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 0      -- 0 is for no trigger
@@ -1220,8 +1210,7 @@ end
  function test_LPM_WhenLpmTriggerSetToIgnitionOff_TerminalIsNotPutIntoLpmWhenExternalPowerSourceIsNotPresent()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 1      -- 1 is for IgnitionOff
@@ -1296,8 +1285,7 @@ end
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutOutOfLpmWhenBothIgnitionIsOnAndExternalPowerIsPresent()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery

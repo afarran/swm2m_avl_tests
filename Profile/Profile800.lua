@@ -34,13 +34,16 @@ Profile800 = {}
     for counter = 1, 3, 1 do
       device.setIO(counter, 0) -- setting all 3 ports to low state
     end
-    -- setting the IO properties - disabling all 3 I/O ports
-    lsf.setProperties(lsfConstants.sins.io,{
+    
+    if lsfConstants ~= nil then
+      -- setting the IO properties - disabling all 3 I/O ports
+      lsf.setProperties(lsfConstants.sins.io,{
                                               {lsfConstants.pins.portConfig[1], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[2], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[3], 0},      -- port disabled
                                           }
-    )
+      )
+    end
   end
   
   function Profile800:hasDualPowerSource() 
@@ -73,4 +76,10 @@ Profile800 = {}
     device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
     framework.delay(2)
     self.isBVSetup = true
+  end
+  
+  function Profile800:setupIOInLPM(device) 
+    for counter = 1, 3, 1 do
+      device.setIO(counter, 0)
+    end
   end

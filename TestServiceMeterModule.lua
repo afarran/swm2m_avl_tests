@@ -142,18 +142,7 @@ function teardown()
 
 
   -- device profile application
-  -- IDP 680 has 4 IOs, IDP 800 has 3 IOs - that should be considered when setting all of them to low state
-  -- setting all digital ports to low level
-  if(hardwareVariant == 3) then
-    for counter = 1, 3, 1 do
-      device.setIO(counter, 0)
-    end
-  end
-  if(hardwareVariant == 1) then
-    for counter = 1, 4, 1 do
-      device.setIO(counter, 0)
-    end
-  end
+  profile:setupIO(lsf, device)
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
@@ -792,8 +781,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                     SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                           }
     -- device profile application
-    -- IDP 800 has only 3 IOs so only 3 SMs can be activated in this case
-    if(hardwareVariant == 3) then
+    if profile:hasFourIOs() then
       expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
       expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
     end
@@ -805,8 +793,7 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
     assert_equal(expectedValues.SM3Time,tonumber(colmsg.Payload.SM3Time), "SM3Time value is not correct in the report")
     assert_equal(expectedValues.SM3Distance,tonumber(colmsg.Payload.SM3Distance), 2, "SM3Distance value is not correct")
     -- device profile application
-    -- IDP 800 has only 3 IOs so only 3 SMs can be activated in this case and only 3 are checked of IDP 800
-    if(hardwareVariant ~= 3) then
+    if profile:hasFourIOs() then
       assert_equal(expectedValues.SM4Time,tonumber(colmsg.Payload.SM4Time), "SM4Time value is not correct in the report")
       assert_equal(expectedValues.SM4Distance,tonumber(colmsg.Payload.SM4Distance), 2, "SM4Distance value is not correct")
     end
