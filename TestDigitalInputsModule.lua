@@ -202,7 +202,6 @@ end
   -- 5. IgnitionOn messaage received
   -- 6. Message fields contain Point#1 GPS and time information
  function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
-
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
                       speed = 0,                      -- terminal in stationary state
