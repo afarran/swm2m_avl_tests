@@ -204,6 +204,7 @@ local function wraptest(flag, msg, t)
    if debug then
        local info = debug.getinfo(3, "l")
        t.line = info.currentline
+       if not flag then avl_debug(t) end -- just one one line for AVL
    end
    if not flag then error(Fail(t)) end
 end

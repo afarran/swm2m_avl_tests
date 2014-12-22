@@ -3,6 +3,8 @@ avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent relat
 avlConstants =  require("AvlAgentConstants")
 lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
+lunatest_debug = require "lunatest_debug"
+
 profileFactory = require("Profile/ProfileFactory")()
 
 -- global variables used in the tests
@@ -22,7 +24,11 @@ local function setup()
   print("*** AVL Feature Tests Started ***")
   math.randomseed(os.time())
   io.output():setvbuf("no")
+<<<<<<< HEAD
+  --include the following test suites in the feature tests:
+=======
   include the following test suites in the feature tests:
+>>>>>>> 4a16b663d165038f7d38ee8421d104ea25154c8e
   lunatest.suite("TestGPSModule")
   lunatest.suite("TestLPMModule")
   lunatest.suite("TestDigitalInputsModule")

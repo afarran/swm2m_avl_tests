@@ -104,14 +104,14 @@ end
                                                }
                     )
                     
-    if profile:hasDualPowerSource() then  
-  -- setting the power service properties - external power source detection enabled
-  lsf.setProperties(lsfConstants.sins.power,{
+  if profile:hasDualPowerSource() then  
+        -- setting the power service properties - external power source detection enabled
+        lsf.setProperties(lsfConstants.sins.power,{
                                                 {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
                                          }
                    )
                    
-    end
+  end
 
 
   avlHelperFunctions.putTerminalIntoStationaryState()
