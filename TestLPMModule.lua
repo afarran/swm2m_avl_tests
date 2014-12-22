@@ -103,11 +103,15 @@ end
                                                 {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode interval of position service
                                                }
                     )
+                    
+    if profile:hasDualPowerSource() then  
   -- setting the power service properties - external power source detection enabled
   lsf.setProperties(lsfConstants.sins.power,{
                                                 {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
                                          }
                    )
+                   
+    end
 
 
   avlHelperFunctions.putTerminalIntoStationaryState()

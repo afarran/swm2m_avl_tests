@@ -164,7 +164,9 @@ end
 --- teardown function executed after each unit test
 function teardown()
 
--- nothing here for now
+  -- setting all IO's to low state
+  profile:setupIO(lsf, device, lsfConstants)
+
 
 end
 
@@ -1342,14 +1344,11 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
@@ -1357,7 +1356,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
@@ -1370,7 +1369,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
 
   -- *** Execute
   gateway.setHighWaterMark()                -- to get the newest messages
-  device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
+  device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
@@ -1416,14 +1415,11 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
@@ -1431,7 +1427,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
@@ -1452,7 +1448,7 @@ function test_SeatbeltViolation_WhenTerminalMovingAndSeatbeltOffLineIsActiveForP
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
-  device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
+  device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
 
   -- SeatbeltViolationStart message not expected
   local expectedMins = {avlConstants.mins.seatbeltViolationStart}
@@ -1491,13 +1487,10 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
                                                 {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
@@ -1506,7 +1499,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
@@ -1519,7 +1512,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
 
   -- *** Execute
   gateway.setHighWaterMark()                -- to get the newest messages
-  device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
+  device.setIO(1, 1)                        -- port 1 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
@@ -1536,7 +1529,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
   timeOfEvent = os.time()
-  device.setIO(2, 0)                        -- port 2 to high level - that triggers SeatbeltOff true - driver fastens seatbelt
+  device.setIO(1, 0)                        -- port 1 to high level - that triggers SeatbeltOff true - driver fastens seatbelt
 
   -- SeatbeltViolationEnd message expected
   local expectedMins = {avlConstants.mins.seatbeltViolationEnd}
@@ -1590,13 +1583,10 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}  -- port 2 detection for both rising and falling edge
-                                        }
+                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
                                                 {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
@@ -1607,7 +1597,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
@@ -1620,7 +1610,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
 
   -- *** Execute
   gateway.setHighWaterMark()                -- to get the newest messages
-  device.setIO(2, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
+  device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
@@ -1735,9 +1725,9 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromLowToHigh_DigInp1HiMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromLowToHigh_DigInp2HiMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
-    
+
     -- device profile application
-    if profile:hasFourIOs() then 
+    if profile:hasFourIOs() then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
 
@@ -1874,7 +1864,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
-    
+
     -- device profile application
     if profile:hasFourIOs()  then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
