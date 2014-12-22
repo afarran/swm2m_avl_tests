@@ -164,6 +164,15 @@ end
 --- teardown function executed after each unit test
 function teardown()
 
+  local gpsSettings={
+                      fixType = 3,                     -- valid fix provided
+                      simulateLinearMotion = false,
+                      jammingDetect = false,
+                      antennaCutDetect = false,
+                     }
+  gps.set(gpsSettings)
+
+
   -- setting all IO's to low state
   profile:setupIO(lsf, device, lsfConstants)
 
