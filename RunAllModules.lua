@@ -6,6 +6,7 @@ lunatest = require "lunatest"
 profileFactory = require("Profile/ProfileFactory")()
 
 -- global variables used in the tests
+FORCE_ALL_TESTCASES = false                                         -- determines whether to run all TCs or to use random TC for similar features - e.g Sensors / ServiceMeters
 GPS_PROCESS_TIME = 1                                                -- seconds
 GATEWAY_TIMEOUT = 60                                                -- in seconds
 TIMEOUT_MSG_NOT_EXPECTED = 20                                       -- in seconds
