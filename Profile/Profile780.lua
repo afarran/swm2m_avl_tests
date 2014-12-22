@@ -49,3 +49,9 @@ Profile780 = {}
   function Profile780:isSeries800() 
     return false
   end
+  
+  function Profile780:setupIOInLPM(device) 
+    for counter = 1, 4, 1 do
+      device.setIO(counter, 0)
+    end
+  end

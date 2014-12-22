@@ -24,6 +24,7 @@ local Profile = {}
   function Profile:isSeries700() end
   function Profile:isSeries800() end
   function Profile:setupBatteryVoltage(device) end
+  function Profile:setupIOInLPM(device) end
   
   function Profile:isBatteryVoltageSetup() return self.isBVSetup end
   

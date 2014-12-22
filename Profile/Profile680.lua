@@ -34,15 +34,17 @@ Profile680 = {}
     for counter = 1, 4, 1 do
        device.setIO(counter, 0) -- setting all 4 ports to low state
     end
-
-    -- setting the IO properties - disabling all 4 I/O ports
-    lsf.setProperties(lsfConstants.sins.io,{
+  
+    if lsfConstants ~= nil then
+      -- setting the IO properties - disabling all 4 I/O ports
+      lsf.setProperties(lsfConstants.sins.io,{
                                               {lsfConstants.pins.portConfig[1], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[2], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[3], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[4], 0},      -- port disabled
                                           }
-    )
+      )
+    end
   end
   
   function Profile680:hasDualPowerSource() 
@@ -59,4 +61,10 @@ Profile680 = {}
   
   function Profile680:isSeries800() 
     return false
+  end
+  
+  function Profile680:setupIOInLPM(device) 
+    for counter = 1, 4, 1 do
+      device.setIO(counter, 0)
+    end
   end
