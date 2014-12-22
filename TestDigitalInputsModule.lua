@@ -66,8 +66,7 @@ RANDOM_SM = false
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
   -- device profile application
-  randomPortNumber = profile.getRandomPortNumber()
-  print("RandomPort " .. randomPortNumber)
+  randomPortNumber = profile:getRandomPortNumber()
 
 end
 
@@ -146,53 +145,8 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)
 
-
-  ----------------------------------------------------------------------
-  -- For IDP 800
-  ----------------------------------------------------------------------
   -- device profile application
-  -- IDP 800 has 3 IOs
-  if(hardwareVariant==3) then
-     for counter = 1, 3, 1 do
-       device.setIO(counter, 0) -- setting all 3 ports to low state
-     end
-
-    -- setting the IO properties - disabling all 3 I/O ports
-    lsf.setProperties(lsfConstants.sins.io,{
-                                              {lsfConstants.pins.portConfig[1], 0},      -- port disabled
-                                              {lsfConstants.pins.portConfig[2], 0},      -- port disabled
-                                              {lsfConstants.pins.portConfig[3], 0},      -- port disabled
-                                          }
-                      )
-
-  end
-
-  ----------------------------------------------------------------------
-  -- For IDP 680
-  ----------------------------------------------------------------------
-  -- device profile application
-  -- IDP 600 has 4 IOs
-  if(hardwareVariant==1) then
-    for counter = 1, 4, 1 do
-       device.setIO(counter, 0) -- setting all 4 ports to low state
-    end
-
-    -- setting the IO properties - disabling all 4 I/O ports
-    lsf.setProperties(lsfConstants.sins.io,{
-                                              {lsfConstants.pins.portConfig[1], 0},      -- port disabled
-                                              {lsfConstants.pins.portConfig[2], 0},      -- port disabled
-                                              {lsfConstants.pins.portConfig[3], 0},      -- port disabled
-                                              {lsfConstants.pins.portConfig[4], 0},      -- port disabled
-                                          }
-                      )
-  end
-
-  ----------------------------------------------------------------------
-  -- For IDP 780
-  ----------------------------------------------------------------------
-  if(hardwareVariant==2) then
-    -- TODO
-  end
+  profile:setupIO(lsf, device, lsfConstants)
 
   -- disabling line number 1
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -1783,8 +1737,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromLowToHigh_DigInp3HiMessageSent
     
     -- device profile application
-    -- IDP 800 has only 3 IOs
-    if profile.hasFourIOs() then 
+    if profile:hasFourIOs() then 
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
 
@@ -1921,9 +1874,9 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
     tests['Port1'] = random_test_DigitalInput_WhenTerminalMovingAndPort1StateChangesFromHighToLow_DigInp1LoMessageSent
     tests['Port2'] = random_test_DigitalInput_WhenTerminalMovingAndPort2StateChangesFromHighToLow_DigInp2LoMessageSent
     tests['Port3'] = random_test_DigitalInput_WhenTerminalMovingAndPort3StateChangesFromHighToLow_DigInp3LoMessageSent
+    
     -- device profile application
-    -- IDP 800 has only 3 IOs
-    if profile.hasFourIOs()  then
+    if profile:hasFourIOs()  then
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
     end
 
@@ -2173,8 +2126,7 @@ end
 function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent()
 
   -- device profile application
-  -- IDP 800 has 3 IOs
-  if profile.hasThreeIOs() then skip("TC related only to IDP 600s and 700s") end
+  if profile:hasThreeIOs() then skip("TC related only to IDP 600s and 700s") end
 
   local configuration = {}
 
@@ -2232,8 +2184,7 @@ end
  function test_PowerMain_WhenVirtualLine13ChangesStateTo1_PowerMainMessageSentAndPowerMainStateBecomesTrue()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2317,8 +2268,7 @@ end
  function test_PowerBackup_WhenVirtualLine13ChangesStateTo0_PowerBackupMessageSentAndPowerMainStateBecomesFalse()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   local INPUT_VOLTAGE = 180      -- tenths of volts, external power voltage value
 
@@ -2394,8 +2344,7 @@ end
  function test_Line13_WhenVirtualLine13ChangesStateTo1_IgnitionOnMessageSent()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2465,8 +2414,7 @@ end
  function test_Line13_WhenVirtualLine13ChangesStateTo0_IgnitionOffMessageSent()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2545,8 +2493,7 @@ end
   function test_Line13_WhenVirtualLine13IsAssociatedWithSeatbeltOffFunction_SeatbeltViolationStartAndSeatbeltViolationEndMessageSentAccordingToStateOfLine13()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
   local SEATBELT_DEBOUNCE_TIME = 1       -- seconds
 
   -- setting AVL properties
@@ -2641,8 +2588,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithIgnitionAndSM0_IgnitionAndSM0AreActivatedAndDeactivatedAccordingToStateOfLine13()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   local ODOMETER_DISTANCE_INCREMENT = 10  -- meters
   local MOVING_DEBOUNCE_TIME = 1          -- seconds
@@ -2796,8 +2742,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM1_ServiceMeter1BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2866,8 +2811,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM2_ServiceMeter2BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -2936,8 +2880,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM3_ServiceMeter3BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -3006,8 +2949,7 @@ end
  function test_Line13_WhenVirtualLine13IsAssociatedWithSM4_ServiceMeter4BecomesActiveAndInactiveAccordingToStateOfLine13()
 
   -- device profile application
-  -- line 13 is specific only in IDP 800s
-  if profile.hasLine13() == false then skip("TC related only to IDP 800s") end
+  if profile:hasLine13() == false then skip("TC related only to IDP 800s") end
 
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
