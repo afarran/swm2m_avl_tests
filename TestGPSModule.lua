@@ -2184,15 +2184,8 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   -- setting terminals power properties for verification
 
   -- device profile application
-  -- external battery voltage and external voltage are only applicable to IDP 800
-  if (hardwareVariant == 3) then
-    device.setPower(3, BATT_VOLTAGE) -- setting battery voltage
-     device.setPower(9, EXT_VOLTAGE)  -- setting external power voltage
-    -- setting external power source
-    device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
-    framework.delay(2)
-  end
-
+  profile:setupBatteryVoltage(device)
+  
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
 
@@ -2227,8 +2220,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal(99, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].CellRssi), "DiagnosticsInfo message has incorrect CellRssi value")
 
   -- device profile application
-  -- external battery voltage and external voltage are only applicable to IDP 800
-  if (hardwareVariant == 3) then
+  if profile:isBatteryVoltageSetup() then
     assert_equal(BATT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
     assert_equal(EXT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].ExtVoltage), "DiagnosticsInfo has incorrect ExtVoltage value")
   else
