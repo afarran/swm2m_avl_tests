@@ -181,6 +181,7 @@ local SensorTesterGps = {}
   function SensorTesterGps:setup()
     lsf.setProperties(lsfConstants.sins.position,{{lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},})
     framework.delay(GPS_READ_INTERVAL)
+    self:setValueToInitial()
   end
   
   function SensorTesterGps:teardown()
@@ -216,22 +217,6 @@ end
 
 function suite_setup()
   sensorTester:setup()
-end
-
--- executed after each test suite
-function suite_teardown()
-  sensorTester:teardown()
-end
-
---- setup function
-  -- setup function description
-function setup()
-  sensorTester:setValueToInitial()
-end
-
------------------------------------------------------------------------------------------------
---- teardown function executed after each unit test
-function teardown()
   sensorTester:setValueToMax(sensorTester.step)
 
   -- Reset sensors
@@ -247,42 +232,22 @@ function teardown()
                      {avlConstants.pins.Sensor3LpmSampleInterval, 0}, {avlConstants.pins.Sensor4LpmSampleInterval, 0},
                      {avlConstants.pins.Sensor1ChangeThld, 1}, {avlConstants.pins.Sensor2ChangeThld, 1},
                      {avlConstants.pins.Sensor3ChangeThld, 1}, {avlConstants.pins.Sensor4ChangeThld, 1},
-                     {avlConstants.pins.Sensor1MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor2MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor3MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor4MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor1MaxThld, 1},
-                     {avlConstants.pins.Sensor2MaxThld, 1},
-                     {avlConstants.pins.Sensor3MaxThld, 1},
-                     {avlConstants.pins.Sensor4MaxThld, 1},
+                     {avlConstants.pins.Sensor1MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor2MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor3MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor4MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor1MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor2MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor3MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor4MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
                      {avlConstants.pins.Sensor1MaxReportInterval, 0}, {avlConstants.pins.Sensor2MaxReportInterval, 0},
                      {avlConstants.pins.Sensor3MaxReportInterval, 0}, {avlConstants.pins.Sensor4MaxReportInterval, 0},
                      {avlConstants.pins.SensorReportingInterval, 0}
                     })
   
-
-
-  -- disable LPM
-    device.setIO(1, 0) -- port is supposed to be in low level before every TC
-
-     -- setting the EIO properties
-    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 0},     -- port disabled
-                                           })
-
-    local lpmTrigger = 0        -- 1 is for IgnitionOff
-
-    -- setting AVL properties
-    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], 0},               -- line number 1 disabled
-                                                {avlConstants.pins.lpmTrigger, lpmTrigger},         -- setting lpmTrigger
-                                               })
-  
-  -- enable gps continuous mode
-  lsf.setProperties(lsfConstants.sins.position, {{lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL}})
-  
-  
   -- All sensors to initial state                
-  sensorTester:setValue(0)
-
+  sensorTester:setValueToInitial()
+  framework.delay(1)
   -- disable sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {
@@ -302,17 +267,151 @@ function teardown()
                      {avlConstants.pins.Sensor2ChangeThld, 0},
                      {avlConstants.pins.Sensor3ChangeThld, 0},
                      {avlConstants.pins.Sensor4ChangeThld, 0},
-                     {avlConstants.pins.Sensor1MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor2MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor3MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor4MinThld, -1, "signedint"},
-                     {avlConstants.pins.Sensor1MaxThld, 1},
-                     {avlConstants.pins.Sensor2MaxThld, 1},
-                     {avlConstants.pins.Sensor3MaxThld, 1},
-                     {avlConstants.pins.Sensor4MaxThld, 1},
                      {avlConstants.pins.SensorReportingInterval, 0}
                     })
-                  
+  gateway.setHighWaterMark()
+end
+
+-- executed after each test suite
+function suite_teardown()
+  
+  sensorTester:setup()
+  sensorTester:setValueToMax(sensorTester.step)
+
+  -- Reset sensors
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    {
+                     {avlConstants.pins.Sensor1Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor2Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor3Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor4Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor1NormalSampleInterval, 1}, {avlConstants.pins.Sensor2NormalSampleInterval, 1},
+                     {avlConstants.pins.Sensor3NormalSampleInterval, 1}, {avlConstants.pins.Sensor4NormalSampleInterval, 1},
+                     {avlConstants.pins.Sensor1LpmSampleInterval, 0}, {avlConstants.pins.Sensor2LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor3LpmSampleInterval, 0}, {avlConstants.pins.Sensor4LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor1ChangeThld, 1}, {avlConstants.pins.Sensor2ChangeThld, 1},
+                     {avlConstants.pins.Sensor3ChangeThld, 1}, {avlConstants.pins.Sensor4ChangeThld, 1},
+                     {avlConstants.pins.Sensor1MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor2MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor3MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor4MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor1MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor2MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor3MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor4MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor1MaxReportInterval, 0}, {avlConstants.pins.Sensor2MaxReportInterval, 0},
+                     {avlConstants.pins.Sensor3MaxReportInterval, 0}, {avlConstants.pins.Sensor4MaxReportInterval, 0},
+                     {avlConstants.pins.SensorReportingInterval, 0}
+                    })
+  
+  -- All sensors to initial state                
+  sensorTester:setValueToInitial()
+  framework.delay(1)
+  -- disable sensors
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    {
+                     {avlConstants.pins.Sensor1Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor2Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor3Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor4Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor1NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor2NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor3NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor4NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor1LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor2LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor3LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor4LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor1ChangeThld, 0},
+                     {avlConstants.pins.Sensor2ChangeThld, 0},
+                     {avlConstants.pins.Sensor3ChangeThld, 0},
+                     {avlConstants.pins.Sensor4ChangeThld, 0},
+                     {avlConstants.pins.SensorReportingInterval, 0}
+                    })
+  
+  sensorTester:teardown()
+end
+
+--- setup function
+  -- setup function description
+function setup()
+  sensorTester:setValueToInitial()
+  gateway.setHighWaterMark()
+  
+end
+
+-----------------------------------------------------------------------------------------------
+--- teardown function executed after each unit test
+function teardown()
+ 
+  -- disable LPM
+    device.setIO(1, 0) -- port is supposed to be in low level before every TC
+
+     -- setting the EIO properties
+    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 0},     -- port disabled
+                                           })
+
+    local lpmTrigger = 0        -- 1 is for IgnitionOff
+
+    -- setting AVL properties
+    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], 0},               -- line number 1 disabled
+                                                {avlConstants.pins.lpmTrigger, lpmTrigger},         -- setting lpmTrigger
+                                               })
+                                             
+  
+  sensorTester:setup()
+  sensorTester:setValueToMax(sensorTester.step)
+
+  -- Reset sensors
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    {
+                     {avlConstants.pins.Sensor1Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor2Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor3Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor4Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
+                     {avlConstants.pins.Sensor1NormalSampleInterval, 1}, {avlConstants.pins.Sensor2NormalSampleInterval, 1},
+                     {avlConstants.pins.Sensor3NormalSampleInterval, 1}, {avlConstants.pins.Sensor4NormalSampleInterval, 1},
+                     {avlConstants.pins.Sensor1LpmSampleInterval, 0}, {avlConstants.pins.Sensor2LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor3LpmSampleInterval, 0}, {avlConstants.pins.Sensor4LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor1ChangeThld, 1}, {avlConstants.pins.Sensor2ChangeThld, 1},
+                     {avlConstants.pins.Sensor3ChangeThld, 1}, {avlConstants.pins.Sensor4ChangeThld, 1},
+                     {avlConstants.pins.Sensor1MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor2MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor3MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor4MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
+                     {avlConstants.pins.Sensor1MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor2MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor3MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor4MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
+                     {avlConstants.pins.Sensor1MaxReportInterval, 0}, {avlConstants.pins.Sensor2MaxReportInterval, 0},
+                     {avlConstants.pins.Sensor3MaxReportInterval, 0}, {avlConstants.pins.Sensor4MaxReportInterval, 0},
+                     {avlConstants.pins.SensorReportingInterval, 0}
+                    })
+  
+  -- All sensors to initial state                
+  sensorTester:setValueToInitial()
+  framework.delay(1)  
+  -- disable sensors
+  lsf.setProperties(avlConstants.avlAgentSIN,
+                    {
+                     {avlConstants.pins.Sensor1Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor2Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor3Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor4Source, framework.base64Encode(""), "data"},
+                     {avlConstants.pins.Sensor1NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor2NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor3NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor4NormalSampleInterval, 0},
+                     {avlConstants.pins.Sensor1LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor2LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor3LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor4LpmSampleInterval, 0},
+                     {avlConstants.pins.Sensor1ChangeThld, 0},
+                     {avlConstants.pins.Sensor2ChangeThld, 0},
+                     {avlConstants.pins.Sensor3ChangeThld, 0},
+                     {avlConstants.pins.Sensor4ChangeThld, 0},
+                     {avlConstants.pins.SensorReportingInterval, 0}
+                    })
 end
 
 -------------------------
