@@ -33,3 +33,7 @@ Profile780 = {}
   function Profile780:setupIO(lsf, device, lsfConstants) 
     --TODO
   end
+  
+  function Profile780:hasDualPowerSource() 
+    return false
+  end

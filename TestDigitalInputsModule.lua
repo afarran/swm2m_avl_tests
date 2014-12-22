@@ -2086,8 +2086,7 @@ end
 function random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant==3) then skip("TC related only to IDP 600 and 700s") end
+  if profile:hasThreeIOs() then skip("TC related only to IDP 680 and 780s") end
 
    local configuration = {}
 

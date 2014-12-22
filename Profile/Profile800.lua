@@ -43,3 +43,7 @@ Profile800 = {}
     )
   end
   
+  function Profile800:hasDualPowerSource() 
+    return true
+  end
+  

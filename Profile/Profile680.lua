@@ -44,3 +44,7 @@ Profile680 = {}
                                           }
     )
   end
+  
+  function Profile680:hasDualPowerSource() 
+    return false
+  end

@@ -17,5 +17,6 @@ local Profile = {}
   function Profile:hasThreeIOs() end
   function Profile:hasLine13() end
   function Profile:setupIO(lsf, device, lsfConstants) end
+  function Profile:hasDualPowerSource() end
   
 return Profile
