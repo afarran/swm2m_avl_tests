@@ -340,7 +340,7 @@ function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
   sensor.pinValues.SensorReportingInterval = 1 -- 60 secs
   --set monitored value in position service
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
   
   -- waiting for periodical report 1
@@ -384,6 +384,7 @@ function generic_test_changeSensorValueByAmount(sensorNo, ReportingInterval)
   -- set first value
   sensorTester:setValueToInitial()
   
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
 
   -- set value
@@ -409,7 +410,7 @@ function generic_test_changeSensorValueByLessThanAmount(sensorNo, ReportingInter
   
   -- set first value
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   -- setting AVL properties
   sensor:applyPinValues()
 
@@ -471,7 +472,7 @@ function generic_test_Sensors_SendMessageWhenValueAboveThreshold(sensorNo)
   sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
   
   framework.delay(sensor.pinValues.NormalSampleInterval)
@@ -511,7 +512,7 @@ function generic_test_Sensors_SendMessageWhenValueBelowThreshold(sensorNo)
   sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
 
   framework.delay(sensor.pinValues.NormalSampleInterval)
@@ -549,7 +550,7 @@ function generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold(sen
   sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
 
   framework.delay(sensor.pinValues.NormalSampleInterval)
@@ -591,7 +592,7 @@ function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sen
   sensor.pinValues.LPMSampleInterval = 3
 
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
 
   framework.delay(sensor.pinValues.NormalSampleInterval)
@@ -650,7 +651,7 @@ function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestamps
   sensor.pinValues.LpmSampleInterval = 15
   
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
   
   -- to make sure the test starts from initial point
@@ -705,7 +706,7 @@ function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPM
   sensor.pinValues.LpmSampleInterval = 7
 
   sensorTester:setValueToInitial()
-  
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
 
   framework.delay(sensor.pinValues.NormalSampleInterval)
@@ -789,6 +790,7 @@ function generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportIn
   sensor.pinValues.LPMSampleInterval = 3
   
   sensorTester:setValueToInitial()
+  gateway.setHighWaterMark()
   sensor:applyPinValues()
   
   sensorTester:setValueToMax(sensorTester.step)
