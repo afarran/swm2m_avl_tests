@@ -24,11 +24,7 @@ local function setup()
   print("*** AVL Feature Tests Started ***")
   math.randomseed(os.time())
   io.output():setvbuf("no")
-<<<<<<< HEAD
   --include the following test suites in the feature tests:
-=======
-  include the following test suites in the feature tests:
->>>>>>> 4a16b663d165038f7d38ee8421d104ea25154c8e
   lunatest.suite("TestGPSModule")
   lunatest.suite("TestLPMModule")
   lunatest.suite("TestDigitalInputsModule")
@@ -60,6 +56,3 @@ setup()
 lunatest.run(nil, arg)
 
 teardown()
-
-
-
