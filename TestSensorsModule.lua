@@ -246,8 +246,10 @@ function suite_setup()
                     })
   
   -- All sensors to initial state                
+  gateway.setHighWaterMark()
   sensorTester:setValueToInitial()
-  framework.delay(1)
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor1Change, avlConstants.mins.Sensor2Change,
+                                                                   avlConstants.mins.Sensor3Change, avlConstants.mins.Sensor4Change}, GATEWAY_TIMEOUT)
   -- disable sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {
@@ -273,62 +275,7 @@ function suite_setup()
 end
 
 -- executed after each test suite
-function suite_teardown()
-  
-  sensorTester:setup()
-  sensorTester:setValueToMax(sensorTester.step)
-
-  -- Reset sensors
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    {
-                     {avlConstants.pins.Sensor1Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
-                     {avlConstants.pins.Sensor2Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
-                     {avlConstants.pins.Sensor3Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
-                     {avlConstants.pins.Sensor4Source, framework.base64Encode({sensorTester:getSin(), sensorTester:getPin()}), "data"},
-                     {avlConstants.pins.Sensor1NormalSampleInterval, 1}, {avlConstants.pins.Sensor2NormalSampleInterval, 1},
-                     {avlConstants.pins.Sensor3NormalSampleInterval, 1}, {avlConstants.pins.Sensor4NormalSampleInterval, 1},
-                     {avlConstants.pins.Sensor1LpmSampleInterval, 0}, {avlConstants.pins.Sensor2LpmSampleInterval, 0},
-                     {avlConstants.pins.Sensor3LpmSampleInterval, 0}, {avlConstants.pins.Sensor4LpmSampleInterval, 0},
-                     {avlConstants.pins.Sensor1ChangeThld, 1}, {avlConstants.pins.Sensor2ChangeThld, 1},
-                     {avlConstants.pins.Sensor3ChangeThld, 1}, {avlConstants.pins.Sensor4ChangeThld, 1},
-                     {avlConstants.pins.Sensor1MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
-                     {avlConstants.pins.Sensor2MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
-                     {avlConstants.pins.Sensor3MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
-                     {avlConstants.pins.Sensor4MinThld, sensorTester:getNormalized(sensorTester.min), "signedint"},
-                     {avlConstants.pins.Sensor1MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
-                     {avlConstants.pins.Sensor2MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
-                     {avlConstants.pins.Sensor3MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
-                     {avlConstants.pins.Sensor4MaxThld, sensorTester:getNormalized(sensorTester.max), "signedint"},
-                     {avlConstants.pins.Sensor1MaxReportInterval, 0}, {avlConstants.pins.Sensor2MaxReportInterval, 0},
-                     {avlConstants.pins.Sensor3MaxReportInterval, 0}, {avlConstants.pins.Sensor4MaxReportInterval, 0},
-                     {avlConstants.pins.SensorReportingInterval, 0}
-                    })
-  
-  -- All sensors to initial state                
-  sensorTester:setValueToInitial()
-  framework.delay(1)
-  -- disable sensors
-  lsf.setProperties(avlConstants.avlAgentSIN,
-                    {
-                     {avlConstants.pins.Sensor1Source, framework.base64Encode(""), "data"},
-                     {avlConstants.pins.Sensor2Source, framework.base64Encode(""), "data"},
-                     {avlConstants.pins.Sensor3Source, framework.base64Encode(""), "data"},
-                     {avlConstants.pins.Sensor4Source, framework.base64Encode(""), "data"},
-                     {avlConstants.pins.Sensor1NormalSampleInterval, 0},
-                     {avlConstants.pins.Sensor2NormalSampleInterval, 0},
-                     {avlConstants.pins.Sensor3NormalSampleInterval, 0},
-                     {avlConstants.pins.Sensor4NormalSampleInterval, 0},
-                     {avlConstants.pins.Sensor1LpmSampleInterval, 0},
-                     {avlConstants.pins.Sensor2LpmSampleInterval, 0},
-                     {avlConstants.pins.Sensor3LpmSampleInterval, 0},
-                     {avlConstants.pins.Sensor4LpmSampleInterval, 0},
-                     {avlConstants.pins.Sensor1ChangeThld, 0},
-                     {avlConstants.pins.Sensor2ChangeThld, 0},
-                     {avlConstants.pins.Sensor3ChangeThld, 0},
-                     {avlConstants.pins.Sensor4ChangeThld, 0},
-                     {avlConstants.pins.SensorReportingInterval, 0}
-                    })
-  
+function suite_teardown()  
   sensorTester:teardown()
 end
 
@@ -388,9 +335,12 @@ function teardown()
                      {avlConstants.pins.SensorReportingInterval, 0}
                     })
   
-  -- All sensors to initial state                
+  -- All sensors to initial state    
+  gateway.setHighWaterMark()
   sensorTester:setValueToInitial()
-  framework.delay(1)  
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor1Change, avlConstants.mins.Sensor2Change,
+                                                                   avlConstants.mins.Sensor3Change, avlConstants.mins.Sensor4Change}, GATEWAY_TIMEOUT)
+  
   -- disable sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {
@@ -923,3 +873,36 @@ function test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval()
   RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
 end
 
+function test_Sensors_AllSensorsAtTime_ReceiveMessagesFromAllSensors()
+  sensors = {Sensor(1), Sensor(2), Sensor(3), Sensor(4)}
+  
+  for i=1, #sensors do
+    local sensor = sensors[i]
+    sensor.pinValues.Source.SIN = sensorTester:getSin()
+    sensor.pinValues.Source.PIN = sensorTester:getPin()
+    sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+    sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+    sensor.pinValues.ChangeThld = 0
+    sensor.pinValues.MaxReportInterval = 0
+    sensor.pinValues.NormalSampleInterval = 1
+    sensor.pinValues.LpmSampleInterval = 0
+    sensor:applyPinValues()
+  end
+  
+  sensorTester:setValueToMax(sensorTester.step)
+  
+  local messagesToGet = {}
+  for i=1,#sensors do 
+    messagesToGet[#messagesToGet +1] = sensors[i].mins.MaxStart
+  end
+  
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(messagesToGet, GATEWAY_TIMEOUT)
+  
+  for i=1, #sensors do
+    local sensor = sensors[i]
+    msg = receivedMessages[sensor.mins.MaxStart]
+    assert_not_nil(msg, 'MaxStart message not received from sensor ' .. i)
+    assert_equal(sensorTester:getNormalizedValue(), msg[sensor.name], 'MaxStart message Sensor value not correct')
+  end
+  
+end

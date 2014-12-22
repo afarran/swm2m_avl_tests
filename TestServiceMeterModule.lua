@@ -7,7 +7,7 @@ module("TestServiceMeterModule", package.seeall)
 
 -- tests are very similiar for every SM, so sm number is randomized
 -- you can turn it off/on here
-RANDOM_SM = FORCE_ALL_TESTCASES
+RANDOM_SM = not FORCE_ALL_TESTCASES
 
 -------------------------
 -- Setup and Teardown
