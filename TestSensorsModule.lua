@@ -220,17 +220,20 @@ end
 
 -- executed after each test suite
 function suite_teardown()
+  sensorTester:teardown()
 end
 
 --- setup function
   -- setup function description
 function setup()
+  sensorTester:setValueToInitial()
 end
 
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
 function teardown()
-  sensorTester:setValueToInitial()
+  sensorTester:setValueToMax(sensorTester.step)
+
   -- Reset sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {
@@ -278,7 +281,6 @@ function teardown()
   
   
   -- All sensors to initial state                
-  sensorTester:setValueToMax(sensorTester.step)
   sensorTester:setValue(0)
 
   -- disable sensors
@@ -310,7 +312,7 @@ function teardown()
                      {avlConstants.pins.Sensor4MaxThld, 1},
                      {avlConstants.pins.SensorReportingInterval, 0}
                     })
-  
+                  
 end
 
 -------------------------
@@ -774,6 +776,7 @@ function test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSampling
 end
 
 function generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval(sensorNo)
+  print("Testing test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval using sensor " .. sensorNo)
   local sensor = Sensor(sensorNo)
   
   sensor.pinValues.Source.SIN = sensorTester:getSin()
@@ -820,3 +823,4 @@ end
 function test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval()
   RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
 end
+
