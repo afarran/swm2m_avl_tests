@@ -18,5 +18,9 @@ local Profile = {}
   function Profile:hasLine13() end
   function Profile:setupIO(lsf, device, lsfConstants) end
   function Profile:hasDualPowerSource() end
+  function Profile:setupPowerService(lsf, lsfConstants) end
+  function Profile:isSeries600() end
+  function Profile:isSeries700() end
+  function Profile:isSeries800() end
   
 return Profile

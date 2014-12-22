@@ -110,14 +110,7 @@ function setup()
                     )
 
   -- device profile application
-  -- power service is specific to IDP 800
-  if(hardwareVariant == 3) then
-    lsf.setProperties(lsfConstants.sins.power,{
-                                                {lsfConstants.pins.extPowerPresentStateDetect, 3}       -- setting detection for Both rising and falling edge
-                                              }
-                      )
-  end
-
+  profile:setupPowerService(lsf, lsfConstants)
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
@@ -1291,8 +1284,7 @@ end
 function test_DigitalOutput_WhenLpmTriggerIsSetToBuiltInBatteryAndExternalPowerSourceIsNotPresent_DigitalOutputPortAssociatedWithLowPowerInHighState()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 10   -- time of lpmEntryDelay, in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
@@ -1394,8 +1386,7 @@ end
 function test_DigitalOutput_WhenLpmTriggerIsSetToBothBuiltInBatteryAndIgnitionOff_DigitalOutputPortAssociatedWithLowPowerInHighStateIfAnyOfTheTriggersIsActive()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 10   -- time of lpmEntryDelay, in minutes
   local lpmTrigger = 3       -- 3 is for both IgnitionOn and Built-in battery
@@ -1542,8 +1533,7 @@ end
 function test_DigitalOutput_WhenDigitalOutputLineIsAssociatedWithMainPowerFunction_DigitalOutputPortChangesAccordingToOnMainPowerState()
 
   -- device profile application
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800") end
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800") end
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1661,8 +1651,7 @@ end
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- device profile application
-  -- This TC only applies to IDP 600 series terminal
-  if(hardwareVariant~=1) then skip("TC related only to IDP 600s") end
+  if profile:isSeries600() == false then skip("TC related only to IDP 600s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1753,8 +1742,7 @@ end
 function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- device profile application
-  -- This TC only applies to IDP 800 series terminal
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:isSeries800() == false then skip("TC related only to IDP 800s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1841,8 +1829,7 @@ end
 function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSent_DigitalOutputsChangeStatesAccordingToMessage()
 
   -- device profile application
-  -- This TC only applies to IDP 700 series terminal - names
-  if(hardwareVariant~=2) then skip("TC related only to IDP 700s") end
+  if profile:isSeries700() == false then skip("TC related only to IDP 700s") end
 
   -- setting the IO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1939,8 +1926,7 @@ end
 function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
   -- device profile application
-  -- This TC only applies to IDP 600 series terminal - 4 digital output lines are affected
-  if(hardwareVariant~=1) then skip("TC related only to IDP 600s") end
+  if profile:isSeries600() == false then skip("TC related only to IDP 600s") end
 
   local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
 
@@ -2034,8 +2020,7 @@ end
 function test_DigitalOutputIDP700_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
   -- device profile application
-  -- This TC only applies to IDP 700 series terminal
-  if(hardwareVariant~=2) then skip("TC related only to IDP 700s") end
+  if profile:isSeries700() == false then skip("TC related only to IDP 700s") end
 
   local invertTime = 1   -- in minutes, time in minutes, after which the set digital output state is automatically inverted
 
@@ -2132,8 +2117,7 @@ end
 function test_DigitalOutputIDP800_WhenSetDigitalOutputsMessageSentAndInvertTimeGreaterThanZero_DigitalOutputsChangeStatesAccordingToMessageAndInvertsAutomaticallyAfterInvertTime()
 
   -- device profile application
-  -- This TC only applies to IDP 800 series terminal - it has 3 IOs and 3 are affected in this case
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  if profile:hasThreeIOs() == false then skip("TC related only to IDP 800s") end
 
   local invertTime = 1   -- in minutes, time after which the set digital output state is automatically inverted
 

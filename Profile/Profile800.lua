@@ -47,3 +47,22 @@ Profile800 = {}
     return true
   end
   
+  function Profile800:setupPowerService(lsf, lsfConstants) 
+    lsf.setProperties(lsfConstants.sins.power,{
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3}       -- setting detection for Both rising and falling edge
+                                              }
+    )
+  end
+  
+  function Profile800:isSeries600() 
+    return false
+  end
+  
+  function Profile800:isSeries700() 
+    return false
+  end
+  
+  function Profile800:isSeries800() 
+    return true
+  end
+  

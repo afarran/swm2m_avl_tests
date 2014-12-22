@@ -37,3 +37,15 @@ Profile780 = {}
   function Profile780:hasDualPowerSource() 
     return false
   end
+  
+  function Profile780:isSeries600() 
+    return false
+  end
+  
+  function Profile780:isSeries700() 
+    return true
+  end
+  
+  function Profile780:isSeries800() 
+    return false
+  end
