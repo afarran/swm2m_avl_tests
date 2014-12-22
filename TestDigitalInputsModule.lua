@@ -1344,13 +1344,10 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}  -- port 2 detection for both rising and falling edge
                                         }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},     -- line number 1 set for Ignition function
                                                 {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
@@ -1359,7 +1356,7 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
@@ -1592,9 +1589,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   lsf.setProperties(lsfConstants.sins.io,{
                                                 {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3}, -- port 1 detection for both rising and falling edge
-                                                {lsfConstants.pins.portConfig[2], 3},     -- port 2 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[2], 3}  -- port 2 detection for both rising and falling edge
-                                        }
+                                          }
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -1609,7 +1604,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
                    )
 
   -- setting digital input bitmap describing when special function inputs are active
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn", "SeatbeltOff"})
+  avlHelperFunctions.setDigStatesDefBitmap({"SeatbeltOff"})
 
   -- terminal should be put in the moving state
   local gpsSettings={
