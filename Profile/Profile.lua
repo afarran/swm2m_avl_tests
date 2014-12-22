@@ -9,7 +9,8 @@ local Profile = {}
     end,})
 
   function Profile:_init()
-      math.randomseed(os.time())                
+      math.randomseed(os.time())
+      self.isBVSetup = false
   end
   
   function Profile:getRandomPortNumber() end
@@ -18,5 +19,12 @@ local Profile = {}
   function Profile:hasLine13() end
   function Profile:setupIO(lsf, device, lsfConstants) end
   function Profile:hasDualPowerSource() end
+  function Profile:setupPowerService(lsf, lsfConstants) end
+  function Profile:isSeries600() end
+  function Profile:isSeries700() end
+  function Profile:isSeries800() end
+  function Profile:setupBatteryVoltage(device) end
+  
+  function Profile:isBatteryVoltageSetup() return self.isBVSetup end
   
 return Profile
