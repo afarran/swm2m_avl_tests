@@ -11,16 +11,34 @@ DEVICE_IDS_LIMIT = 99 -- device limit of saved ids
 
 --- suite_setup
  -- suite_setup description
- 
+
 function suite_setup()
+
+  -- reset of properties of SIN 126 and 25
+	local message = {SIN = 16, MIN = 10}
+	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
+	gateway.submitForwardMessage(message)
+
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+  message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+  gateway.submitForwardMessage(message)
+
+  -- wait until service is up and running again and sends Reset message
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+
 end
 
 -- executed after each test suite
 function suite_teardown()
+
+
 end
 
---- setup function 
-  -- setup function description 
+--- setup function
+  -- setup function description
 function setup()
 end
 
@@ -29,7 +47,7 @@ end
 function teardown()
 end
 
-------------------------- 
+-------------------------
 -- Test Cases
 -------------------------
 
@@ -41,10 +59,10 @@ function test_DriverIds_SendingOnlyOneSingleDriverId_DriverIdsCorrectlyDefined()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
-  local AVL_SIN = avlConstants.avlAgentSIN 
-  local DRIVER_ID = "AQEBAQEBAQ==" 
+  local AVL_SIN = avlConstants.avlAgentSIN
+  local DRIVER_ID = "AQEBAQEBAQ=="
   local DRIVER_ID_INDEX = 1
-  
+
   -- set driver id via message
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=DRIVER_ID_INDEX},{Name="DriverId",Value=DRIVER_ID}}}}},}
@@ -52,7 +70,7 @@ function test_DriverIds_SendingOnlyOneSingleDriverId_DriverIdsCorrectlyDefined()
   framework.delay(5)
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
-  
+
    -- wait for event
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
@@ -61,7 +79,7 @@ function test_DriverIds_SendingOnlyOneSingleDriverId_DriverIdsCorrectlyDefined()
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX], "No proper index in messsage" )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId, "No driver id in message" )
-  
+
   local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId
   assert_equal(DRIVER_ID, driver_id, 0 , "Wrong DriverId : " .. driver_id .. " it should be: "..DRIVER_ID )
 end
@@ -74,8 +92,8 @@ function test_DriverIds_DeleteAllDriverIds_DriverIdsAreCorrectlySetToZero()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
-  local AVL_SIN = avlConstants.avlAgentSIN 
-  
+  local AVL_SIN = avlConstants.avlAgentSIN
+
   -- set driver id via message
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=true},}
@@ -83,7 +101,7 @@ function test_DriverIds_DeleteAllDriverIds_DriverIdsAreCorrectlySetToZero()
   framework.delay(5)
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
-  
+
    -- wait for event
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
@@ -113,40 +131,40 @@ function generic_test_BatchSendingAndReceivingDriverId(limit,limit_to_check)
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
-  local AVL_SIN = avlConstants.avlAgentSIN 
+  local AVL_SIN = avlConstants.avlAgentSIN
   local DRIVER_ID_1 = "AQEBAQEBAQ=="
   local DRIVER_ID_2 = "XQEBAQEBAQ=="
   local DRIVER_ID_3 = "ZQEBAQEBAQ=="
   local IDS_LIMIT_SET = limit
   local IDS_LIMIT_CHECK = limit_to_check
-  
+
   -- set driver id via message
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={}},}
-  
+
   for i=0,IDS_LIMIT_SET,1 do
     if i == 0 then
-      message.Fields[2].Elements[i+1]= { Index = i, Fields = { {Name = "Index", Value = i+1}, {Name = "DriverId",Value = DRIVER_ID_1}} } 
+      message.Fields[2].Elements[i+1]= { Index = i, Fields = { {Name = "Index", Value = i+1}, {Name = "DriverId",Value = DRIVER_ID_1}} }
     elseif i == IDS_LIMIT_SET  then
-      message.Fields[2].Elements[i+1]= { Index = i, Fields = { {Name = "Index", Value = i+1}, {Name = "DriverId",Value = DRIVER_ID_2}} } 
+      message.Fields[2].Elements[i+1]= { Index = i, Fields = { {Name = "Index", Value = i+1}, {Name = "DriverId",Value = DRIVER_ID_2}} }
     else
-      message.Fields[2].Elements[i+1]= { Index = i, Fields = { {Name = "Index", Value = i+1}, {Name = "DriverId",Value = DRIVER_ID_3}} } 
+      message.Fields[2].Elements[i+1]= { Index = i, Fields = { {Name = "Index", Value = i+1}, {Name = "DriverId",Value = DRIVER_ID_3}} }
     end
-  
+
   end
 
 	gateway.submitForwardMessage(message)
   framework.delay(5)
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
-  
+
    -- wait for event
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN], "DefinedDriver message is not received." )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
-  
+
   for i=0,IDS_LIMIT_CHECK,1 do
     local driver_id_to_check
     if i == 0 then
@@ -156,11 +174,11 @@ function generic_test_BatchSendingAndReceivingDriverId(limit,limit_to_check)
     else
       driver_id_to_check = DRIVER_ID_3
     end
-    
+
     assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[i+1], "No proper index in messsage" )
     assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[i+1].DriverId, "No driver id in message" )
     local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[i+1].DriverId
     assert_equal(driver_id_to_check, driver_id, 0 , "Wrong DriverId : " .. driver_id .. " it should be: "..driver_id_to_check )
   end
-  
+
 end
