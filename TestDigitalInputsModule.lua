@@ -1369,20 +1369,15 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
 
   -- *** Execute
   gateway.setHighWaterMark()                -- to get the newest messages
-  device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
+  framework.delay(2)
+  device.setIO(1, 1)                        -- port 1 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME + SEATBELT_DEBOUNCE_TIME)
 
-  -- MovingStart message expected
-  local expectedMins = {avlConstants.mins.movingStart}
+  -- MovingStart and SeatbeltViolationStart messages expected
+  local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.seatbeltViolationStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
-
-  framework.delay(SEATBELT_DEBOUNCE_TIME)     -- wait for seatbeltDebounceTime
-
-  -- SeatbeltViolationStart message expected
-  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
 
@@ -1491,7 +1486,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
@@ -1514,18 +1509,12 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   gateway.setHighWaterMark()                -- to get the newest messages
   device.setIO(1, 1)                        -- port 1 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME + SEATBELT_DEBOUNCE_TIME)
 
   -- MovingStart message expected
-  local expectedMins = {avlConstants.mins.movingStart}
+  local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.seatbeltViolationStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
-
-  framework.delay(SEATBELT_DEBOUNCE_TIME)     -- wait for seatbeltDebounceTime
-
-  -- SeatbeltViolationStart message expected
-  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
   timeOfEvent = os.time()
@@ -1587,7 +1576,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
@@ -1612,18 +1601,12 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   gateway.setHighWaterMark()                -- to get the newest messages
   device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME + SEATBELT_DEBOUNCE_TIME)
 
-  -- MovingStart message expected
-  local expectedMins = {avlConstants.mins.movingStart}
+  -- MovingStart and SeatbeltViolationStart messages expected
+  local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.seatbeltViolationStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
-
-  framework.delay(SEATBELT_DEBOUNCE_TIME)     -- wait for seatbeltDebounceTime
-
-  -- SeatbeltViolationStart message expected
-  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
   gps.set({speed = 0}) -- terminal stops moving
