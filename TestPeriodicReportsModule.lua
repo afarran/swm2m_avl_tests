@@ -349,7 +349,7 @@ function test_PeriodicMovingIntervalSat_WhenTerminalInMovingStateAndMovingInterv
   assert_equal(gpsSettings.longitude*60000, tonumber(matchingMessages[1].Payload.Longitude), "MovingIntervalSat message has incorrect longitude value")
   assert_equal(gpsSettings.latitude*60000, tonumber(matchingMessages[1].Payload.Latitude), "MovingIntervalSat message has incorrect latitude value")
   assert_equal("MovingIntervalSat", matchingMessages[1].Payload.Name, "MovingIntervalSat message has incorrect message name")
-  assert_equal(timeOfEvent, tonumber(matchingMessages[1].Payload.EventTime), 10, "MovingIntervalSat message has incorrect EventTime value")
+  assert_equal(timeOfEvent, tonumber(matchingMessages[1].Payload.EventTime), 20, "MovingIntervalSat message has incorrect EventTime value")
   assert_equal(gpsSettings.speed, tonumber(matchingMessages[1].Payload.Speed), "MovingIntervalSat message has incorrect speed value")
   assert_equal(361, tonumber(matchingMessages[1].Payload.Heading), "MovingIntervalSat message has incorrect heading value")
 

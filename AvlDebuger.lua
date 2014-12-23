@@ -21,7 +21,7 @@ local AvlDebuger = {}
     -- position properties
     local POSITION_SIN = 20
     gps_props = lsf.getProperties(POSITION_SIN , {})
-    dump_gps_props = framework.dump( gps_props )
+    dump_gps_props = framework.dump( self:mapProps(self.positionMaper, gps_props) )
   
     -- eio properties
     local EIO_SIN = 25
@@ -240,6 +240,29 @@ self.eioMaper[61] = "outputSink5Value"
 self.eioMaper[62] = "outputSink6Default"
 self.eioMaper[63] = "outputSink6Value"
 self.eioMaper[65] = "port1StrongPullDown"
+
+self.positionMaper = {}
+self.positionMaper[1] = "source"
+self.positionMaper[2] = "fixValid"
+self.positionMaper[3] = "fixType"
+self.positionMaper[4] = "reserved1"
+self.positionMaper[5] = "reserved2"
+self.positionMaper[6] = "latitude"
+self.positionMaper[7] = "longitude"
+self.positionMaper[8] = "altitude"
+self.positionMaper[9] = "speed"
+self.positionMaper[10] = "heading"
+self.positionMaper[11] = "fixTime"
+self.positionMaper[12] = "fixAge"
+self.positionMaper[13] = "fixMode"
+self.positionMaper[14] = "mode"
+self.positionMaper[15] = "continuous"
+self.positionMaper[16] = "jammingInd"
+self.positionMaper[17] = "jammingFlag"
+self.positionMaper[18] = "jammingRaw"
+self.positionMaper[19] = "acquireTimeout"
+self.positionMaper[20] = "maxFixTimeout"
+self.positionMaper[21] = "metricSpeed"
 
   end
   
