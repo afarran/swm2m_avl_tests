@@ -34,7 +34,7 @@ local function setup()
   lunatest.suite("TestSensorsModule")
   lunatest.suite("TestAdminConfigModule")
   lunatest.suite("TestDriverIdentModule")
-  
+
 end
 
 local function teardown()

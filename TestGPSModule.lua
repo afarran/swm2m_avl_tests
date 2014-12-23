@@ -1384,6 +1384,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                                {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
                              }
                    )
+   gateway.setHighWaterMark() -- to get the newest messages
   -- *** Execute
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
@@ -2262,6 +2263,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   -- *** Setup
   local GPS_JAMMING_DEBOUNCE_TIME = 5    -- seconds
   local JAMMING_LEVEL = 10               -- integer
+  local gpsSettings = {}
 
   -- applying properties of the service
   lsf.setProperties(AVL_SIN,{
@@ -2269,19 +2271,31 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
                             }
                     )
 
-  -- gps settings table
-  local gpsSettings={
+  -- gps settings table - initial position
+  gpsSettings[1]={
                       speed = 0,                      -- terminal stationary
-                      heading = 90,                   -- degrees
+                      heading = 91,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
+                      jammingDetect = false,
+                      jammingLevel = JAMMING_LEVEL,
+                     }
+
+  -- gps settings tables
+  gpsSettings[2]={
+                      speed = 0,                      -- terminal stationary
+                      heading = 92,                   -- degrees
+                      latitude = 2,                   -- degrees
+                      longitude = 2,                  -- degrees
                       jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
-  gps.set(gpsSettings)
+  gps.set(gpsSettings[1])
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  gps.set(gpsSettings[2])
   local timeOfEvent = os.time()
   framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until settings are applied
 
@@ -2291,11 +2305,11 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   gps.set({jammingDetect = false}) -- back to jamming off
 
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
-  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
-  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "GpsJammingStart message has incorrect latitude value")
+  assert_equal(gpsSettings[1].longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
+  assert_equal(gpsSettings[1].latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "GpsJammingStart message has incorrect latitude value")
   assert_equal("GpsJammingStart", receivedMessages[avlConstants.mins.gpsJammingStart].Name, "GpsJammingStart message has incorrect message name")
   assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "GpsJammingStart message has incorrect EventTime value")
-  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "GpsJammingStart message has incorrect speed value")
+  assert_equal(gpsSettings[1].speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "GpsJammingStart message has incorrect speed value")
   assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "GpsJammingStart message has incorrect heading value")
   assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].JammingRaw), "GpsJammingStart message has incorrect JammingRaw value")
 
@@ -2558,18 +2572,23 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
   local timeOfEvent = os.time()
   gps.set({antennaCutDetect = true}) -- antenna cut from this point
 
+  print("antenna cut start")
+
   local expectedMins = {avlConstants.mins.antennaCutStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
+  print("antenna cut end")
+
+
   gps.set({antennaCutDetect = false}) -- antenna connected back from this point
 
-  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "AntennaCutStart message not received")
-  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "AntennaCutStart message has incorrect longitude value")
-  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "AntennaCutStart message has incorrect latitude value")
-  assert_equal("AntennaCutStart", receivedMessages[avlConstants.mins.gpsJammingStart].Name, "AntennaCutStart message has incorrect message name")
-  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "AntennaCutStart message has incorrect EventTime value")
-  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "AntennaCutStart message has incorrect speed value")
-  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "AntennaCutStart message has incorrect heading value")
+  assert_not_nil(receivedMessages[avlConstants.mins.antennaCutStart], "AntennaCutStart message not received")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Longitude), "AntennaCutStart message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Latitude), "AntennaCutStart message has incorrect latitude value")
+  assert_equal("AntennaCutStart", receivedMessages[avlConstants.mins.antennaCutStart].Name, "AntennaCutStart message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].EventTime), 5, "AntennaCutStart message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Speed), "AntennaCutStart message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Heading), "AntennaCutStart message has incorrect heading value")
 
 
 end

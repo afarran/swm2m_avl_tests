@@ -74,6 +74,8 @@ function setup()
 
   local geofenceEnabled = false       -- to disable geofence feature
 
+  gps.set({blockage = false})
+
  --applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                  {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"},
@@ -87,7 +89,7 @@ end
 --- teardown function executed after each unit test
 function teardown()
 
--- nothing here for now
+  gps.set({blockage = false})
 
 end
 
@@ -1381,9 +1383,7 @@ end
 ---------------------
 
 -- test if an Air Communication Blocked (AirCommBlocked MIN 33) event occurs after blockage longer than AirBlockageTime
-function test_AirCommBlockedEventGeneratedAfterBlockageLongerThanAirBlockageTime()
-
-  print("testing if AirCommBlocked  event occurs after blockage longer than AirBlockageTime")
+function test_AirCommBlockage_WhenAirCommIsBlockedForTimeLongerThanAirBlockagePeriod_AirCommBlockageEventGenerated()
 
   local AIR_BLOCKAGE_TIME = 1 -- minutes
   local AIR_BLOCKAGE_TIMEOUT = AIR_BLOCKAGE_TIME*60 + 10 -- seconds
@@ -1405,18 +1405,14 @@ function test_AirCommBlockedEventGeneratedAfterBlockageLongerThanAirBlockageTime
                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                             }
                    )
-  gps.set({speed = 0})
-  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
   gps.set({speed = EXPECTED_VALUE})
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
   gateway.setHighWaterMark()
 
-  print("SET BLOCKAGE for " .. AIR_BLOCKAGE_TIMEOUT .. "secs (for now manually in simulator) " )
-  -- TODO: set the blockage via API
+  gps.set({blockage = true})
   framework.delay(AIR_BLOCKAGE_TIMEOUT)
-  print("UNSET BLOCKAGE NOW!")
-
+  gps.set({blockage = false})
 
   -- wait for event
   expectedMins = {AIR_COMM_BLOCKED_MIN,}
@@ -1430,9 +1426,7 @@ function test_AirCommBlockedEventGeneratedAfterBlockageLongerThanAirBlockageTime
 end
 
 -- test if an Air Communication Blocked (AirCommBlocked MIN 33) event doesn't occur after blockage less than AirBlockageTime
-function test_AirCommBlockedEventNotGeneratedAfterBlockageLessThanAirBlockageTime()
-
-  print("testing if AirCommBlocked event doesn't occur after blockage less than AirBlockageTime")
+function test_AirCommBlockage_WhenAirCommIsBlockedForTimeShorterThanAirBlockagePeriod_AirCommBlockageEventNotGenerated()
 
   local AIR_BLOCKAGE_TIME = 1 -- minutes
   local AIR_BLOCKAGE_TIMEOUT = (AIR_BLOCKAGE_TIME*60) / 2  -- seconds
@@ -1461,24 +1455,23 @@ function test_AirCommBlockedEventNotGeneratedAfterBlockageLessThanAirBlockageTim
 
   gateway.setHighWaterMark()
 
-  print("SET BLOCKAGE for " .. AIR_BLOCKAGE_TIMEOUT .. "secs (for now manually in simulator) " )
-  -- TODO: set the blockage via API
+  gps.set({blockage = true})
+
   framework.delay(AIR_BLOCKAGE_TIMEOUT)
-  print("UNSET BLOCKAGE NOW!")
+
+  gps.set({blockage = false})
 
   -- wait for event
   expectedMins = {AIR_COMM_BLOCKED_MIN,}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
   -- check if event doesn't occur
-  assert_nil(receivedMessages[AIR_COMM_BLOCKED_MIN], "AirCommBlocked message received!")
+  assert_nil(receivedMessages[AIR_COMM_BLOCKED_MIN], "AirCommBlocked message incorrectly received!")
 
 end
 
 
-function test_DataSentWithTheEventIsFromBlockageStartMoment()
-
-  print("Testing if data sent with the event is from blockage start moment.")
+function test_AirCommBlockage_WhenAirCommIsBlockedForTimeLongerThanAirBlockagePeriod_AirCommBlockageEventGeneratedAndDataIsReportedFromTheMomentWhenConditionWasMet()
 
   local AIR_BLOCKAGE_TIME = 1 -- minutes
   local AIR_BLOCKAGE_TIMEOUT = AIR_BLOCKAGE_TIME*60 + 10 -- seconds
@@ -1491,7 +1484,7 @@ function test_DataSentWithTheEventIsFromBlockageStartMoment()
 
   -- set property AirBlockageTime
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                        {avlConstants.pins.AirBlockageTime, AIR_BLOCKAGE_TIME},
+                                              {avlConstants.pins.AirBlockageTime, AIR_BLOCKAGE_TIME},
                                              }
                     )
 
@@ -1501,22 +1494,18 @@ function test_DataSentWithTheEventIsFromBlockageStartMoment()
                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                             }
                    )
-  gps.set({speed = 0})
-  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
   gps.set({speed = EXPECTED_VALUE})
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
-
-
-  print("SET BLOCKAGE for " .. AIR_BLOCKAGE_TIMEOUT .. "secs (for now manually in simulator) " )
-  -- TODO: set the blockage via API
-  framework.delay(AIR_BLOCKAGE_TIMEOUT/2)
-  -- set value during blockage time
-  gps.set({speed = EXPECTED_VALUE})
-  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
-  framework.delay(AIR_BLOCKAGE_TIMEOUT/2)
-  print("UNSET BLOCKAGE NOW!")
 
   gateway.setHighWaterMark()
+  gps.set({blockage = true})
+  framework.delay(AIR_BLOCKAGE_TIMEOUT/2)
+
+ -- set value during blockage time
+  gps.set({speed = EXPECTED_VALUE + 10})
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(AIR_BLOCKAGE_TIMEOUT/2)
+  gps.set({blockage = false})
 
   -- wait for event
   expectedMins = {AIR_COMM_BLOCKED_MIN,}
