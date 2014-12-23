@@ -204,7 +204,6 @@ local function wraptest(flag, msg, t)
    if debug then
        local info = debug.getinfo(3, "l")
        t.line = info.currentline
-       if not flag then avl_debug(t) end -- just one one line for AVL
    end
    if not flag then error(Fail(t)) end
 end
@@ -550,7 +549,7 @@ default_hooks = {
                    printf("%s", res:tostring(name))
                 end
              end
-          end,
+          end
 }
 
 
@@ -580,7 +579,12 @@ verbose_hooks = {
                   printf("%s", res:tostring(name))
                   dot_ct = 0
                end,
-   done = function(r) print_totals(r) end
+   done = function(r) print_totals(r) end,
+   -- hook for extra debug for AVL
+   avl_debug = function(name,res)
+                    AvlDebuger:debug(name,res)
+                end
+   -- end hook
 }
 
 setmetatable(verbose_hooks, {__index = default_hooks })
@@ -693,6 +697,7 @@ local function run_test(name, test, suite, hooks, setup, teardown)
    result:add(suite, name)
 
    if is_func(hooks.post_test) then hooks.post_test(name, result) end
+   if is_func(hooks.avl_debug) and not ok then hooks.avl_debug(name, result) end
 end
 
 

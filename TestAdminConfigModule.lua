@@ -247,6 +247,50 @@ function test_GetEventEnable_GetListAndRangeOfEvents_ReturnMessageContainsProper
   end
 end
 
+function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfigurationOfEventEnable()
+  local NUMBEROFEVENTS = 199
+  local EVENT_LIST = {2, 14, 6, 5, 23, 18}
+
+	local message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents", Value = 1},
+                    }
+	gateway.submitForwardMessage(message)
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+
+  assert_not_nil(msg, 'EventEnableStatus Sending message not sent')
+  print('sad')
+  
+  message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
+  message.Fields = { {Name="OperationType",Value=OPERATION_TYPE.Sending},
+                     {Name="EventList",Value = framework.base64Encode(EVENT_LIST)},
+                     {Name="Range", Elements= { {Index=0, Fields= {{Name="From",Value=START_RANGE},
+                                                                   {Name="To",Value=END_RANGE}
+                                                                  }}}},
+                     {Name="List",Value=framework.base64Encode(EVENT_LIST)},}
+  
+	message.Fields = {{Name="OperationType",Value="Sending"},
+                    {Name="EventList",Elements={{Index=0,Fields={{Name="EventId",Value=4},
+                                                                 {Name="Enabled",Value=1}}},
+                                                {Index=1,Fields={{Name="EventId",Value=5},
+                                                                 {Name="Enabled",Value=1}}}
+                    }},
+                    {Name="OtherEvents",Value="NoChange"},{Name="SaveChanges",Value=1}}
+	
+  gateway.submitForwardMessage(message)
+  
+  
+  message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents", Value = 1},
+                    }
+	gateway.submitForwardMessage(message)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+  
+end
+
 function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
 
   local message = {}

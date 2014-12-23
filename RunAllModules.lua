@@ -3,8 +3,7 @@ avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent relat
 avlConstants =  require("AvlAgentConstants")
 lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
-lunatest_debug = require "lunatest_debug"
-
+AvlDebuger = require "AvlDebuger"()
 profileFactory = require("Profile/ProfileFactory")()
 
 -- global variables used in the tests
@@ -35,7 +34,7 @@ local function setup()
   lunatest.suite("TestSensorsModule")
   lunatest.suite("TestAdminConfigModule")
   lunatest.suite("TestDriverIdentModule")
-
+  
 end
 
 local function teardown()
