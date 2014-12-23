@@ -293,11 +293,8 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
   -- get avlStatesPropety to decide if waiting for MovingEnd message is necessary
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
 
-
-
-
-
-  if(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) then
+  local whilecount = 0
+  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) do
 
     -- setting properties of the service to put terminal into stationary state
     lsf.setProperties(avlConstants.avlAgentSIN,{
@@ -308,13 +305,6 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
     -- set the speed to zero and wait for stationaryDebounceTime
     framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
-  end
-
-  -- checking if terminal entered stationary state for sure
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
-
-  local whilecount = 0
-  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) do
     avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
     whilecount = whilecount + 1
     if (whilecount > tries) then
@@ -356,7 +346,8 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
 
-  if(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) then
+  local whilecount = 0
+  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) do
     -- setting properties of the service
     lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
@@ -366,13 +357,6 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
 
     framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_READ_INTERVAL)
 
-  end
-
-  -- checking if terminal entered stationary state for sure
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
-
-  local whilecount = 0
-  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) do
     avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
     whilecount = whilecount + 1
     if (whilecount > tries) then
