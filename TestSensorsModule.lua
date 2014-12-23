@@ -216,7 +216,19 @@ end
  -- suite_setup description
 
 function suite_setup()
+  -- disable LPM - tests will fail if the device is in LPM
+    device.setIO(1, 0) -- port is supposed to be in low level before every TC
 
+     -- setting the EIO properties
+    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 0},     -- port disabled
+                                           })
+
+    local lpmTrigger = 0        -- 1 is for IgnitionOff
+
+    -- setting AVL properties
+    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], 0},               -- line number 1 disabled
+                                                {avlConstants.pins.lpmTrigger, lpmTrigger},         -- setting lpmTrigger
+                                               })
 
   -- reset of properties of SIN 126 and 25
 	local message = {SIN = 16, MIN = 10}
@@ -268,6 +280,8 @@ function suite_setup()
   sensorTester:setValueToInitial()
   local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.Sensor1Change, avlConstants.mins.Sensor2Change,
                                                                    avlConstants.mins.Sensor3Change, avlConstants.mins.Sensor4Change}, GATEWAY_TIMEOUT)
+                                                               
+  assert_not_nil(receivedMessages, 'Sensor Change messages not received during suite setup!')
   -- disable sensors
   lsf.setProperties(avlConstants.avlAgentSIN,
                     {
