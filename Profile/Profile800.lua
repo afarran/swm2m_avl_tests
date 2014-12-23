@@ -69,9 +69,9 @@ Profile800 = {}
     return true
   end
   
-  function Profile800:setupBatteryVoltage(device) 
-    device.setPower(3, BATT_VOLTAGE) -- setting battery voltage
-    device.setPower(9, EXT_VOLTAGE)  -- setting external power voltage
+  function Profile800:setupBatteryVoltage(device,ext_voltage,batt_voltage) 
+    device.setPower(3, batt_voltage) -- setting battery voltage
+    device.setPower(9, ext_voltage)  -- setting external power voltage
     -- setting external power source
     device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
     framework.delay(2)

@@ -2189,7 +2189,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   -- setting terminals power properties for verification
 
   -- device profile application
-  profile:setupBatteryVoltage(device)
+  profile:setupBatteryVoltage(device,EXT_VOLTAGE,BATT_VOLTAGE)
 
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
