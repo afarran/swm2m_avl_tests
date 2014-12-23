@@ -321,7 +321,7 @@ end
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
 function teardown()
-
+  if TEARDOWN_LPM then
   -- disable LPM
     device.setIO(1, 0) -- port is supposed to be in low level before every TC
 
@@ -335,8 +335,8 @@ function teardown()
     lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], 0},               -- line number 1 disabled
                                                 {avlConstants.pins.lpmTrigger, lpmTrigger},         -- setting lpmTrigger
                                                })
-
-
+    TEARDOWN_LPM = false
+  end
   sensorTester:setup()
   sensorTester:setValueToMax(sensorTester.step)
 
@@ -452,13 +452,15 @@ function test_Sensors_ChangeValueOverChangeThld_ReceiveChangeMsg()
 end
 
 --Sending a message when a sensor value has changed by more than set amount
-function generic_test_changeSensorValueByAmount(sensorNo, ReportingInterval)
+function generic_test_changeSensorValueByAmount(sensorNo, ReportingInterval, NormalSampleInterval)
+  ReportingInterval = ReportingInterval or 1
+  NormalSampleInterval = NormalSampleInterval or 1
   print("Testing test_changeSensorValueByAmount using sensor " .. sensorNo)
   local sensor = Sensor(sensorNo)
 
   sensor.pinValues.ChangeThld = 1000
   sensor.pinValues.SensorReportingInterval = ReportingInterval
-  sensor.pinValues.NormalSampleInterval = ReportingInterval
+  sensor.pinValues.NormalSampleInterval = NormalSampleInterval
   sensor.pinValues.Source = {SIN = sensorTester:getSin(), PIN = sensorTester:getPin()}
 
   -- set first value
@@ -524,7 +526,8 @@ end
 -- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
 function test_ChangeThresholdWhenReportIntervalZeroForSensor()
   local ReportingInterval = 0
-  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
+  local NormalSampleInterval = 1
+  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval, NormalSampleInterval)
 end
 
 -- Sending a message when a sensor value has changed by less than set amount
@@ -771,6 +774,7 @@ function test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBy
 end
 
 function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval(sensorNo)
+  TEARDOWN_LPM = true
   print("Testing test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval using sensor " .. sensorNo)
   local sensor = Sensor(sensorNo)
   local INITIAL_SAMPLE_INTERVAL = 1

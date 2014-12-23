@@ -47,7 +47,23 @@ end
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
 function teardown()
-
+  if (RESTORE_EVENTENABLE) then
+  
+    local events = {}
+    local count = 1
+    for k,v in pairs(initialEventStatus) do
+      events[count] = {Index = count-1, Fields = {{Name="EventId", Value=k}, {Name="Enabled", Value=v} }}
+      count = count + 1 
+    end
+    
+    message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
+    message.Fields = {{Name="OperationType",Value="Sending"},
+                      {Name="EventList",Elements=events},
+                      {Name="OtherEvents",Value="NoChange"},{Name="SaveChanges",Value=1}}
+    
+    gateway.submitForwardMessage(message)
+    RESTORE_EVENTENABLE = false
+  end
 end
 
 -------------------------
@@ -248,38 +264,48 @@ function test_GetEventEnable_GetListAndRangeOfEvents_ReturnMessageContainsProper
 end
 
 function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfigurationOfEventEnable()
-  local NUMBEROFEVENTS = 199
+  RESTORE_EVENTENABLE = true
   local EVENT_LIST = {2, 14, 6, 5, 23, 18}
 
 	local message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
 	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
-                     {Name="GetAllEvents", Value = 1},
-                    }
+                     {Name="GetAllEvents", Value = 1},}
+                   
 	gateway.submitForwardMessage(message)
   local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[avlConstants.mins.EventEnableStatus]
-
   assert_not_nil(msg, 'EventEnableStatus Sending message not sent')
-  print('sad')
   
+  initialEventStatus = {} -- used in teardown
+  local expectedEventStatus = {}
+  -- 0 for disabled, 1 for enabled
+  
+  for k, v in pairs(msg.EnabledEvents) do
+    initialEventStatus[tonumber(v.EventId)] = 1
+    expectedEventStatus[tonumber(v.EventId)] = 1
+  end
+  for k, v in pairs(msg.DisabledEvents) do
+    initialEventStatus[tonumber(v.EventId)] = 0
+    expectedEventStatus[tonumber(v.EventId)] = 0
+  end
+  
+  local function createEventlist(ids, value)
+    result = {}
+    for i=1, #ids do
+      result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
+    end
+    return result
+  end
   message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
-  message.Fields = { {Name="OperationType",Value=OPERATION_TYPE.Sending},
-                     {Name="EventList",Value = framework.base64Encode(EVENT_LIST)},
-                     {Name="Range", Elements= { {Index=0, Fields= {{Name="From",Value=START_RANGE},
-                                                                   {Name="To",Value=END_RANGE}
-                                                                  }}}},
-                     {Name="List",Value=framework.base64Encode(EVENT_LIST)},}
-  
 	message.Fields = {{Name="OperationType",Value="Sending"},
-                    {Name="EventList",Elements={{Index=0,Fields={{Name="EventId",Value=4},
-                                                                 {Name="Enabled",Value=1}}},
-                                                {Index=1,Fields={{Name="EventId",Value=5},
-                                                                 {Name="Enabled",Value=1}}}
-                    }},
+                    {Name="EventList",Elements= createEventlist(EVENT_LIST, 0)},
                     {Name="OtherEvents",Value="NoChange"},{Name="SaveChanges",Value=1}}
 	
   gateway.submitForwardMessage(message)
   
+  for k,v in pairs(EVENT_LIST) do 
+    expectedEventStatus[v] = 0
+  end
   
   message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
 	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
@@ -289,16 +315,34 @@ function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfiguratio
   receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
   msg = receivedMessages[avlConstants.mins.EventEnableStatus]
   
+  for k, v in pairs(msg.EnabledEvents) do
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 1, 0, 'Event expected to be disabled')
+  end
+  for k, v in pairs(msg.DisabledEvents) do
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 0, 0, 'Event expected to be enabled')
+  end
+  
 end
 
 function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
+  local properties = propertiesMG:getMessageWithDefaultValues()
+  generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
+end
+
+function test_SetProperties_WhenSetRandomPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
+  --local properties = propertiesMG:getMessageWithRandomValues()
+  local properties = propertiesMG:getMessageWithDefaultValues()
+  generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
+end
+
+function generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
 
   local message = {}
   -- preparing setProperties message
 	message.SIN = avlConstants.avlAgentSIN
 	message.MIN = avlConstants.mins.setProperties
-  message.Fields = propertiesMG:getMessageWithDefaultValues()  -- fields of serviceProperties message are taken from getMessageWithDefaultValues helper function
-  -- message.Fields = propertiesMG:getMessageWithRandomValues() --TODO: check randomization
+  -- fields of serviceProperties message are taken from getMessageWithDefaultValues helper function
+  message.Fields = properties
   message.Fields[1].Value = 0 -- not to save all properties
   gateway.setHighWaterMark()  -- to get the newest messages
 
@@ -323,7 +367,10 @@ function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetA
     end
   end
 
-  --TODO: sent revert message!
+  -- reset of properties of SIN 126 and 25
+	local message2 = {SIN = 16, MIN = 10}
+	message2.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
+	gateway.submitForwardMessage(message2)
 
 end
 
