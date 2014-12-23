@@ -216,20 +216,7 @@ end
  -- suite_setup description
 
 function suite_setup()
-  -- disable LPM - tests will fail if the device is in LPM
-    device.setIO(1, 0) -- port is supposed to be in low level before every TC
-
-     -- setting the EIO properties
-    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 0},     -- port disabled
-                                           })
-
-    local lpmTrigger = 0        -- 1 is for IgnitionOff
-
-    -- setting AVL properties
-    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], 0},               -- line number 1 disabled
-                                                {avlConstants.pins.lpmTrigger, lpmTrigger},         -- setting lpmTrigger
-                                               })
-
+ 
   -- reset of properties of SIN 126 and 25
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
@@ -245,7 +232,19 @@ function suite_setup()
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
 
+  -- disable LPM - tests will fail if the device is in LPM
+    device.setIO(1, 0) -- port is supposed to be in low level before every TC
 
+     -- setting the EIO properties
+    lsf.setProperties(lsfConstants.sins.io,{{lsfConstants.pins.portConfig[1], 0},     -- port disabled
+                                           })
+
+    local lpmTrigger = 0        -- 1 is for IgnitionOff
+
+    -- setting AVL properties
+    lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], 0},               -- line number 1 disabled
+                                                {avlConstants.pins.lpmTrigger, lpmTrigger},         -- setting lpmTrigger
+                                               })
   sensorTester:setup()
   sensorTester:setValueToMax(sensorTester.step)
 
