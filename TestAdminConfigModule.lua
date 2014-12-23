@@ -456,8 +456,9 @@ function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetA
 end
 
 function test_SetProperties_WhenSetRandomPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
-  --local properties = propertiesMG:getMessageWithRandomValues()
-  local properties = propertiesMG:getMessageWithDefaultValues()
+  local properties = propertiesMG:getMessageWithRandomValues()
+  AvlDebuger:single_debug(framework.dump(properties))
+  --local properties = propertiesMG:getMessageWithDefaultValues()
   generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
 end
 
