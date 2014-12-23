@@ -44,6 +44,13 @@ local AvlDebuger = {}
   
   end
 
+  function AvlDebuger:single_debug(msg)
+    local file = io.open("avl.log", "a")
+    file:write("************************************\n")
+    file:write(framework.dump(msg))
+    file:write("************************************\n")
+  end
+
   function AvlDebuger:_init()
 self.avlMaper = {}
 self.avlMaper[1] = "StationarySpeedThld"
