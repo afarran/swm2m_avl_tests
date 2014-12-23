@@ -290,19 +290,20 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
                      }
   gps.set(gpsSettings)
 
+  -- setting properties of the service to put terminal into stationary state
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                               {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
+                                              }
+                    )
+
   -- get avlStatesPropety to decide if waiting for MovingEnd message is necessary
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
 
   local whilecount = 0
   while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) do
 
-    -- setting properties of the service to put terminal into stationary state
-    lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
-                                                {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
-                                               }
-                      )
-    -- set the speed to zero and wait for stationaryDebounceTime
+    -- speed is zero, wait for stationaryDebounceTime
     framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
 
     avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
@@ -343,20 +344,19 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
                       simulateLinearMotion = false,
                      }
   gps.set(gpsSettings) -- applying settings of gps simulator
+  -- setting properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
+                                             }
+                   )
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
 
   local whilecount = 0
   while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) do
-    -- setting properties of the service
-    lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
-                                                {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
-                                               }
-                      )
 
     framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_READ_INTERVAL)
-
     avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
     whilecount = whilecount + 1
     if (whilecount > tries) then
