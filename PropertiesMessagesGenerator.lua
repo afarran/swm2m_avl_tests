@@ -21,19 +21,19 @@ end
 -- TODO: private method
 function PropertiesMessagesGenerator:prepareMessage(random)
   math.randomseed(os.time())
+  local RANDOM_ITEMS = 30
   for i = 1, #self.message.Fields do
     self.messageFields[i]={}
     self.messageFields[i].Name = self.message.Fields[i].Name
-
     if random == false or self.message.Fields[i].Range == nil   then
       self.messageFields[i].Value = self.message.Fields[i].Value
     else
       if random and #self.message.Fields[i].Range == 1 then
         self.messageFields[i].Value = self.message.Fields[i].Range[1]
-      elseif random and type(self.message.Fields[i].Range[1]) == "string" then
+      elseif i < RANDOM_ITEMS and random and type(self.message.Fields[i].Range[1]) == "string" then
         local index = math.random(1,#self.message.Fields[i].Range)
         self.messageFields[i].Value = self.message.Fields[i].Range[index]
-      elseif random and type(self.message.Fields[i].Range[1]) == "number" then
+      elseif i < RANDOM_ITEMS and random and type(self.message.Fields[i].Range[1]) == "number" then
         self.messageFields[i].Value = math.random(self.message.Fields[i].Range[1],self.message.Fields[i].Range[2])
       elseif random then
         self.messageFields[i].Value = self.message.Fields[i].Value
