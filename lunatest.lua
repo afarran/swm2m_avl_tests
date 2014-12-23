@@ -697,7 +697,7 @@ local function run_test(name, test, suite, hooks, setup, teardown)
    result:add(suite, name)
 
    if is_func(hooks.post_test) then hooks.post_test(name, result) end
-   if is_func(hooks.avl_debug) then hooks.avl_debug(name, result) end
+   if is_func(hooks.avl_debug) and not ok then hooks.avl_debug(name, result) end
 end
 
 
