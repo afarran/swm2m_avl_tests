@@ -1384,7 +1384,12 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                                {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
                              }
                    )
-   gateway.setHighWaterMark() -- to get the newest messages
+  gateway.setHighWaterMark() -- to get the newest messages
+
+  -- this is for debugging - will be removed
+  AvlDebuger:single_debug(gpsSettings[1],"gpsSettings[1]")
+  AvlDebuger:single_debug(gpsSettings[2],"gpsSettings[2]")
+  AvlDebuger:single_debug(gpsSettings[3],"gpsSettings[3]")
   -- *** Execute
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
@@ -1660,6 +1665,11 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                                {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
                              }
                    )
+    -- this is for debugging - will be removed
+  AvlDebuger:single_debug(gpsSettings[1],"gpsSettings[1]")
+  AvlDebuger:single_debug(gpsSettings[2],"gpsSettings[2]")
+  AvlDebuger:single_debug(gpsSettings[3],"gpsSettings[3]")
+
 
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
