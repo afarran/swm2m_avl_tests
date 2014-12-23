@@ -528,7 +528,7 @@ function generic_test_Sensors_SendMessageWhenValueAboveThreshold(sensorNo)
   -- wait for max start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[sensor.mins.MaxStart]
-  assert_not_nil(msg, 'Sensor did not send Max Start message')
+  assert_not_nil(msg, 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
   local FirstSampleTime = tonumber(msg.EventTime)
 
@@ -567,7 +567,7 @@ function generic_test_Sensors_SendMessageWhenValueBelowThreshold(sensorNo)
   -- wait for min start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinStart}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[sensor.mins.MinStart]
-  assert_not_nil(msg, 'Sensor did not send Min Start message')
+  assert_not_nil(msg, 'Sensor did not send Min Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
   local FirstSampleTime = tonumber(msg.EventTime)
 
@@ -575,7 +575,7 @@ function generic_test_Sensors_SendMessageWhenValueBelowThreshold(sensorNo)
   -- wait for min end message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinEnd}, GATEWAY_TIMEOUT)
   msg = receivedMessages[sensor.mins.MinEnd]
-  assert_not_nil(msg, 'Sensor did not send Min End message')
+  assert_not_nil(msg, 'Sensor did not send Min End message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMin), NEAR_ZERO, "SensorMin has incorrect value")
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
   local SecondSampleTime = tonumber(msg.EventTime)
@@ -606,7 +606,7 @@ function generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold(sen
   -- wait for min start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinStart}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[sensor.mins.MinStart]
-  assert_not_nil(msg, 'Sensor did not send Min Start message')
+  assert_not_nil(msg, 'Sensor did not send Min Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
 
   sensorTester:setValueToMax(sensorTester.step)
@@ -614,12 +614,12 @@ function generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold(sen
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MinEnd, sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
   -- check if min end message was sent
   msg = receivedMessages[sensor.mins.MinEnd]
-  assert_not_nil(msg, 'Sensor did not send Min End message')
+  assert_not_nil(msg, 'Sensor did not send Min End message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMin), NEAR_ZERO, "SensorMin has incorrect value")
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
 
   msg = receivedMessages[sensor.mins.MaxStart]
-  assert_not_nil(msg, 'Sensor did not send Max Start message')
+  assert_not_nil(msg, 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name .. " has incorrect value")
 
 end
@@ -648,7 +648,7 @@ function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sen
   -- wait for max start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[sensor.mins.MaxStart]
-  assert_not_nil(msg, 'Sensor did not send Max Start message')
+  assert_not_nil(msg, 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
   sensorTester:setValueToMin(-sensorTester.step)
@@ -657,12 +657,12 @@ function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sen
                                                              sensor.mins.MaxEnd}, GATEWAY_TIMEOUT)
   -- check if min end message was sent
   msg = receivedMessages[sensor.mins.MaxEnd]
-  assert_not_nil(msg, 'Sensor did not send Max End message')
+  assert_not_nil(msg, 'Sensor did not send Max End message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedPreviousValue(), tonumber(msg.SensorMax), NEAR_ZERO, "SensorMax has incorrect value")
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
   msg = receivedMessages[sensor.mins.MinStart]
-  assert_not_nil(msg, 'Sensor did not send Min Start message')
+  assert_not_nil(msg, 'Sensor did not send Min Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
 end
@@ -711,7 +711,7 @@ function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestamps
   -- wait for max start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[sensor.mins.MaxStart]
-  assert_not_nil(msg, 'Sensor did not send Max Start message')
+  assert_not_nil(msg, 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
   local FirstSampleTimestamp = msg.EventTime
 
@@ -730,8 +730,8 @@ function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestamps
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart,
                                                              sensor.mins.MaxEnd}, 1.5 * sensor.pinValues.NormalSampleInterval)
   -- check if MaxStart or MaxEnd message was sent
-  assert_nil(receivedMessages[sensor.mins.MaxEnd], 'Sensor send Max End message')
-  assert_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor send Max Start message')
+  assert_nil(receivedMessages[sensor.mins.MaxEnd], 'Sensor send Max End message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
+  assert_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
 
 end
 
@@ -761,7 +761,7 @@ function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPM
   -- wait for max start message
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
   local msg = receivedMessages[sensor.mins.MaxStart]
-  assert_not_nil(msg, 'Sensor did not send Max Start message')
+  assert_not_nil(msg, 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
 
   --* Go into LPM mode
@@ -811,7 +811,8 @@ function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPM
   sensorTester:setValueToMax(sensorTester.step)
   receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart,}, 1.5 * sensor.pinValues.LpmSampleInterval)
   msg = receivedMessages[sensor.mins.MaxStart]
-  assert_not_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor did not send Max Start message')
+  assert_not_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
+  assert_not_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   local SecondSampleTimestamp = msg.EventTime
   
   assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, sensor.pinValues.LpmSampleInterval, 1, 'Message Timestamps do not match LPM sampling interval')   
@@ -902,7 +903,7 @@ function test_Sensors_AllSensorsAtTime_ReceiveMessagesFromAllSensors()
     local sensor = sensors[i]
     msg = receivedMessages[sensor.mins.MaxStart]
     assert_not_nil(msg, 'MaxStart message not received from sensor ' .. i)
-    assert_equal(sensorTester:getNormalizedValue(), msg[sensor.name], 'MaxStart message Sensor value not correct')
+    assert_equal(sensorTester:getNormalizedValue(), msg[sensor.name], 1, 'MaxStart message Sensor value not correct')
   end
   
 end
