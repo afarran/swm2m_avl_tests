@@ -325,13 +325,24 @@ function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfiguratio
 end
 
 function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
+  local properties = propertiesMG:getMessageWithDefaultValues()
+  generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
+end
+
+function test_SetProperties_WhenSetRandomPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
+  --local properties = propertiesMG:getMessageWithRandomValues()
+  local properties = propertiesMG:getMessageWithDefaultValues()
+  generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
+end
+
+function generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
 
   local message = {}
   -- preparing setProperties message
 	message.SIN = avlConstants.avlAgentSIN
 	message.MIN = avlConstants.mins.setProperties
-  message.Fields = propertiesMG:getMessageWithDefaultValues()  -- fields of serviceProperties message are taken from getMessageWithDefaultValues helper function
-  -- message.Fields = propertiesMG:getMessageWithRandomValues() --TODO: check randomization
+  -- fields of serviceProperties message are taken from getMessageWithDefaultValues helper function
+  message.Fields = properties
   message.Fields[1].Value = 0 -- not to save all properties
   gateway.setHighWaterMark()  -- to get the newest messages
 
@@ -356,7 +367,10 @@ function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetA
     end
   end
 
-  --TODO: sent revert message!
+  -- reset of properties of SIN 126 and 25
+	local message2 = {SIN = 16, MIN = 10}
+	message2.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
+	gateway.submitForwardMessage(message2)
 
 end
 
