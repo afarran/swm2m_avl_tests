@@ -289,13 +289,6 @@ function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfiguratio
     expectedEventStatus[tonumber(v.EventId)] = 0
   end
   
-  local function createEventlist(ids, value)
-    result = {}
-    for i=1, #ids do
-      result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
-    end
-    return result
-  end
   message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
 	message.Fields = {{Name="OperationType",Value="Sending"},
                     {Name="EventList",Elements= createEventlist(EVENT_LIST, 0)},
@@ -324,6 +317,15 @@ function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfiguratio
   
 end
 
+-- Helper needed for SetEventEnable
+local function createEventlist(ids, value)
+  result = {}
+  for i=1, #ids do
+    result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
+  end
+  return result
+end
+
 function test_SetEventEnable_EventListDisableOthers_GetEventMessageReturnsCorrectConfigurationOfEventEnable()
   RESTORE_EVENTENABLE = true
   local EVENT_LIST = {2, 14, 6, 5, 23, 18}
@@ -350,13 +352,6 @@ function test_SetEventEnable_EventListDisableOthers_GetEventMessageReturnsCorrec
     expectedEventStatus[tonumber(v.EventId)] = 0
   end
   
-  local function createEventlist(ids, value)
-    result = {}
-    for i=1, #ids do
-      result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
-    end
-    return result
-  end
   message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
 	message.Fields = {{Name="OperationType",Value="Sending"},
                     {Name="EventList",Elements= createEventlist(EVENT_LIST, 1)},
@@ -413,13 +408,6 @@ function test_SetEventEnable_EventListEnableOthers_GetEventMessageReturnsCorrect
     expectedEventStatus[tonumber(v.EventId)] = 0
   end
   
-  local function createEventlist(ids, value)
-    result = {}
-    for i=1, #ids do
-      result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
-    end
-    return result
-  end
   message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
 	message.Fields = {{Name="OperationType",Value="Sending"},
                     {Name="EventList",Elements= createEventlist(EVENT_LIST, 0)},
