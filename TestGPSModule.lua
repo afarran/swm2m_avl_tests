@@ -2558,18 +2558,23 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
   local timeOfEvent = os.time()
   gps.set({antennaCutDetect = true}) -- antenna cut from this point
 
+  print("antenna cut start")
+
   local expectedMins = {avlConstants.mins.antennaCutStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
+  print("antenna cut end")
+
+
   gps.set({antennaCutDetect = false}) -- antenna connected back from this point
 
-  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "AntennaCutStart message not received")
-  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "AntennaCutStart message has incorrect longitude value")
-  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "AntennaCutStart message has incorrect latitude value")
-  assert_equal("AntennaCutStart", receivedMessages[avlConstants.mins.gpsJammingStart].Name, "AntennaCutStart message has incorrect message name")
-  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "AntennaCutStart message has incorrect EventTime value")
-  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "AntennaCutStart message has incorrect speed value")
-  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "AntennaCutStart message has incorrect heading value")
+  assert_not_nil(receivedMessages[avlConstants.mins.antennaCutStart], "AntennaCutStart message not received")
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Longitude), "AntennaCutStart message has incorrect longitude value")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Latitude), "AntennaCutStart message has incorrect latitude value")
+  assert_equal("AntennaCutStart", receivedMessages[avlConstants.mins.antennaCutStart].Name, "AntennaCutStart message has incorrect message name")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].EventTime), 5, "AntennaCutStart message has incorrect EventTime value")
+  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Speed), "AntennaCutStart message has incorrect speed value")
+  assert_equal(361, tonumber(receivedMessages[avlConstants.mins.antennaCutStart].Heading), "AntennaCutStart message has incorrect heading value")
 
 
 end
