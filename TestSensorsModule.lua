@@ -921,7 +921,7 @@ function test_Sensors_AllSensorsAtTime_ReceiveMessagesFromAllSensors()
     local sensor = sensors[i]
     msg = receivedMessages[sensor.mins.MaxStart]
     assert_not_nil(msg, 'MaxStart message not received from sensor ' .. i)
-    assert_equal(sensorTester:getNormalizedValue(), msg[sensor.name], 1, 'MaxStart message Sensor value not correct')
+    assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, 'MaxStart message Sensor value not correct')
   end
 
 end
