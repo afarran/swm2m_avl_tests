@@ -30,9 +30,9 @@ local AvlDebuger = {}
   
     local file = io.open("avl.log", "a")
     file:write("[ "..os.date().." ]-------------------------- start of ".. name .." ---------------------------- \n")
-    file:write("MESSAGE: " .. info.msg.."\n")
-    file:write("LINE: " .. info.line.."\n")
-    file:write("REASON: " .. info.reason.."\n")
+    if info.msg then file:write("MESSAGE: " .. info.msg.."\n") end
+    if info.line then file:write("LINE: " .. info.line.."\n") end
+    if info.reason then file:write("REASON: " .. info.reason.."\n") end
     file:write("AVL PROPERTIES: \n")
     file:write(avl_dump_props)
     file:write("GPS PROPERTIES: \n")
