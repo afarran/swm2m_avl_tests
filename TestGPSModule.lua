@@ -1384,6 +1384,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                                {avlConstants.pins.turnDebounceTime, TURN_DEBOUNCE_TIME},
                              }
                    )
+   gateway.setHighWaterMark() -- to get the newest messages
   -- *** Execute
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
@@ -2262,6 +2263,7 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   -- *** Setup
   local GPS_JAMMING_DEBOUNCE_TIME = 5    -- seconds
   local JAMMING_LEVEL = 10               -- integer
+  local gpsSettings = {}
 
   -- applying properties of the service
   lsf.setProperties(AVL_SIN,{
@@ -2269,19 +2271,31 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
                             }
                     )
 
-  -- gps settings table
-  local gpsSettings={
+  -- gps settings table - initial position
+  gpsSettings[1]={
                       speed = 0,                      -- terminal stationary
-                      heading = 90,                   -- degrees
+                      heading = 91,                   -- degrees
                       latitude = 1,                   -- degrees
                       longitude = 1,                  -- degrees
+                      jammingDetect = false,
+                      jammingLevel = JAMMING_LEVEL,
+                     }
+
+  -- gps settings tables
+  gpsSettings[2]={
+                      speed = 0,                      -- terminal stationary
+                      heading = 92,                   -- degrees
+                      latitude = 2,                   -- degrees
+                      longitude = 2,                  -- degrees
                       jammingDetect = true,
                       jammingLevel = JAMMING_LEVEL,
                      }
 
   -- *** Execute
   gateway.setHighWaterMark() -- to get the newest messages
-  gps.set(gpsSettings)
+  gps.set(gpsSettings[1])
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  gps.set(gpsSettings[2])
   local timeOfEvent = os.time()
   framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until settings are applied
 
@@ -2291,11 +2305,11 @@ function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceT
   gps.set({jammingDetect = false}) -- back to jamming off
 
   assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
-  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
-  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "GpsJammingStart message has incorrect latitude value")
+  assert_equal(gpsSettings[1].longitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Longitude), "GpsJammingStart message has incorrect longitude value")
+  assert_equal(gpsSettings[1].latitude*60000, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Latitude), "GpsJammingStart message has incorrect latitude value")
   assert_equal("GpsJammingStart", receivedMessages[avlConstants.mins.gpsJammingStart].Name, "GpsJammingStart message has incorrect message name")
   assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].EventTime), 5, "GpsJammingStart message has incorrect EventTime value")
-  assert_equal(gpsSettings.speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "GpsJammingStart message has incorrect speed value")
+  assert_equal(gpsSettings[1].speed, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Speed), "GpsJammingStart message has incorrect speed value")
   assert_equal(361, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].Heading), "GpsJammingStart message has incorrect heading value")
   assert_equal(JAMMING_LEVEL, tonumber(receivedMessages[avlConstants.mins.gpsJammingStart].JammingRaw), "GpsJammingStart message has incorrect JammingRaw value")
 
