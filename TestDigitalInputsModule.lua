@@ -47,6 +47,21 @@ RANDOM_SM = false
   -- 3. Value of randomPortNumber set by using math.random function (different with every run of suite_setup)
  function suite_setup()
 
+  -- reset of properties of SIN 126 and 25
+	local message = {SIN = 16, MIN = 10}
+	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
+	gateway.submitForwardMessage(message)
+
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+  message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+  gateway.submitForwardMessage(message)
+
+  -- wait until service is up and running again and sends Reset message
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                     {avlConstants.pins.lpmTrigger, 0},
@@ -164,6 +179,15 @@ end
 --- teardown function executed after each unit test
 function teardown()
 
+  local gpsSettings={
+                      fixType = 3,                     -- valid fix provided
+                      simulateLinearMotion = false,
+                      jammingDetect = false,
+                      antennaCutDetect = false,
+                     }
+  gps.set(gpsSettings)
+
+
   -- setting all IO's to low state
   profile:setupIO(lsf, device, lsfConstants)
 
@@ -204,7 +228,6 @@ end
   -- 5. IgnitionOn messaage received
   -- 6. Message fields contain Point#1 GPS and time information
  function test_Ignition_WhenPortValueChangesToHigh_IgnitionOnMessageSent()
-
   -- in this TC gpsSettings are configured only to check if these are correctly reported in message
   local gpsSettings={
                       speed = 0,                      -- terminal in stationary state
@@ -1369,20 +1392,15 @@ function test_SeatbeltViolation_WhenTerminalStartsMovingAndSeatbeltOffLineIsActi
 
   -- *** Execute
   gateway.setHighWaterMark()                -- to get the newest messages
-  device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
+  framework.delay(2)
+  device.setIO(1, 1)                        -- port 1 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME + SEATBELT_DEBOUNCE_TIME)
 
-  -- MovingStart message expected
-  local expectedMins = {avlConstants.mins.movingStart}
+  -- MovingStart and SeatbeltViolationStart messages expected
+  local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.seatbeltViolationStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
-
-  framework.delay(SEATBELT_DEBOUNCE_TIME)     -- wait for seatbeltDebounceTime
-
-  -- SeatbeltViolationStart message expected
-  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
 
@@ -1491,7 +1509,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
@@ -1514,18 +1532,12 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndS
   gateway.setHighWaterMark()                -- to get the newest messages
   device.setIO(1, 1)                        -- port 1 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME + SEATBELT_DEBOUNCE_TIME)
 
   -- MovingStart message expected
-  local expectedMins = {avlConstants.mins.movingStart}
+  local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.seatbeltViolationStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
-
-  framework.delay(SEATBELT_DEBOUNCE_TIME)     -- wait for seatbeltDebounceTime
-
-  -- SeatbeltViolationStart message expected
-  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
   timeOfEvent = os.time()
@@ -1587,7 +1599,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
                    )
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
+                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["SeatbeltOff"]},    -- line number 2 set for SeatbeltOff function
                                                 {avlConstants.pins.seatbeltDebounceTime, SEATBELT_DEBOUNCE_TIME},             -- seatbeltDebounceTime set
                                                 {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},               -- moving related
                                                 {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},                 -- moving related
@@ -1612,18 +1624,12 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndM
   gateway.setHighWaterMark()                -- to get the newest messages
   device.setIO(1, 1)                        -- port 2 to high level - that triggers SeatbeltOff true
   gps.set(gpsSettings)
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME + SEATBELT_DEBOUNCE_TIME)
 
-  -- MovingStart message expected
-  local expectedMins = {avlConstants.mins.movingStart}
+  -- MovingStart and SeatbeltViolationStart messages expected
+  local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.seatbeltViolationStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
-
-  framework.delay(SEATBELT_DEBOUNCE_TIME)     -- wait for seatbeltDebounceTime
-
-  -- SeatbeltViolationStart message expected
-  local expectedMins = {avlConstants.mins.seatbeltViolationStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.seatbeltViolationStart], "SeatbeltViolationStart message not received")
 
   gps.set({speed = 0}) -- terminal stops moving

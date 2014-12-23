@@ -3,6 +3,7 @@ avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent relat
 avlConstants =  require("AvlAgentConstants")
 lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
+AvlDebuger = require "AvlDebuger"()
 profileFactory = require("Profile/ProfileFactory")()
 
 -- global variables used in the tests
@@ -22,7 +23,7 @@ local function setup()
   print("*** AVL Feature Tests Started ***")
   math.randomseed(os.time())
   io.output():setvbuf("no")
-  include the following test suites in the feature tests:
+  --include the following test suites in the feature tests:
   lunatest.suite("TestGPSModule")
   lunatest.suite("TestLPMModule")
   lunatest.suite("TestDigitalInputsModule")
@@ -33,7 +34,7 @@ local function setup()
   lunatest.suite("TestSensorsModule")
   lunatest.suite("TestAdminConfigModule")
   lunatest.suite("TestDriverIdentModule")
-
+  
 end
 
 local function teardown()
@@ -54,6 +55,3 @@ setup()
 lunatest.run(nil, arg)
 
 teardown()
-
-
-
