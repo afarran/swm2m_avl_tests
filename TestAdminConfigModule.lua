@@ -289,13 +289,6 @@ function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfiguratio
     expectedEventStatus[tonumber(v.EventId)] = 0
   end
   
-  local function createEventlist(ids, value)
-    result = {}
-    for i=1, #ids do
-      result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
-    end
-    return result
-  end
   message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
 	message.Fields = {{Name="OperationType",Value="Sending"},
                     {Name="EventList",Elements= createEventlist(EVENT_LIST, 0)},
@@ -316,10 +309,131 @@ function test_SetEventEnable_EventList_GetEventMessageReturnsCorrectConfiguratio
   msg = receivedMessages[avlConstants.mins.EventEnableStatus]
   
   for k, v in pairs(msg.EnabledEvents) do
-    assert_equal(expectedEventStatus[tonumber(v.EventId)], 1, 0, 'Event expected to be disabled')
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 1, 0, 'Event ' .. tonumber(v.EventId) .. ' expected to be disabled')
   end
   for k, v in pairs(msg.DisabledEvents) do
-    assert_equal(expectedEventStatus[tonumber(v.EventId)], 0, 0, 'Event expected to be enabled')
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 0, 0, 'Event ' .. tonumber(v.EventId) .. ' expected to be enabled')
+  end
+  
+end
+
+-- Helper needed for SetEventEnable
+local function createEventlist(ids, value)
+  result = {}
+  for i=1, #ids do
+    result[i] = {Index = i-1, Fields = {{Name="EventId", Value=ids[i]}, {Name="Enabled", Value=value} }}
+  end
+  return result
+end
+
+function test_SetEventEnable_EventListDisableOthers_GetEventMessageReturnsCorrectConfigurationOfEventEnable()
+  RESTORE_EVENTENABLE = true
+  local EVENT_LIST = {2, 14, 6, 5, 23, 18}
+
+	local message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents", Value = 1},}
+                   
+	gateway.submitForwardMessage(message)
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+  assert_not_nil(msg, 'EventEnableStatus Sending message not sent')
+  
+  initialEventStatus = {} -- used in teardown
+  local expectedEventStatus = {}
+  -- 0 for disabled, 1 for enabled
+  
+  for k, v in pairs(msg.EnabledEvents) do
+    initialEventStatus[tonumber(v.EventId)] = 1
+    expectedEventStatus[tonumber(v.EventId)] = 1
+  end
+  for k, v in pairs(msg.DisabledEvents) do
+    initialEventStatus[tonumber(v.EventId)] = 0
+    expectedEventStatus[tonumber(v.EventId)] = 0
+  end
+  
+  message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
+	message.Fields = {{Name="OperationType",Value="Sending"},
+                    {Name="EventList",Elements= createEventlist(EVENT_LIST, 1)},
+                    {Name="OtherEvents",Value="DisableAllOthers"},{Name="SaveChanges",Value=1}}
+	
+  gateway.submitForwardMessage(message)
+  for i=1, #expectedEventStatus do
+    expectedEventStatus[i] = 0
+  end
+  for k,v in pairs(EVENT_LIST) do 
+    expectedEventStatus[v] = 1
+  end
+  
+  message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents", Value = 1},
+                    }
+	gateway.submitForwardMessage(message)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+  
+  for k, v in pairs(msg.EnabledEvents) do
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 1, 0, 'Event ' .. tonumber(v.EventId) .. ' expected to be disabled')
+  end
+  for k, v in pairs(msg.DisabledEvents) do
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 0, 0, 'Event ' .. tonumber(v.EventId) .. ' expected to be enabled')
+  end
+  
+end
+
+function test_SetEventEnable_EventListEnableOthers_GetEventMessageReturnsCorrectConfigurationOfEventEnable()
+  RESTORE_EVENTENABLE = true
+  local EVENT_LIST = {2, 14, 6, 5, 23, 18, 15} -- Event 15 is always disabled
+
+	local message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents", Value = 1},}
+                   
+	gateway.submitForwardMessage(message)
+  local receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+  assert_not_nil(msg, 'EventEnableStatus Sending message not sent')
+  
+  initialEventStatus = {} -- used in teardown
+  local expectedEventStatus = {}
+  -- 0 for disabled, 1 for enabled
+  
+  for k, v in pairs(msg.EnabledEvents) do
+    initialEventStatus[tonumber(v.EventId)] = 1
+    expectedEventStatus[tonumber(v.EventId)] = 1
+  end
+  for k, v in pairs(msg.DisabledEvents) do
+    initialEventStatus[tonumber(v.EventId)] = 0
+    expectedEventStatus[tonumber(v.EventId)] = 0
+  end
+  
+  message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.SetEventEnable}
+	message.Fields = {{Name="OperationType",Value="Sending"},
+                    {Name="EventList",Elements= createEventlist(EVENT_LIST, 0)},
+                    {Name="OtherEvents",Value="EnableAllOthers"},{Name="SaveChanges",Value=1}}
+	
+  gateway.submitForwardMessage(message)
+  for i=1, #expectedEventStatus do
+    expectedEventStatus[i] = 1
+  end
+  for k,v in pairs(EVENT_LIST) do 
+    expectedEventStatus[v] = 0
+  end
+  
+  message = {SIN = avlConstants.avlAgentSIN,  MIN = avlConstants.mins.GetEventEnable}
+	message.Fields = { {Name="OperationType",Value = OPERATION_TYPE.Sending},
+                     {Name="GetAllEvents", Value = 1},
+                    }
+	gateway.submitForwardMessage(message)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({avlConstants.mins.EventEnableStatus}, GATEWAY_TIMEOUT)
+  msg = receivedMessages[avlConstants.mins.EventEnableStatus]
+  
+  for k, v in pairs(msg.EnabledEvents) do
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 1, 0, 'Event ' .. tonumber(v.EventId) .. ' expected to be disabled')
+  end
+  for k, v in pairs(msg.DisabledEvents) do
+    assert_equal(expectedEventStatus[tonumber(v.EventId)], 0, 0, 'Event ' .. tonumber(v.EventId) .. ' expected to be enabled')
   end
   
 end
@@ -330,8 +444,7 @@ function test_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetA
 end
 
 function test_SetProperties_WhenSetRandomPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties()
-  --local properties = propertiesMG:getMessageWithRandomValues()
-  local properties = propertiesMG:getMessageWithDefaultValues()
+  local properties = propertiesMG:getMessageWithRandomValues()
   generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlySetAndResponseMessageContainsAllProperties(properties)
 end
 
