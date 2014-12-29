@@ -28,6 +28,12 @@ function suite_setup()
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
 
+  --delete all ids
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.SetDriverIds}
+  message.Fields = {{Name="DeleteAll",Value=true},}
+  gateway.submitForwardMessage(message)
+  framework.delay(2)
+  
 end
 
 -- executed after each test suite
@@ -48,6 +54,7 @@ function teardown()
   local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.SetDriverIds}
   message.Fields = {{Name="DeleteAll",Value=true},}
   gateway.submitForwardMessage(message)
+  framework.delay(2)
 end
 
 -------------------------
@@ -252,15 +259,22 @@ function test_DeleteDriverIds_WhenSetDriverIdsMessageContainsOptionalEmptyDelete
 
 end
 
-function test_setDriverIds_WhenSomeDriverIdsAreAlreadyFindAndMessageWithNewIndexIsSend_NewDriverIdIsDefined()
-  
-  local DRIVER_ID_INDEX = 4
+function test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithExistingIndexIsSend_ExistingDriverIdIsModified()
+  generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 3)
+end
+
+function test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithNewIndexIsSend_NewDriverIdIsDefined()
+  generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 4)
+end
+
+function generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(start_len, index)
+  local DRIVER_ID_INDEX = index
   local DRIVER_ID = "AQEBAQEBAQ=="
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
   local AVL_SIN = avlConstants.avlAgentSIN
-  local START_LEN = 4
+  local START_LEN = start_len
   
   generic_test_BatchSendingAndReceivingDriverId(START_LEN)
   
