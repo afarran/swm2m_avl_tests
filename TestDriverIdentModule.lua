@@ -221,7 +221,7 @@ function test_DeleteNonExistentDriverId_WhenSetDriverIdsMessageIsSentWithOneNonE
 
 end
 
-function test_DeleteIds_WhenSetDriverIdsMessageContainsOptionalEmptyDeleteIdsField_ExistingDriverIdsAreNotDeleted()
+function test_DeleteDriverIds_WhenSetDriverIdsMessageContainsOptionalEmptyDeleteIdsField_ExistingDriverIdsAreNotDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -252,12 +252,43 @@ function test_DeleteIds_WhenSetDriverIdsMessageContainsOptionalEmptyDeleteIdsFie
 
 end
 
+function test_setDriverIds_WhenSomeDriverIdsAreAlreadyFindAndMessageWithNewIndexIsSend_NewDriverIdIsDefined()
+  
+  local DRIVER_ID_INDEX = 4
+  local DRIVER_ID = "AQEBAQEBAQ=="
+  local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
+  local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
+  local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
+  local AVL_SIN = avlConstants.avlAgentSIN
+  local START_LEN = 4
+  
+  generic_test_BatchSendingAndReceivingDriverId(START_LEN)
+  
+  -- set driver id via message
+  local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
+  message.Fields = {{Name="DeleteAll",Value=false},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=DRIVER_ID_INDEX},{Name="DriverId",Value=DRIVER_ID}}}}},}
+  gateway.submitForwardMessage(message)
+  framework.delay(5)
+  local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
+	gateway.submitForwardMessage(message2)
+
+   -- wait for event
+  expectedMins = {DEFINED_DRIVER_IDS_MIN}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
+
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN], "DefinedDriver message is not received." )
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
+  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, START_LEN + 1,0,"New driver id not added")
+  
+  --TODO: check not only length but value as well
+  
+end
 
 function test_DriverIds_setDriverIdsMessageSentWithNumberOfDriverIdsEqualToLimit_DriverIdsCorrectlyDefined()
   generic_test_BatchSendingAndReceivingDriverId(DEVICE_IDS_LIMIT)
 end
 
-function test_DriverIds_setDriverIdsMessageSentWithNumberOfDriverIdsEqualToLimit_DriverIdsCorrectlyDefined()
+function test_DriverIds_setDriverIdsMessageSentWithNumberOfDriverIdsBelowLimit_DriverIdsCorrectlyDefined()
   generic_test_BatchSendingAndReceivingDriverId(DEVICE_IDS_LIMIT-1)
 end
 
@@ -321,12 +352,12 @@ function test_DeleteIds_When100DriverIdsAreDefinedAnd99AreDeletedInSetDriverIdsM
   generic_test_BatchDeleting(100,99)
 end
 
-function test_DeleteIds_When100DriverIdsAreDefinedAnd100AreDeletedInSetDriverIdsMessage_NoneLeft()
+function test_DeleteIds_When100DriverIdsAreDefinedAnd100AreDeletedInSetDriverIdsMessage_NoneDriverIdLeft()
   generic_test_BatchDeleting(100,100)
 end
 
 -- This raises error : No such file or directory.
---function test_DeleteIds_When100DriverIdsAreDefinedAnd101AreDeletedInSetDriverIdsMessage_NoneLeft()
+--function test_DeleteIds_When100DriverIdsAreDefinedAnd101AreDeletedInSetDriverIdsMessage_NoneDriverIdLeft()
 --  generic_test_BatchDeleting(100,101)
 --end
 
