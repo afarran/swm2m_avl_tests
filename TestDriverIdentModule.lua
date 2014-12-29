@@ -77,19 +77,17 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriv
 
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN], "DefinedDriver message is not received." )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
-  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX], "No proper index in messsage" )
-  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId, "No driver id in message" )
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1], "No proper index in message" )
+  assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].DriverId, "No driver id in message" )
 
-  local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[DRIVER_ID_INDEX].DriverId
+  assert_equal( tonumber(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].Index) , DRIVER_ID_INDEX, 0 , "Wrong index of driver id")
+
+  local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].DriverId
   assert_equal(DRIVER_ID, driver_id, 0 , "Wrong DriverId : " .. driver_id .. " it should be: "..DRIVER_ID )
   
   --TODO:check if there wasn't more than one
 end
 
--- Test of deleting all driver ids
--- Message SetDriverIds is sent.
--- Message GetDriverIds is sent.
--- Message DefinedDriversIds is received and driver id is assumed empty
 function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSetToTrueAndNoOtherFields_AllExistingDriverIdsAreDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
@@ -119,10 +117,7 @@ function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSe
   assert_nil(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "DriverIds collection should be empty")
 
 end
-
--- Test of deleting single driver ids
--- Message SetDriverIds is sent.
--- Message GetDriverIds is sent. 
+ 
 function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecificDriverIdsToDelete_SpecificDriverIdsAreDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
@@ -319,9 +314,6 @@ function generic_test_BatchSendingAndReceivingDriverId(limit)
   
   assert_lte(limit, checked_items, 0 , "Received driver ids cannot be more than ".. limit)
   
-  --print("added items : "..IDS_LIMIT_SET)
-  --print("checked_items :" .. checked_items)
-
 end
 
 
