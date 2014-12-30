@@ -29,6 +29,14 @@ function suite_setup()
   local expectedMins = {avlConstants.mins.reset}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+  
+  --restore interval
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}    
+                                               }
+                    )
+  framework.delay(2)
+  
 
 end
 
@@ -485,6 +493,39 @@ function generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlyS
 	message2.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
 	gateway.submitForwardMessage(message2)
 
+end
+
+function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_PreviousLatLngShouldBeTheSameAsBeforeRestart()
+  
+  --continous gps fix
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                {lsfConstants.pins.gpsReadInterval,1}     
+                                               }
+                    )
+  framework.delay(2)
+  
+  --set gps values
+  gpsSettings={
+                  latitude = 3,                        -- degrees
+                  longitude = 3,                       -- degrees
+                 }
+  
+  gps.set(gpsSettings)
+  local stime = os.time()
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  
+  -- restarting AVL agent after 
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+  message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+  gateway.submitForwardMessage(message)
+
+  -- wait until service is up and running again and sends Reset message
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+  assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.reset].PrevLatitude),0, "Wrong previous latitude" )
+  assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.reset].PrevLongitude), 0 , "Wrong previous longitude" )
+  
 end
 
 
