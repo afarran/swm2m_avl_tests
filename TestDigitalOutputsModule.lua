@@ -113,7 +113,15 @@ function setup()
   local digOutActiveBitmap = 0          -- setting DigOutActiveBitmap 0
   local geofenceEnabled = false        -- to enable geofence feature
 
-  --applying properties of geofence service
+  -- antenna not cut, jamming not detected and air communication not blocked
+  local gpsSettings={
+                      jammingDetect = false,
+                      blockage = false,
+                      antennaCutDetect = false,
+                     }
+  gps.set(gpsSettings)
+
+  -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"}
                                                }
@@ -188,6 +196,7 @@ function setup()
 
                                         }
                     )
+
 
 
 
@@ -416,6 +425,69 @@ function test_DigitalOutput_WhenTerminalIsInAnennaCutState_DigitalOutputPortAsso
 end
 
 
+--- TC checks if digital output line associated with AirCommunicationBlocked state is changing when air communication blockage cut is detected .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set port 1 to be digital output and associate it with Air Communication Blockage function
+  -- 2. Set the high state of port to indicate line active state
+  -- 3. Simulate Air Communication Blockage for time longer than AIR_BLOCKAGE_TIME
+  -- 4. Check the state of port 1
+  -- 5. Simulate Air Communication nit blocked
+  -- 6. Check the state of port 1
+  --
+  -- Results:
+  --
+  -- 1. Port 1 set to be digital output and associated with AntennaCut function
+  -- 2. High state of port set to be an indicator of active line
+  -- 3. Terminal enters AirCommunicationBlocked state
+  -- 4. Port 1 is in high state
+  -- 5. Terminal leaves AirCommunicationBlocked state
+  -- 6. Port 1 is in low state
+function test_DigitalOutput_WhenTerminalIsInAirCommunicationBlockedState_DigitalOutputPortAssociatedWithAirCommunicationBlockageInHighState()
+
+  -- *** Setup
+  local AIR_BLOCKAGE_TIME = 1                            -- minutes
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                           {lsfConstants.pins.portConfig[1], 6},          -- port 1 as digital output
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["AirBlocked"]},    -- digital output line number 1 set for Antenna cut function
+                                              {avlConstants.pins.AirBlockageTime, AIR_BLOCKAGE_TIME},
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- *** Execute
+  gateway.setHighWaterMark()           -- to get the newest messages
+  gps.set({blockage = true})           -- air communication is blocked from now
+  framework.delay(AIR_BLOCKAGE_TIME)
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(1, device.getIO(1), "Port1 associated with AirCommBlocked state is not in high state as expected")
+
+  gateway.setHighWaterMark()
+  gps.set({blockage = false})           -- air communication is not blocked from now
+
+  framework.delay(2)
+  -- asserting state of port 1 - low state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with AntennaCut state is not in low state as expected")
+
+
+end
+
+
 
 --- TC checks if digital output line associated with Moving state is changing when speed is above Stationary Speed Threshold
   -- *actions performed:
@@ -449,8 +521,8 @@ function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutput
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
-                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},            -- moving related
-                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},          -- moving related
+                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},              -- moving related
+                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},            -- moving related
                                              }
                    )
   -- activating special output function
