@@ -268,6 +268,87 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssoc
 end
 
 
+--- TC checks if digital output line associated with GpsJammed state is changing when GPS jamming is detected .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  -- * GPS signal is not jammed
+  --
+  -- Steps:
+  --
+  -- 1. Set port 1 to be digital output and associate it with GpsJammed function
+  -- 2. Set the high state of port to indicate line active state
+  -- 3. Simulate gps jamming for time longer than gpsJamDebounceTime
+  -- 4. Check the state of port 1
+  -- 5. Simulate gps signal not jammed fot time longer than gpsJamDebounceTime
+  -- 6. Check the state of port 1
+  --
+  -- Results:
+  --
+  -- 1. Port 1 set to be digital output and associated with GpsJammed function
+  -- 2. High state of port set to be an indicator of active line
+  -- 3. Terminal enters GpsJammed state
+  -- 4. Port 1 is in high state
+  -- 5. Terminal leaves GPSJammed state
+  -- 6. Port 1 is in low state
+function test_DigitalOutput_WhenTerminalIsInGpsJammedState_DigitalOutputPortAssociatedWithGpsJammingInHighState()
+
+  -- *** Setup
+  local GPS_JAMMING_DEBOUNCE_TIME = 1    -- seconds
+  local JAMMING_LEVEL = 10               -- integer
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                           {lsfConstants.pins.portConfig[1], 6},                              -- port 1 as digital output
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["GpsJammed"]},    -- digital output line number 1 set for GpsJammed function
+                                              {avlConstants.pins.gpsJamDebounceTime, GPS_JAMMING_DEBOUNCE_TIME},
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+  -- GPS signal is jammed from now
+  local gpsSettings={
+                      jammingDetect = true,
+                      jammingLevel = JAMMING_LEVEL,
+                    }
+  gps.set(gpsSettings)
+
+  framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_PROCESS_TIME)   -- wait until terminal enters GpsJammed state
+
+  local expectedMins = {avlConstants.mins.gpsJammingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(1, device.getIO(1), "Port1 associated with GpsJammed state is not in high state as expected")
+
+  gateway.setHighWaterMark()
+  -- GPS signal is not jammed from now
+  gps.set({jammingDetect = false})
+
+  framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_PROCESS_TIME)   -- wait until terminal leaves GpsJammed state
+
+  expectedMins = {avlConstants.mins.gpsJammingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingEnd], "GpsJammingEnd message not received")
+
+  -- asserting state of port 1 - low state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with GpsJammed state is not in low state as expected")
+
+
+end
+
+
 
 --- TC checks if digital output line associated with Moving state is changing when speed is above Stationary Speed Threshold
   -- *actions performed:
