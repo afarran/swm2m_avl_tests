@@ -219,64 +219,99 @@ function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecif
 
 end
 
+--- TC checks if setDriverIds message sets duplicated indexes as well. 
+  -- Initial Conditions:
+  -- 
+  -- * DeleteAll flag set to true
+  --
+  -- Steps:
+  --
+  -- 1. Send SetDriverIds message with duplicated indexes
+  -- 2. Send GetDriverIds message.
+  -- 3. Wait for DefindedDriverIds message.
+  -- 4. Check driver IDs collection 
+  --
+  -- Results:
+  --
+  -- 1. SetDriverIds message is correctly send.
+  -- 2. GetDriverIds message is correctlly send.
+  -- 3. DefindedDriverIds message is received.
+  -- 4. Only one ID is set from each two duplicated. 
 function test_SetDriverId_WhenSetDriverIdMessageIsSentWithDuplicatedIndexes_DriverIdsAreCorectlySet()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
   local AVL_SIN = avlConstants.avlAgentSIN
   
+  -- Send SetDriverIds message with duplicated indexes
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=0},{Name="DriverId",Value="AAEBAQEBAQ=="}}},{Index=1,Fields={{Name="Index",Value=0},{Name="DriverId",Value="AQABAQEBAQ=="}}},{Index=2,Fields={{Name="Index",Value=2},{Name="DriverId",Value="AQEAAQEBAQ=="}}},{Index=3,Fields={{Name="Index",Value=2},{Name="DriverId",Value="AQEBAAEBAQ=="}}}}},}
-  
   gateway.submitForwardMessage(message)
   
-  -- get driver ids 
+  -- Send GetDriverIds message 
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
   
+  -- Wait for DefindedDriverIds message
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
-  -- check ids
+  -- Check driver IDs collection
   assert_equal(2, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is wrong number of driver ids.")
-
   found = 0
   for i, value in ipairs(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId) do
     if tonumber(value.Index) == 0 and value.DriverId == "AQABAQEBAQ==" then found = found + 1 end
     if tonumber(value.Index) == 2 and value.DriverId == "AQEBAAEBAQ==" then found = found + 1 end
   end
-  
   assert_equal(2, found, 0,  "Wrong ids in the result.")
   
 end
 
+--- TC checks if setDriverIds message tries to delete non-existent driver ID existent IDs are not deleted. 
+  -- Initial Conditions:
+  -- 
+  -- * a few driver ids (4) are added
+  --
+  -- Steps:
+  --
+  -- 1. Send SetDriverIds message with non-existent driver ID to delete
+  -- 2. Send GetDriverIds message.
+  -- 3. Wait for DefindedDriverIds message.
+  -- 4. Check driver IDs collection 
+  --
+  -- Results:
+  --
+  -- 1. SetDriverIds message is correctly send.
+  -- 2. GetDriverIds message is correctlly send.
+  -- 3. DefindedDriverIds message is received.
+  -- 4. There is the same number of driver IDs as before deleting. 
 function test_DeleteNonExistentDriverId_WhenSetDriverIdsMessageIsSentWithOneNonExistentDriverIdToDelete_ExistingDriverIdsAreNotDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
   local AVL_SIN = avlConstants.avlAgentSIN
   
-  --adding a few driver ids (4)
+  -- a few driver ids (4) are added
   local fillMessage = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
 	fillMessage.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=0},{Name="DriverId",Value="AAEBAQEBAQ=="}}},{Index=1,Fields={{Name="Index",Value=1},{Name="DriverId",Value="AQABAQEBAQ=="}}},{Index=2,Fields={{Name="Index",Value=2},{Name="DriverId",Value="AQEAAQEBAQ=="}}},{Index=3,Fields={{Name="Index",Value=3},{Name="DriverId",Value="AQEBAAEBAQ=="}}}}},}
 	gateway.submitForwardMessage(fillMessage)
   framework.delay(5)
 
-  -- try to delete non-existent driver id
+  -- Send SetDriverIds message with non-existent driver ID to delete
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=false},{Name="DeleteIds",Elements={{Index=0,Fields={{Name="Index",Value=5}}}}},}
   gateway.submitForwardMessage(message)
   framework.delay(5)
   
-  -- get driver ids 
+  -- Send GetDriverIds message 
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
 
-  -- wait for event
+  -- Wait for DefindedDriverIds message
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
-  -- check if there is the same number of driver ids
+  -- Check driver IDs collection if there is the same number of driver IDs as before deleting
   assert_equal(4, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is wrong number of driver ids.")
 
 end
