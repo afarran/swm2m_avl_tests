@@ -260,15 +260,15 @@ function test_DeleteDriverIds_WhenSetDriverIdsMessageContainsOptionalEmptyDelete
 end
 
 function test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithExistingIndexIsSend_ExistingDriverIdIsModified()
-  generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 3)
+  generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 0, 4)
 end
 
 function test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithNewIndexIsSend_NewDriverIdIsDefined()
-  generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 4)
+  generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 1, 5)
 end
 
-function generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(start_len, index)
-  local DRIVER_ID_INDEX = index
+function generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(start_len, index_offset, final_len)
+  local DRIVER_ID_INDEX = start_len - 1 + index_offset
   local DRIVER_ID = "AQEBAQEBAQ=="
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
@@ -292,7 +292,7 @@ function generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(start_len,
 
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN], "DefinedDriver message is not received." )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
-  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, START_LEN + 1,0,"New driver id not added")
+  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, final_len ,0,"New driver id not added")
   
   --TODO: check not only length but value as well
   
