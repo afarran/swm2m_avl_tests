@@ -5,12 +5,10 @@
 
 module("TestDriverIdentModule", package.seeall)
 
--- Setup and Teardown
+-- there could be only up to 100 driver IDs
 DEVICE_IDS_LIMIT = 100 
 
 --- suite_setup
- -- suite_setup description
-
 function suite_setup()
 
   -- reset of properties of SIN 126 and 25
@@ -38,8 +36,6 @@ end
 
 -- executed after each test suite
 function suite_teardown()
-
-
 end
 
 --- setup function
@@ -61,7 +57,24 @@ end
 -- Test Cases
 -------------------------
 
-
+--- TC checks if setDriverIds message sets one single driver ID .
+  -- Initial Conditions:
+  --
+  -- * DeleteAll flag set to true.
+  --
+  -- Steps:
+  --
+  -- 1. Set driver ID via SetDriverIds message with index 0.
+  -- 2. Send GetDriverIds message.
+  -- 3. Wait for DefindedDriverIds message.
+  -- 4. Check if correct driver ID is set and only one ID exists in a driver ids collection.
+  --
+  -- Results:
+  --
+  -- 1. SetDriverIds message is correctly send.
+  -- 2. GetDriverIds message is correctly send.
+  -- 3. DefindedDriverIds message is received.
+  -- 4. Only one ID exists in a driver ids collection and driverId value is correct.
 function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriverIdCorrectlyDefined()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
