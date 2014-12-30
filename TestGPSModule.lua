@@ -2582,13 +2582,8 @@ function test_AntennaCut_WhenTerminalDetectsSatelliteAntennaCut_AntennaCutStartM
   local timeOfEvent = os.time()
   gps.set({antennaCutDetect = true}) -- antenna cut from this point
 
-  print("antenna cut start")
-
   local expectedMins = {avlConstants.mins.antennaCutStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-
-  print("antenna cut end")
-
 
   gps.set({antennaCutDetect = false}) -- antenna connected back from this point
 
