@@ -453,6 +453,8 @@ function test_DigitalOutput_WhenTerminalIsInAirCommunicationBlockedState_Digital
 
   -- *** Setup
   local AIR_BLOCKAGE_TIME = 1                            -- minutes
+  local STATIONARY_SPEED_THLD = 10                       -- kmh
+  local MOVING_DEBOUNCE_TIME = 5                         -- seconds
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -463,6 +465,8 @@ function test_DigitalOutput_WhenTerminalIsInAirCommunicationBlockedState_Digital
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["AirBlocked"]},    -- digital output line number 1 set for Antenna cut function
                                               {avlConstants.pins.AirBlockageTime, AIR_BLOCKAGE_TIME},
+                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -470,9 +474,11 @@ function test_DigitalOutput_WhenTerminalIsInAirCommunicationBlockedState_Digital
   framework.delay(2)                 -- wait until settings are applied
 
   -- *** Execute
-  gateway.setHighWaterMark()           -- to get the newest messages
-  gps.set({blockage = true})           -- air communication is blocked from now
-  framework.delay(AIR_BLOCKAGE_TIME)
+  gps.set({speed = STATIONARY_SPEED_THLD + 10})  -- movingStart is used as a message activating airCommBlockage timer
+  gateway.setHighWaterMark()                     -- to get the newest messages
+  gps.set({blockage = true})                     -- air communication is blocked from now
+
+  framework.delay(AIR_BLOCKAGE_TIME*60 + 10)
 
   -- asserting state of port 1 - high state is expected
   assert_equal(1, device.getIO(1), "Port1 associated with AirCommBlocked state is not in high state as expected")
@@ -482,7 +488,7 @@ function test_DigitalOutput_WhenTerminalIsInAirCommunicationBlockedState_Digital
 
   framework.delay(2)
   -- asserting state of port 1 - low state is expected
-  assert_equal(0, device.getIO(1), "Port1 associated with AntennaCut state is not in low state as expected")
+  assert_equal(0, device.getIO(1), "Port1 associated with AirCommBlocked state is not in low state as expected")
 
 
 end
