@@ -83,15 +83,17 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriv
   local DRIVER_ID = "AQEBAQEBAQ=="
   local DRIVER_ID_INDEX = 0
 
-  -- set driver id via message
+  -- Set driver ID via SetDriverIds message with index 0.
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=DRIVER_ID_INDEX},{Name="DriverId",Value=DRIVER_ID}}}}},}
   gateway.submitForwardMessage(message)
   framework.delay(5)
+  
+  -- Send GetDriverIds message.
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
 
-   -- wait for event
+   -- wait for event DefindedDriverIds
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
@@ -99,7 +101,6 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriv
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1], "No proper index in message" )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].DriverId, "No driver id in message" )
-
   assert_equal(DRIVER_ID_INDEX, tonumber(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].Index) ,  0 , "Wrong index of driver id")
 
   local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].DriverId
@@ -108,6 +109,26 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriv
   
 end
 
+--- TC checks if setDriverIds message with flag DeleteAll set to true deletes all IDs. 
+  -- Initial Conditions:
+  -- 
+  -- * One driver ID is set before delete all. 
+  --
+  -- Steps:
+  --
+  -- 1. Set driver ID via SetDriverIds message with index 0.
+  -- 2. Delete all IDs via SetDriverIds message.
+  -- 3. Send GetDriverIds message.
+  -- 4. Wait for DefindedDriverIds message.
+  -- 5. Check if driver ids collection is empty
+  --
+  -- Results:
+  --
+  -- 1. SetDriverIds message is correctly send.
+  -- 2. SetDriverIds message is correctly send.
+  -- 3. GetDriverIds message is correctlly send.
+  -- 4. DefindedDriverIds message is received.
+  -- 5. No ID exists in a driver ids collection.
 function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSetToTrueAndNoOtherFields_AllExistingDriverIdsAreDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
@@ -116,24 +137,27 @@ function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSe
   local DRIVER_ID = "AQEBAQEBAQ=="
   local DRIVER_ID_INDEX = 0
   
-  --adding driver id
+  -- Set driver ID via SetDriverIds message with index 0.
   local fillMessage = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   fillMessage.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=DRIVER_ID_INDEX},{Name="DriverId",Value=DRIVER_ID}}}}},}
   gateway.submitForwardMessage(fillMessage)
   framework.delay(5)
 
-  -- delete all driver ids via message
+  -- Delete all IDs via SetDriverIds message
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=true},}
   gateway.submitForwardMessage(message)
   framework.delay(5)
+  
+  -- Send GetDriverIds message
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
 
-   -- wait for event
+  -- Wait for DefindedDriverIds message
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
+  -- Check if driver ids collection is empty
   assert_nil(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "DriverIds collection should be empty")
 
 end
