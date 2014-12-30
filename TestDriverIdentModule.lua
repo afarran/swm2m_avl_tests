@@ -87,12 +87,12 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriv
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1], "No proper index in message" )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].DriverId, "No driver id in message" )
 
-  assert_equal( tonumber(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].Index) , DRIVER_ID_INDEX, 0 , "Wrong index of driver id")
+  assert_equal(DRIVER_ID_INDEX, tonumber(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].Index) ,  0 , "Wrong index of driver id")
 
   local driver_id = receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId[1].DriverId
   assert_equal(DRIVER_ID, driver_id, 0 , "Wrong DriverId : " .. driver_id .. " it should be: "..DRIVER_ID )
+  assert_equal( 1 , #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There should be only one driver ID in this set" )
   
-  --TODO:check if there wasn't more than one
 end
 
 function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSetToTrueAndNoOtherFields_AllExistingDriverIdsAreDeleted()
@@ -119,7 +119,7 @@ function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSe
 
    -- wait for event
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
-  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   assert_nil(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "DriverIds collection should be empty")
 
@@ -154,7 +154,7 @@ function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecif
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
   -- check ids
-  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 2, "There is different number of driver ids.")
+  assert_equal(2, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is different number of driver ids.")
 
   found = 0
   for i, value in ipairs(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId) do
@@ -162,7 +162,7 @@ function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecif
     if tonumber(value.Index) == 3 then found = found + 1 end
   end
   
-  assert_equal(found,2, "Wrong indexes in the result.")
+  assert_equal(2, found, 0, "Wrong indexes in the result.")
 
 end
 
@@ -185,7 +185,7 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithDuplicatedIndexes_Driv
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   -- check ids
-  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 2, "There is different number of driver ids.")
+  assert_equal(2, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is wrong number of driver ids.")
 
   found = 0
   for i, value in ipairs(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId) do
@@ -193,7 +193,7 @@ function test_SetDriverId_WhenSetDriverIdMessageIsSentWithDuplicatedIndexes_Driv
     if tonumber(value.Index) == 2 and value.DriverId == "AQEBAAEBAQ==" then found = found + 1 end
   end
   
-  assert_equal(found,2, "Wrong ids in the result.")
+  assert_equal(2, found, 0,  "Wrong ids in the result.")
   
 end
 
@@ -203,13 +203,13 @@ function test_DeleteNonExistentDriverId_WhenSetDriverIdsMessageIsSentWithOneNonE
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
   local AVL_SIN = avlConstants.avlAgentSIN
   
-  --adding a few driver ids
+  --adding a few driver ids (4)
   local fillMessage = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
 	fillMessage.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=0},{Name="DriverId",Value="AAEBAQEBAQ=="}}},{Index=1,Fields={{Name="Index",Value=1},{Name="DriverId",Value="AQABAQEBAQ=="}}},{Index=2,Fields={{Name="Index",Value=2},{Name="DriverId",Value="AQEAAQEBAQ=="}}},{Index=3,Fields={{Name="Index",Value=3},{Name="DriverId",Value="AQEBAAEBAQ=="}}}}},}
 	gateway.submitForwardMessage(fillMessage)
   framework.delay(5)
 
-  -- delete not all driver ids
+  -- try to delete non-existent driver id
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=false},{Name="DeleteIds",Elements={{Index=0,Fields={{Name="Index",Value=5}}}}},}
   gateway.submitForwardMessage(message)
@@ -219,12 +219,12 @@ function test_DeleteNonExistentDriverId_WhenSetDriverIdsMessageIsSentWithOneNonE
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
 
-   -- wait for event
+  -- wait for event
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
-  -- check ids
-  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 4, "There is different number of driver ids.")
+  -- check if there is the same number of driver ids
+  assert_equal(4, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is wrong number of driver ids.")
 
 end
 
@@ -255,7 +255,7 @@ function test_DeleteDriverIds_WhenSetDriverIdsMessageContainsOptionalEmptyDelete
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
   -- check ids
-  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 4, "There is different number of driver ids.")
+  assert_equal(4, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is wrong number of driver ids.")
 
 end
 
@@ -292,9 +292,14 @@ function generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(start_len,
 
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN], "DefinedDriver message is not received." )
   assert_not_nil( receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, "No Driver ids in message" )
-  assert_equal(#receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, final_len ,0,"New driver id not added")
+  assert_equal(final_len, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0,"New driver id not added")
   
-  --TODO: check not only length but value as well
+  --check not only length but value as well 
+  for i, value in ipairs(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId) do
+    if tonumber(value.Index) == DRIVER_ID_INDEX then
+      assert_equal(DRIVER_ID,value.DriverId,0,"Wrong driver ID")
+    end
+  end
   
 end
 
@@ -326,7 +331,7 @@ function generic_test_BatchSendingAndReceivingDriverId(limit)
   message.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={}},}
 
   for i=0,IDS_LIMIT_SET-1,1 do
-      driver_ids_choosen[i] = driver_ids[lunatest.random_int(1,#driver_ids)] -- TODO: random
+      driver_ids_choosen[i] = driver_ids[lunatest.random_int(1,#driver_ids)] 
       --print ("Random: i:"..i..driver_ids_choosen[i])
       table.insert(
         message.Fields[2].Elements , 
@@ -361,7 +366,6 @@ function generic_test_BatchSendingAndReceivingDriverId(limit)
   
 end
 
-
 function test_DeleteIds_When100DriverIdsAreDefinedAnd99AreDeletedInSetDriverIdsMessage_OnlyDriverIdOneLeft()
   generic_test_BatchDeleting(100,99)
 end
@@ -370,10 +374,9 @@ function test_DeleteIds_When100DriverIdsAreDefinedAnd100AreDeletedInSetDriverIds
   generic_test_BatchDeleting(100,100)
 end
 
--- This raises error : No such file or directory.
---function test_DeleteIds_When100DriverIdsAreDefinedAnd101AreDeletedInSetDriverIdsMessage_NoneDriverIdLeft()
---  generic_test_BatchDeleting(100,101)
---end
+function test_DeleteIds_When100DriverIdsAreDefinedAnd101AreDeletedInSetDriverIdsMessage_NoneDriverIdLeft()
+  generic_test_BatchDeleting(100,101)
+end
 
 function generic_test_BatchDeleting(limit,limit_to_delete)
   
@@ -406,7 +409,11 @@ function generic_test_BatchDeleting(limit,limit_to_delete)
   if receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId ~= nil then
     receivedMessagesCount = #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId
   end
-
-  assert_equal( receivedMessagesCount, (limit-limit_to_delete), "Wrong batch delete." )
+  
+  if (limit - limit_to_delete) < 0 then
+    assert_equal( 0 , receivedMessagesCount, 0, "Wrong batch delete." )
+  else 
+    assert_equal( (limit-limit_to_delete), receivedMessagesCount, 0, "Wrong batch delete." )
+  end
   
 end
