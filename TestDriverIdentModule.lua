@@ -162,6 +162,24 @@ function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSe
 
 end
  
+--- TC checks if setDriverIds message with flag DeleteAll set to false deletes only specific IDs. 
+  -- Initial Conditions:
+  -- 
+  -- * A few driver IDs are set
+  --
+  -- Steps:
+  --
+  -- 1. Delete specific driver IDs via SetDriverIds message.
+  -- 2. Send GetDriverIds message.
+  -- 3. Wait for DefindedDriverIds message.
+  -- 4. Check Driver IDs.
+  --
+  -- Results:
+  --
+  -- 1. SetDriverIds message is correctly send.
+  -- 2. GetDriverIds message is correctlly send.
+  -- 3. DefindedDriverIds message is received.
+  -- 4. Only specific IDs deleted.
 function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecificDriverIdsToDelete_SpecificDriverIdsAreDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
@@ -170,35 +188,33 @@ function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecif
   local DRIVER_ID = "AQEBAQEBAQ=="
   local DRIVER_ID_INDEX = 0
   
-  --adding a few driver ids
+  -- A few driver IDs are set before deleting specific IDs.
   local fillMessage = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
 	fillMessage.Fields = {{Name="DeleteAll",Value=true},{Name="UpdateDriverIds",Elements={{Index=0,Fields={{Name="Index",Value=0},{Name="DriverId",Value="AAEBAQEBAQ=="}}},{Index=1,Fields={{Name="Index",Value=1},{Name="DriverId",Value="AQABAQEBAQ=="}}},{Index=2,Fields={{Name="Index",Value=2},{Name="DriverId",Value="AQEAAQEBAQ=="}}},{Index=3,Fields={{Name="Index",Value=3},{Name="DriverId",Value="AQEBAAEBAQ=="}}}}},}
 	gateway.submitForwardMessage(fillMessage)
   framework.delay(5)
 
-  -- delete not all driver ids
+  -- Delete specific driver IDs via SetDriverIds message
   local message = {SIN = AVL_SIN, MIN = SET_DRIVER_IDS_MIN}
   message.Fields = {{Name="DeleteAll",Value=false},{Name="DeleteIds",Elements={{Index=0,Fields={{Name="Index",Value=1}}},{Index=1,Fields={{Name="Index",Value=2}}}}},}
   gateway.submitForwardMessage(message)
   framework.delay(5)
   
-  -- get driver ids 
+  -- Send GetDriverIds message 
   local message2 = {SIN = AVL_SIN, MIN = GET_DRIVER_IDS_MIN}
 	gateway.submitForwardMessage(message2)
 
-   -- wait for event
+   -- Wait for DefindedDriverIds message
   expectedMins = {DEFINED_DRIVER_IDS_MIN}
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, WAIT_FOR_EVENT_TIMEOUT)
 
-  -- check ids
-  assert_equal(2, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is different number of driver ids.")
-
+  -- Check Driver IDs
+  assert_equal(2, #receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId, 0, "There is wrong number of driver IDs.")
   found = 0
   for i, value in ipairs(receivedMessages[DEFINED_DRIVER_IDS_MIN].DriverId) do
     if tonumber(value.Index) == 0 then found = found + 1 end
     if tonumber(value.Index) == 3 then found = found + 1 end
   end
-  
   assert_equal(2, found, 0, "Wrong indexes in the result.")
 
 end
