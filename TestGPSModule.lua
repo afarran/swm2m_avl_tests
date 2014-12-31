@@ -1361,7 +1361,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                   latitude = 1,                       -- degrees
                   longitude = 1                       -- degrees
                  }
-
+  print("gpsSettings[1]", framework.dump(gpsSettings[1]))
   -- Point#2 gps settings
   gpsSettings[2]={
                   speed = STATIONARY_SPEED_THLD + 10,                     -- kmh
@@ -1369,7 +1369,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                   latitude = 2,                                           -- degrees
                   longitude = 2,                                          -- degrees
                  }
-
+ print("gpsSettings[2]", framework.dump(gpsSettings[2]))
   -- Point#3 gps settings
   gpsSettings[3]={
                   speed = STATIONARY_SPEED_THLD + 14,                  -- kmh
@@ -1377,6 +1377,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
                   latitude = 3,                                        -- degrees
                   longitude = 3,                                       -- degrees
                  }
+ print("gpsSettings[3]", framework.dump(gpsSettings[3]))
 
 
   -- applying properties of the service
@@ -1397,7 +1398,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
   -- waiting until turnDebounceTime passes - in case terminal had some different heading before
-  framework.delay(TURN_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME)
+  framework.delay(TURN_DEBOUNCE_TIME + MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME + 5)
 
   local expectedMins = {avlConstants.mins.movingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
@@ -1645,8 +1646,13 @@ function test_Turn_WhenHeadingChangeIsBelowTurnThldAndLastsAboveTurnDebounceTime
                      }
 
   -- *** Execute
+  gateway.setHighWaterMark()
   gps.set(gpsSettings)
+<<<<<<< HEAD
   framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + TURN_DEBOUNCE_TIME) -- terminal should go to moving state after this time
+=======
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + TURN_DEBOUNCE_TIME + 4) -- terminal should go to moving state after this time
+>>>>>>> b1dce4db7150c358e4fe24c08b2aa1b48f676efc
 
   local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.turn}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
@@ -1785,7 +1791,7 @@ function test_Turn_WhenHeadingChangeIsAboveTurnThldAndLastsAboveTurnDebounceTime
   gps.set(gpsSettings[1])    -- applying gps settings for Point#1
 
   -- waiting until turnDebounceTime passes - in case terminal had some different heading before
-  framework.delay(TURN_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME)
+  framework.delay(TURN_DEBOUNCE_TIME + GPS_READ_INTERVAL+ GPS_PROCESS_TIME + 5)
 
   local expectedMins = {avlConstants.mins.movingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)

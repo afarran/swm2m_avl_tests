@@ -299,6 +299,7 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
 
   -- get avlStatesPropety to decide if waiting for MovingEnd message is necessary
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+  framework.delay(2)
 
   local whilecount = 0
   while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) do
