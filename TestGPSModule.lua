@@ -1648,12 +1648,8 @@ function test_Turn_WhenHeadingChangeIsBelowTurnThldAndLastsAboveTurnDebounceTime
   -- *** Execute
   gateway.setHighWaterMark()
   gps.set(gpsSettings)
-<<<<<<< HEAD
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + TURN_DEBOUNCE_TIME) -- terminal should go to moving state after this time
-=======
-  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + TURN_DEBOUNCE_TIME + 4) -- terminal should go to moving state after this time
->>>>>>> b1dce4db7150c358e4fe24c08b2aa1b48f676efc
 
+  framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + TURN_DEBOUNCE_TIME) -- terminal should go to moving state after this time
   local expectedMins = {avlConstants.mins.movingStart, avlConstants.mins.turn}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
