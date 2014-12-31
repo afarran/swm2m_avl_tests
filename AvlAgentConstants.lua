@@ -150,8 +150,7 @@ avlConstants = {
 
                               -- Air Blockage
                               AirBlockageTime = 22,
-
-
+                              ParamSaveInterval = 202
 
                     },
 

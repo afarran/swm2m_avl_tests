@@ -5,10 +5,6 @@
 
 module("TestDigitalInputsModule", package.seeall)
 
--- tests are very similiar for every SM, so sm number is randomized
--- you can turn it off/on here
-RANDOM_SM = false
-
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -48,11 +44,13 @@ RANDOM_SM = false
  function suite_setup()
 
   -- reset of properties of SIN 126 and 25
+  -- lsf.resetProperties() 
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
 	gateway.submitForwardMessage(message)
 
   -- restarting AVL agent after running module
+  -- lsf.restartService()
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
   message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
   gateway.submitForwardMessage(message)
@@ -124,7 +122,6 @@ end
   -- 3. All 4 ports in low state
   -- 4. Digital input lines 1-4 disabled
  function setup()
-
   -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
                                                   {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
@@ -133,10 +130,6 @@ end
 
   -- put terminal into stationary state
   avlHelperFunctions.putTerminalIntoStationaryState()
-
-  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
-  device.setIO(1, 1)
-  framework.delay(2)
 
   ----------------------------------------------------------------------
   -- Putting terminal in IgnitionOn = false state
@@ -160,6 +153,10 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)
 
+  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
+  device.setIO(1, 1)
+  framework.delay(2)
+  
   -- device profile application
   profile:setupIO(lsf, device, lsfConstants)
 
@@ -329,10 +326,9 @@ end
                                              }
                    )
 
-  gateway.setHighWaterMark()         -- to get the newest messages
-
   device.setIO(1, 1)                 -- port 1 to high level
   framework.delay(2)
+  gateway.setHighWaterMark()         -- to get the newest messages
   device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOn
 
   -- IgnitionOn message expected
@@ -340,14 +336,6 @@ end
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
-
-  -- following code is only not to make problems with setup function
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})  -- setting bitmap to make high state the trigger of ignitionON
-  framework.delay(2)
-  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOff
-  framework.delay(2)
-  device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOff
-
 
 end
 
@@ -1724,7 +1712,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 end
 
 -- Test cases for every IO are quite the same, so we are randomizing only one
--- You can force firing every test by changing constant RANDOM_SM ..
+-- You can force firing every test by changing constant RANDOM_SM .. 
 function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToHigh_DigInpRandomHiMessageSent()
 
     local tests = {}
@@ -1737,7 +1725,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('Port', tests, setup, teardown)
 
 end
 
@@ -1876,7 +1864,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
     end
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('Port', tests, setup, teardown)
 
 end
 
@@ -3059,31 +3047,7 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHig
 
 end
 
---
--- Stuff for randomizing tests
---
 
--- Randomizing SM test case (0 - 4)
-function getRandomSm()
-  testCase = lunatest.random_int (0, 4)
-  print("Port"..testCase.." choosen.")
-  return testCase
-end
-
--- Choosing tc or firing all.
-function chooseTest(tests)
-  if RANDOM_SM == true then
-    testCase = getRandomSm()
-    tests['Port'..testCase]()
-  else
-    for i, tc in pairs(tests) do
-        print(i.." choosen.")
-        setup()
-        tc()
-        teardown()
-    end
-  end
-end
 
 
 

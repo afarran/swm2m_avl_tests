@@ -403,13 +403,10 @@ end
 -- Test for: Periodically sending a message
 -- Testing if report timeout is set properly
 -- Testing if report has proper value
-function test_ConfigurePeriodicalReports_ReceiveMessageContainingSensorValues()
+function test_PeriodicalReports_whenReportTimeoutIsSetProperly_ReceiveMessageContainsProperSensorValues()
   RandomSensorRun(generic_test_PeriodicallySendingMessageContainingSensorValues)
 end
 
--- Test for: Periodically sending a message
--- Testing if report timeout is set properly
--- Testing if report has proper value
 -- Test logic
 function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
   print("Testing test_PeriodicallySendingMessageContainingSensorValues using sensor " .. sensorNo)
@@ -445,13 +442,13 @@ function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
 end
 
 
---Sending a message when a sensor value has changed by more than set amount
-function test_Sensors_ChangeValueOverChangeThld_ReceiveChangeMsg()
+-- Sending a message when a sensor value has changed by more than set amount
+function test_SensorsChange_whenSensorValueChangedByMoreThanAmount_messageIsSent()
   local ReportingInterval = 1
   RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
 end
 
---Sending a message when a sensor value has changed by more than set amount
+-- generic logic
 function generic_test_changeSensorValueByAmount(sensorNo, ReportingInterval, NormalSampleInterval)
   ReportingInterval = ReportingInterval or 1
   NormalSampleInterval = NormalSampleInterval or 1
@@ -479,7 +476,7 @@ function generic_test_changeSensorValueByAmount(sensorNo, ReportingInterval, Nor
   assert_equal(sensorTester:getNormalizedValue() , tonumber(receivedMessages[sensor.mins.Change][sensor.name]), 1, "Problem with triggering change with threshold.")
 end
 
---Sending a message when a sensor value has changed by less than set amount
+-- generic logic
 function generic_test_changeSensorValueByLessThanAmount(sensorNo, ReportingInterval)
   print("Testing test_changeSensorValueByLessThanAmount using sensor " .. sensorNo)
 
@@ -503,41 +500,22 @@ function generic_test_changeSensorValueByLessThanAmount(sensorNo, ReportingInter
 
 end
 
--- TC for seting single value of gps
-function test_SettingGpsValue()
-    local GPS_EXPECTED_VALUE = 2
-
-
-    -- setting AVL properties
-    lsf.setProperties(avlConstants.avlAgentSIN,{
-                        {avlConstants.pins.Sensor1Source, framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
-                                             }
-                    )
-
-    gps.set({  speed = 1, heading = 90, latitude = GPS_EXPECTED_VALUE, longitude = 2})
-    framework.delay(3)
-
-    --checking if raported value is set properly
-    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(lsfConstants.sins.position, {lsfConstants.pins.latitude}))
-    sensor1Value = tonumber(currentProperties[lsfConstants.pins.latitude])
-    assert_equal(GPS_EXPECTED_VALUE * 60000 , sensor1Value , 0, "Problem with gps setting (a sensor source)")
-end
-
 -- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
-function test_ChangeThresholdWhenReportIntervalZeroForSensor()
+function test_SensorsChange_whenSensorValueChangedByMoreThanAmountAndReportIntervalZero_messageIsSent()
   local ReportingInterval = 0
   local NormalSampleInterval = 1
   RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval, NormalSampleInterval)
 end
 
 -- Sending a message when a sensor value has changed by less than set amount
-function test_changeSensorValueByLessThanChangeThld_NoMessageExpected()
+function test_SensorsChange_whenSensorValueChangedByLessThanAmount_noMessageReceived()
   ReportingInterval = 1
   RandomSensorRun(generic_test_changeSensorValueByLessThanAmount, ReportingInterval)
 end
 
 -------------------------
 
+-- Generic logic.
 -- Check if Message is sent if sensor value goes above threshold and then goes back below it
 function generic_test_Sensors_SendMessageWhenValueAboveThreshold(sensorNo)
   print("Testing test_Sensors_SendMessageWhenValueAboveThreshold using sensor " .. sensorNo)
@@ -701,19 +679,20 @@ function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sen
 
 end
 
-function test_Sensors_ValueAboveAndBelowMaxThreshold_MaxStartMaxEndReceived()
+--666
+function test_SensorsChange_whenValueAboveAndBelowMaxThreshold_MaxStartMaxEndReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveThreshold)
 end
 
-function test_Sensors_ValueBelowAndAboveMinThreshold_MinStartMinEndReceived()
+function test_SensorsChange_whenValueBelowAndAboveMinThreshold_MinStartMinEndReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowThreshold)
 end
 
-function test_Sensors_ValueBelowMinThenAboveMaxThreshold_MinStartMinEndMaxStartReceived()
+function test_SensorsChange_whenValueBelowMinThenAboveMaxThreshold_MinStartMinEndMaxStartReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold)
 end
 
-function test_Sensors_ValueAboveMaxThenBelowMinThreshold_MaxStartMaxEndMinStartReceived()
+function test_SensorsChange_whenValueAboveMaxThenBelowMinThreshold_MaxStartMaxEndMinStartReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold)
 end
 
@@ -769,7 +748,7 @@ function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestamps
 
 end
 
-function test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval()
+function test_SensorsSampling_whenNormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval()
   RandomSensorRun(generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval)
 end
 
@@ -855,7 +834,7 @@ function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPM
 
 end
 
-function test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval()
+function test_SensorsLPMSampling_whenSamplingIntervalAndLPM_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval()
   RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
 end
 
@@ -905,11 +884,11 @@ function generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportIn
 
 end
 
-function test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval()
+function test_SensorsReports_whenMaxReportInterval_MessageReceivedAfterMaxRerportInterval()
   RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
 end
 
-function test_Sensors_AllSensorsAtTime_ReceiveMessagesFromAllSensors()
+function test_SensorsAll_whenAllSensorsAtTime_ReceiveMessagesFromAllSensors()
   sensors = {Sensor(1), Sensor(2), Sensor(3), Sensor(4)}
 
   for i=1, #sensors do

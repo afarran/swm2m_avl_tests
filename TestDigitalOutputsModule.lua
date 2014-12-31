@@ -20,7 +20,7 @@ module("TestDigitalOutputsModule", package.seeall)
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
 function suite_setup()
-
+  
   -- reset of properties of SIN 126 and 25
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
@@ -903,7 +903,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM4 state
-function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter4IsON_DigitalOutputPortAssociatedWithSM4InHighState()
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
