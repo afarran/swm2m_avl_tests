@@ -1,19 +1,23 @@
-
 cfg, framework, gateway, lsf, device, gps = require "TestFramework"()
 avlHelperFunctions    = require "avlHelperFunctions"()    -- all AVL Agent related functions put in avlHelperFunctions file
 avlConstants =  require("AvlAgentConstants")
 lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
+AvlDebuger = require "AvlDebuger"()
+profileFactory = require("Profile/ProfileFactory")()
+FORCE_ALL_TESTCASES = false                                  -- determines whether to run all TCs or to use random TC for similar features -
+tcRandomizer =  require "Randomizer"()
 
 -- global variables used in the tests
 GPS_PROCESS_TIME = 1                                                -- seconds
 GATEWAY_TIMEOUT = 60                                                -- in seconds
 TIMEOUT_MSG_NOT_EXPECTED = 20                                       -- in seconds
+GEOFENCE_INTERVAL = 10                                              -- in seconds
 GPS_READ_INTERVAL = 1                                               -- used to configure the time interval of updating the position , in seconds
 AVL_SIN = 126                                                       -- AVL SIN is constant
 hardwareVariant = avlHelperFunctions.getTerminalHardwareVersion()   -- 1,2 and 3 for 600, 700 and 800 available
 lsfConstants= lsfConstantsAllTerminals[hardwareVariant]             -- getting constants specific for the terminal under test
-
+profile = profileFactory.create(hardwareVariant)
 
 --- Called before the start of any test suites
 local function setup()
@@ -28,7 +32,9 @@ local function setup()
   lunatest.suite("TestDigitalOutputsModule")
   lunatest.suite("TestGeofencesModule")
   lunatest.suite("TestPeriodicReportsModule")
-
+  lunatest.suite("TestSensorsModule")
+  lunatest.suite("TestAdminConfigModule")
+  lunatest.suite("TestDriverIdentModule")
 end
 
 local function teardown()
@@ -49,6 +55,3 @@ setup()
 lunatest.run(nil, arg)
 
 teardown()
-
-
-

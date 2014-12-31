@@ -271,36 +271,51 @@ end
 -- @usage
 -- avlHelperFunctions.putTerminalIntoStationaryState()
 -- @within AvlhelperFunctions
-function avlHelperFunctions.putTerminalIntoStationaryState()
+function avlHelperFunctions.putTerminalIntoStationaryState(tries)
 
-  local stationaryDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5         -- kmh
+  tries = tries or 10
+  local STATIONARY_DEBOUNCE_TIME = 1      -- seconds
+  local STATIONARY_SPEED_THLD = 5         -- kmh
 
+  gateway.setHighWaterMark()
 
-  --setting properties of the service
+  local gpsSettings={
+                       speed = 0,
+                       longitude = 0,                   -- degrees
+                       latitude = 0,                    -- degrees
+                       fixType = 3,                     -- valid fix provided
+                       simulateLinearMotion = false,   -- terminal not moving
+                       jammingDetect = false,
+                       antennaCutDetect = false,
+                     }
+  gps.set(gpsSettings)
+
+  -- setting properties of the service to put terminal into stationary state
   lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                    {avlConstants.pins.stationaryDebounceTime, stationaryDebounceTime}
-                                             }
+                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                               {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
+                                              }
                     )
 
-  -- gps settings table
-  local gpsSettings={
-              speed = 0,
-              longitude = 0,                   -- degrees
-              latitude = 0,                    -- degrees
-              fixType = 3,                     -- valid fix provided
-              simulateLinearMotion = false,   -- terminal not moving
-                     }
-
-  -- set the speed to zero and wait for stationaryDebounceTime
-  gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+6) -- 6 seconds are added to make sure terminal changes state
-
+  -- get avlStatesPropety to decide if waiting for MovingEnd message is necessary
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
-  framework.delay(2) -- wait until property is read
-  -- assertion gives the negative result if terminal does not change the moving state to false
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in stationary state as expected")
+
+  local whilecount = 0
+  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving) do
+
+    -- speed is zero, wait for stationaryDebounceTime
+    framework.delay(STATIONARY_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+
+    avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+    whilecount = whilecount + 1
+    if (whilecount > tries) then
+      assert_true(false, "Not possible to put terminal into stationary state after defined number of tries")
+      break
+    end
+  end
+
+
+
 
 
 end
@@ -311,34 +326,44 @@ end
 -- @usage
 -- avlHelperFunctions.putTerminalIntoMovingState()
 -- @within AvlhelperFunctions
-function avlHelperFunctions.putTerminalIntoMovingState()
+function avlHelperFunctions.putTerminalIntoMovingState(tries)
 
-  local movingDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5     -- kmh
+  tries = tries or 10
 
-  --setting properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                    {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                    {avlConstants.pins.movingDebounceTime, movingDebounceTime}
-                                             }
-                    )
+  local MOVING_DEBOUNCE_TIME = 1      -- seconds
+  local STATIONARY_SPEED_THLD = 5     -- kmh
 
   -- gps settings table
   local gpsSettings={
-              speed = stationarySpeedThld+5,   -- kmh
-              longitude = 0,                   -- degrees
-              latitude = 0,                    -- degrees
-              fixType= 3,                      -- valid fix provided
+                      speed = STATIONARY_SPEED_THLD + 5,   -- kmh
+                      longitude = 0,                       -- degrees
+                      latitude = 0,                        -- degrees
+                      fixType= 3,                          -- valid fix provided
+                      jammingDetect = false,
+                      antennaCutDetect = false,
+                      simulateLinearMotion = false,
                      }
-
-  -- set the speed above stationarySpeedThld and wait longer than movingDebounceTime
   gps.set(gpsSettings) -- applying settings of gps simulator
-  framework.delay(movingDebounceTime+GPS_READ_INTERVAL+3) -- three seconds are added to make sure terminal changes state
+  -- setting properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
+                                             }
+                   )
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
-   framework.delay(2) -- wait until property is read
-  -- assertion gives the negative result if terminal does not change the moving state to true
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal not in moving state as expected")
+
+  local whilecount = 0
+  while(avlHelperFunctions.stateDetector(avlStatesProperty).Moving == false) do
+
+    framework.delay(MOVING_DEBOUNCE_TIME + GPS_READ_INTERVAL + GPS_READ_INTERVAL)
+    avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
+    whilecount = whilecount + 1
+    if (whilecount > tries) then
+      assert_true(false, "Not possible to put terminal into moving state after defined number of tries")
+      break
+    end
+  end
 
 
 end
@@ -403,10 +428,9 @@ function avlHelperFunctions.getTerminalHardwareVersion()
   local getTerminalInfoMessage = {SIN = 16, MIN = 1}
  	-- local getTerminalInfoMessage = {SIN = lsfConstants.sins.system, MIN = lsfConstans.mins.getTerminalInfo}  -- TODO: change function to use this line
   gateway.submitForwardMessage(getTerminalInfoMessage)
-  framework.delay(2)
   -- receiving terminalInfo messge (MIN 1) as the response to the request
-  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16, 1))
-  -- local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(lsfConstants.sins.system, lsfConstans.mins.getTerminalInfo)) -- TODO: change function to use this line
+  local terminalInfoMessage = gateway.getReturnMessage(framework.checkMessageType(16,1), nil, 60)
+
   if(terminalInfoMessage.Payload.Fields[1].Value == "IDP-6XX") then return 1
   elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-7XX") then  return 2
   elseif(terminalInfoMessage.Payload.Fields[1].Value == "IDP-8XX") then return 3
@@ -429,7 +453,7 @@ function avlHelperFunctions.matchReturnMessages(expectedMins, timeout)
   local function UpdateMsgMatchingList(msg)
     if msg then   --TODO: why would this function be called with no msg?
       for idx, min in pairs(expectedMins) do
-        if min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
+        if msg.Payload and min == msg.Payload.MIN and msg.SIN == avlConstants.avlAgentSIN and msgList[min] == nil then
           msgList[min] = framework.collapseMessage(msg).Payload
           msgList.count = msgList.count + 1
           break
@@ -442,8 +466,123 @@ function avlHelperFunctions.matchReturnMessages(expectedMins, timeout)
   return msgList
 end
 
+--- Function waits for specific timeout until given old properties are different than current properties
+-- @tparam oldProperties - list of properties received from getProperties method ({{pin, value}, {pin, value}})
+-- @tparam timeout - timeout in seconds determining how long to wait for property change
+-- @tparam delay - delay in seconds between requesting new parameter list
+-- @treturn table of properties {pin, value}
 
+function avlHelperFunctions.getChangedProperties(oldProperties, timeout, delay)
+  delay = delay or 0.33
+  timeout = timeout or 10
+  local startTime = os.time()
+  local propList = {}
+  local newProperties
+  local result
+  for i=1, #oldProperties do
+    propList[i] = oldProperties[i].pin
+  end
 
+  while (os.time() - startTime < timeout) do
+    framework.delay(delay)
+    newProperties = lsf.getProperties(avlConstants.avlAgentSIN, propList)
 
+    for i=1,#newProperties do
+      if newProperties[i].value ~= oldProperties[i].value then
+        result = newProperties
+        break
+      end
+    end
+    if result then break end
+  end
+  return result
+end
+
+--- Function converts property list to table
+-- e.g. propList = {{pin = pin1, value = val1}, {pin = pin2, value = val2}}
+-- is converted into result = {pin1 = val1, pin2 = val2}
+-- @tparam propertyList - list of properties received from getProperties method ({{pin, value}, {pin, value}})
+-- @treturn - table of properties where pin determines index and value determines pin value, table of pins
+function avlHelperFunctions.propertiesToTable(propertyList)
+  result = {}
+  pins = {}
+  for index, property in ipairs(propertyList) do
+    result[tonumber(property.pin)] = property.value
+    pins[index] = tonumber(property.pin)
+  end
+  return result, pins
+end
+
+function avlHelperFunctions.bytesToInt(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
+    local t={str:byte(1,-1)}
+    if endian=="big" then --reverse bytes
+        local tt={}
+        for k=1,#t do
+            tt[#t-k+1]=t[k]
+        end
+        t=tt
+    end
+    local n=0
+    for k=1,#t do
+        n=n+t[k]*2^((k-1)*8)
+    end
+    if signed then
+        n = (n > 2^(#t*8-1) -1) and (n - 2^(#t*8)) or n -- if last bit set, negative.
+    end
+    return n
+end
+
+-- This uses the ‘haversine’ formula to calculate
+-- the great-circle distance between two points – that is,
+-- the shortest distance over the earth’s surface –
+-- giving an ‘as-the-crow-flies’ distance between the points (ignoring any hills they fly over, of course!).
+-- Haversine
+-- formula: 	a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+-- c = 2 ⋅ atan2( √a, √(1−a) )
+-- d = R ⋅ c
+-- where 	φ is latitude, λ is longitude, R is earth’s radius (mean radius = 6,371km);
+-- note that angles need to be in radians to pass to trig functions!
+--
+-- This solution has accuracy about 3m per 1km
+-- Solution of better accuracy (1mm per 1km) is here: http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+-- Python implementation: https://github.com/geopy/geopy/blob/master/geopy/distance.py
+-- usage: geoDistance(30.19, 71.51, 31.33, 74.21)
+function avlHelperFunctions.geoDistance(lat1, lon1, lat2, lon2)
+  if lat1 == nil or lon1 == nil or lat2 == nil or lon2 == nil then
+    return nil
+  end
+  local dlat = math.rad(lat2-lat1)
+  local dlon = math.rad(lon2-lon1)
+  local sin_dlat = math.sin(dlat/2)
+  local sin_dlon = math.sin(dlon/2)
+  local a = sin_dlat * sin_dlat + math.cos(math.rad(lat1)) * math.cos(math.rad(lat2)) * sin_dlon * sin_dlon
+  local c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+  -- To get miles, use 3963 as the constant (equator again)
+  local d = 6378 * c
+  return d
+end
+
+function avlHelperFunctions.matchParameters(expectedProps, timeout)
+  timeout = timeout or 10
+  local props, pins = avlHelperFunctions.propertiesToTable(expectedProps)
+  local startTime = os.time()
+
+  local currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+  local currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
+
+  while (os.time() - startTime < timeout) do
+    local match = true
+    for k, v in pairs(currentPropTable) do
+        if currentPropTable[k] ~= props[k] then match = false end
+    end
+    if match then
+      return currentProps, currentPropTable, pins
+    end
+      currentProps = lsf.getProperties(avlConstants.avlAgentSIN, propList)
+      currentPropTable = avlHelperFunctions.propertiesToTable(currentProps)
+  end
+
+  return nil
+end
 
 return function() return avlHelperFunctions end

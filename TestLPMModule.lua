@@ -27,6 +27,21 @@ module("TestLPMModule", package.seeall)
   -- 1. Terminal not in LPM
 function suite_setup()
 
+  -- reset of properties of SIN 126 and 25
+	local message = {SIN = 16, MIN = 10}
+	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
+	gateway.submitForwardMessage(message)
+
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+  message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+  gateway.submitForwardMessage(message)
+
+  -- wait until service is up and running again and sends Reset message
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.lpmTrigger, 0},
@@ -67,15 +82,6 @@ end
 -- executed after each test suite
 function suite_teardown()
 
-  -- restarting AVL agent after running module
-	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
-	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
-	gateway.submitForwardMessage(message)
-
-  -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
-
 end
 
 
@@ -102,6 +108,16 @@ end
                                                 {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}     -- setting the continues mode interval of position service
                                                }
                     )
+
+  if profile:hasDualPowerSource() then
+        -- setting the power service properties - external power source detection enabled
+        lsf.setProperties(lsfConstants.sins.power,{
+                                                {lsfConstants.pins.extPowerPresentStateDetect, 3},    -- detection of both present and absent
+                                         }
+                   )
+
+  end
+
 
   avlHelperFunctions.putTerminalIntoStationaryState()
 
@@ -133,10 +149,8 @@ end
   device.setIO(1, 1)
   framework.delay(2)
 
-  -- setting all 4 ports to low stare
-  for counter = 1, 4, 1 do
-    device.setIO(counter, 0)
-  end
+  -- device profile application
+  profile:setupIOInLPM(device)
   framework.delay(3)
 
   -- reading avlStates property
@@ -431,45 +445,28 @@ function test_LPM_WhenTerminalEntersAndLeavesLPM_TerminalStopsMovingOnEnterToLpm
   device.setIO(1, 1) -- that should trigger IgnitionOn
   framework.delay(2)
 
-  -- checking state of the terminal, Low Power Mode is not expected
-  local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
-  framework.delay(2)
+  avlHelperFunctions.putTerminalIntoMovingState()  -- terminal in moving state from this moment
 
-  avlHelperFunctions.putTerminalIntoMovingState()
-
+  gateway.setHighWaterMark()
   device.setIO(1, 0) -- that should trigger IgnitionOff
   framework.delay(2)
 
   -- waiting for time longer than lpmEntryDelay, terminal should go to LPM after this period
-  framework.delay(lpmEntryDelay*60+5)    -- multiplication by 60 because lpmEntryDelay is in minutes
-  -- checking state of the terminal, Low Power Mode is expected
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal not in the Low Power Mode state as expected")
+  framework.delay(lpmEntryDelay*60)    -- multiplication by 60 because lpmEntryDelay is in minutes
 
-  -- reading AVLStates property to check moving state
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  -- checking if terminal is not in moving state (while being in LPM)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal unexpectedly in moving state while being in LPM")
+  -- terminal is expected to stop moving
+  local expectedMins = {avlConstants.mins.movingEnd}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received after entering Low Power Mode")
 
-  device.setIO(1, 1) -- IgnitionOn line becomes active, that should trigger IgnitionOn
-  framework.delay(4)
+  gateway.setHighWaterMark()
+  device.setIO(1, 1)            -- IgnitionOn line becomes active, that should trigger IgnitionOn and leaving LPM
 
-  -- checking state of the terminal, Low Power Mode is not expected
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "terminal incorrectly in LPM state")
+  -- terminal is expected to start moving again
+  expectedMins = {avlConstants.mins.movingStart}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received after leaving Low Power Mode")
 
-  -- reading movingDebounceTime property (it is needed as delay value in next step)
-  local movingDebounceTime = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.movingDebounceTime)
-  framework.delay(2)
-
-  -- waiting until terminal goes into moving state again (speed is above threshold)
-  framework.delay(movingDebounceTime[1].value+GPS_READ_INTERVAL+10)
-
-  -- reading AVLStates property to check moving state
-  avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
-  -- checking if terminal is in moving state after leaving LPM (according to simulated speed it should be moving)
-  assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Moving, "terminal is not in moving state after leaving LPM as expected ")
 
 
 end
@@ -718,8 +715,8 @@ end
   -- 6. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0    -- in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
@@ -731,7 +728,6 @@ function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalPutInLpmWhenExternal
                                              }
                    )
 
-  -- Important: there is bug reported for setPower function
   device.setPower(8,1)             -- external power present (terminal plugged to external power source)
   framework.delay(3)               -- wait until setting is applied
   -- check external power property
@@ -799,8 +795,8 @@ end
   -- 6. Terminal does not enter LPM
 function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalNotPutInLpmWhenExternalPowerSourceNotPresentShorterThanLpmEntryDelayPeriod()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 1    -- in minutes
   local lpmTrigger = 2       -- 2 is for Built-in battery
@@ -878,8 +874,8 @@ end
   -- 7. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToIgnitionOffAndBuiltInBattery_TerminalPutInLpmWhenExternalPowerSourceNotPresentAndOutOfLpmWhenExternalPowerSourcePresent()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0    -- in minutes
   local lpmTrigger = 3       -- 3 is for IgnitionOn and Built-in battery
@@ -961,8 +957,8 @@ end
   -- 5. Terminal put out of LPM
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutInLpmAfterIgnitionOffAndPutOutOfLpmAfterIgnitionOn()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery
@@ -1054,8 +1050,8 @@ end
   -- 3. Terminal does not go to to LPM
  function test_LPM_WhenLpmTriggerSetToBuiltInBattery_TerminalIsNotPutIntoLpmByIgnitionOffEvent()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 2      -- 2 is for Built-in Battery
@@ -1140,8 +1136,8 @@ end
   -- 6. Terminal doesn not enter LPM
  function test_LPM_WhenLpmTriggerSetToZero_TerminalIsNotPutIntoLpmByIgnitionOffEventOrUnpluggingExternalPowerSource()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 0      -- 0 is for no trigger
@@ -1222,8 +1218,8 @@ end
   -- 3. Terminal does not enter LPM
  function test_LPM_WhenLpmTriggerSetToIgnitionOff_TerminalIsNotPutIntoLpmWhenExternalPowerSourceIsNotPresent()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 1      -- 1 is for IgnitionOff
@@ -1297,8 +1293,8 @@ end
   -- 11. Terminal leaves LPM
 function test_LPM_WhenLpmTriggerSetToBothIgnitionOffAndBuiltInBattery_TerminalPutOutOfLpmWhenBothIgnitionIsOnAndExternalPowerIsPresent()
 
-  -- Dual power source feature is specific to IDP 800
-  if(hardwareVariant~=3) then skip("TC related only to IDP 800s") end
+  -- device profile application
+  if profile:hasDualPowerSource() == false then skip("TC related only to IDP 800s") end
 
   local lpmEntryDelay = 0   -- minutes
   local lpmTrigger = 3      -- 3 is for both IgnitionOff and Built-in Battery

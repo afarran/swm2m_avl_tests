@@ -24,5 +24,19 @@
       <Longitude>3</Longitude>
       <Radius>20</Radius>
     </Fence>
+    <Fence xsi:type="RectangularFence">
+      <Name>ID = 2</Name>
+      <Latitude>50.5</Latitude>
+      <Longitude>4.5</Longitude>
+      <Width>80</Width>
+      <Height>100</Height>
+    </Fence>
+    <Fence xsi:type="RectangularFence">
+      <Name>ID = 3</Name>
+      <Latitude>50.3</Latitude>
+      <Longitude>4.8</Longitude>
+      <Width>35</Width>
+      <Height>45</Height>
+    </Fence>
   </Fences>
 </Geofence>

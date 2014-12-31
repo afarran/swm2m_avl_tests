@@ -15,6 +15,8 @@ lsfConstantsAllTerminals = {
                                                 -- Messages MINs
                                                 mins = {
                                                           setDataLogFilter = 1,   -- to mobile message, log service
+                                                          setCircle = 1,          -- to mobile message, geofences service
+                                                          setRectangle = 7,       -- to mobile message, geofences service
                                                           write = 1,              -- to mobile message, filesystem service
                                                           saveProperties = 11,    -- to mobile, system service
                                                           propertyValues = 5,     -- from mobile, system service
@@ -35,6 +37,7 @@ lsfConstantsAllTerminals = {
                                                           geofenceInterval = 2,
                                                           geofenceHisteresis = 3,
                                                           -- Position service
+                                                          latitude = 6,
                                                           gpsReadInterval = 15,    -- continunes property, position service
                                                           -- IDP Service
                                                           wakeUpInterval = 11,    -- wake up interval
@@ -73,6 +76,8 @@ lsfConstantsAllTerminals = {
                                                 -- Messages MINs
                                                 mins = {
                                                           setDataLogFilter = 1,   -- to mobile message, log service
+                                                          setCircle = 1,          -- to mobile message, geofences service
+                                                          setRectangle = 7,       -- to mobile message, geofences service
                                                           write = 1,              -- to mobile message, filesystem service
                                                           saveProperties = 11,    -- to mobile, system service
                                                           propertyValues = 5,     -- from mobile, system service
@@ -92,6 +97,7 @@ lsfConstantsAllTerminals = {
                                                           geofenceInterval = 2,
                                                           geofenceHisteresis = 3,
                                                           -- Position service
+                                                          latitude = 6,
                                                           gpsReadInterval = 15,    -- continunes property, position service
                                                           -- IDP Service
                                                           wakeUpInterval = 11,    -- wake up interval

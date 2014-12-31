@@ -21,6 +21,21 @@ module("TestServiceMeterModule", package.seeall)
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
 function suite_setup()
 
+  -- reset of properties of SIN 126 and 25
+	local message = {SIN = 16, MIN = 10}
+	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
+	gateway.submitForwardMessage(message)
+
+  -- restarting AVL agent after running module
+	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
+  message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
+  gateway.submitForwardMessage(message)
+
+  -- wait until service is up and running again and sends Reset message
+  local expectedMins = {avlConstants.mins.reset}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
+
   -- setting lpmTrigger to 0 (nothing can put terminal into the low power mode)
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                               {avlConstants.pins.lpmTrigger, 0},
@@ -36,14 +51,8 @@ end
 -- executed after each test suite
 function suite_teardown()
 
-  -- restarting AVL agent after running module
-	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
-	message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
-	gateway.submitForwardMessage(message)
 
-  -- wait until service is up and running again and sends Reset message
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.reset),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "Reset message after reset of AVL not received")
+
 
 end
 
@@ -89,8 +98,6 @@ function setup()
   -- setting digital input bitmap describing when special function inputs are active
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
-
-  framework.delay(2)                 -- wait until settings are applied
   device.setIO(1, 0)                 -- that should trigger IgnitionOff
   framework.delay(2)                 -- wait until settings are applied
 
@@ -123,7 +130,24 @@ end
 --- teardown function executed after each unit test
 function teardown()
 
--- nothing here for now
+  -- enabling the continues mode of position service (SIN 20, PIN 15)
+  lsf.setProperties(lsfConstants.sins.position,{
+                                                   {lsfConstants.pins.gpsReadInterval, GPS_READ_INTERVAL},
+                                               }
+                    )
+  -- disabling long driving reports and reading odometer and speed from external source
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.maxDrivingTime, 0},
+                             {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" },
+                             {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data"},
+                            }
+                   )
+
+
+  -- device profile application
+  profile:setupIO(lsf, device)
+
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
 end
 
@@ -134,8 +158,52 @@ end
 
 --]]
 
+-- Test cases for every SMX are quite the same, so we are randomizing only one
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
 
---- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Time fields
+    local tests = {}
+    tests['SM0'] = random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM1'] = random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM2'] = random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM3'] = random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM4'] = random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
+
+    tcRandomizer:chooseTest('SM', tests, setup, teardown)
+
+end
+
+-- Test cases for every SMX are quite the same, so we are randomizing only one
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRandomTimeAndSMRandomDistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+
+    local tests = {}
+    tests['SM0']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM1']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM2']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM3']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+    tests['SM4']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
+
+    tcRandomizer:chooseTest('SM', tests, setup, teardown)
+
+end
+
+-- Test cases for every SMX are quite the same, so we are randomizing only one
+-- You can force firing every test by changing constant RANDOM_SM
+function test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXCDistanceTestProperties()
+
+    local tests = {}
+    tests['SM0']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM0TimeAndSM0DistanceTestProperties
+    tests['SM1']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM1TimeAndSM1DistanceTestProperties
+    tests['SM2']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM2TimeAndSM2DistanceTestProperties
+    tests['SM3']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM3TimeAndSM3DistanceTestProperties
+    tests['SM4']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM4TimeAndSM4DistanceTestProperties
+
+    tcRandomizer:chooseTest('SM', tests, setup, teardown)
+
+end
+
+--- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM0Time and SM0Distance fields
   -- are populated
   -- *actions performed:
   -- configure port 1 as a digital input and associate this port with IgnitionOnAndSM0 line
@@ -149,88 +217,38 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM0Time and SM0Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM0ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
-  local numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
-  local odometerDistanceIncrement = 10  -- in meters
-
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
+  configuration.numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
+  configuration.odometerDistanceIncrement = 10  -- in meters
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld+10,   -- terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                   }
 
-  -- setting the EIO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                         }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  configuration.funcDigInp = avlConstants.funcDigInp.IgnitionAndSM0
+  configuration.bitmap = {"IgnitionOn"}
+  configuration.name_time = "SM0Time"
+  configuration.name_distance = "SM0Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
+  -- test implementation
+  generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
 
-  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM0Time",Value=0},{Name="SM0Distance",Value=0},}
-	gateway.submitForwardMessage(message)
-
-  device.setIO(1, 1)  -- port 1 to high level - that should trigger IgnitionOn and activate SM0
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for counter = 1, numberOfSteps, 1 do
-
-    -- terminal moving to another point distanceOfStep away from the initial position
-    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-    gps.set(gpsSettings)               -- applying gps settings
-    framework.delay(4)                 -- wait until settings are applied
-
-    gateway.setHighWaterMark()         -- to get the newest messages
-
-    -- sending getServiceMeter message
-    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-    gateway.submitForwardMessage(getServiceMeterMessage)
-
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
-
-    local expectedValues={
-                            gps = gpsSettings,
-                            messageName = "ServiceMeter",
-                            currentTime = os.time(),
-                            SM0Time = 0,                                   -- zero hours of IgnitionOn is expected (this value has been set to 0 a moment ago)
-                            SM0Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                          }
-
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
-
- end
-
-
+  -- part of implementation unique for SM0
   device.setIO(1, 0)  -- port 1 to low level - that should trigger IgnitionOff and deactivate SM0
   framework.delay(5)  -- wait until IgnitionOn message
-
 
 end
 
@@ -247,69 +265,37 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM0Time and SM0Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
-  
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM0TimeAndSM0DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
 
+  -- test configuration
+
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1         -- seconds
+  configuration.stationarySpeedThld = 5        -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                 }
 
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.IgnitionAndSM0},    -- line number 1 set for IgnitionAndSM0
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
+  configuration.funcDigInp = avlConstants.funcDigInp.IgnitionAndSM0
+  configuration.bitmap = {"IgnitionOn"}
+  configuration.name_time = "SM0Time"
+  configuration.name_distance = "SM0Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM0Time",Value=SMTimeTC},{Name="SM0Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM0Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM0Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- test implementation (common for every SM)
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
-
-
 
 --- TC checks if ServiceMeter message is sent after GetServiceMeter request and SM1Time and SM1Time fields
   -- are populated
@@ -325,83 +311,35 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM1Time and SM1Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM1ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
-  local numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
-  local odometerDistanceIncrement = 10  -- in meters
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
+  configuration.numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
+  configuration.odometerDistanceIncrement = 10  -- in meters
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld+10,   -- terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                   }
 
-  -- setting the EIO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                         }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM1
+  configuration.bitmap = {"SM1Active"}
+  configuration.name_time = "SM1Time"
+  configuration.name_distance = "SM1Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM1Time",Value=0},{Name="SM1Distance",Value=0},}
-	gateway.submitForwardMessage(message)
-
-  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM1 = ON
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for counter = 1, numberOfSteps, 1 do
-
-    -- terminal moving to another point distanceOfStep away from the initial position
-    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-    gps.set(gpsSettings)               -- applying gps settings
-    framework.delay(4)                 -- wait until settings are applied
-
-    gateway.setHighWaterMark()         -- to get the newest messages
-
-    -- sending getServiceMeter message
-    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-    gateway.submitForwardMessage(getServiceMeterMessage)
-
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
-
-    local expectedValues={
-                    gps = gpsSettings,
-                    messageName = "ServiceMeter",
-                    currentTime = os.time(),
-                    SM1Time = 0,                             -- zero hours of SM1 is expected, value has been set to 0 a moment ago
-                    SM1Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                          }
-
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
-
- end
+  -- test implementation
+  generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
 
 end
 
@@ -417,65 +355,38 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM1Time and SM1Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM1TimeAndSM1DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                 }
 
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM1},    -- line number 1 set for SM1
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM1Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM1
+  configuration.bitmap = {"SM1Active"}
+  configuration.name_time = "SM1Time"
+  configuration.name_distance = "SM1Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM1Time",Value=SMTimeTC},{Name="SM1Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM1Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM1Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- test implementation
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
+
 
 
 
@@ -493,81 +404,34 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM2Time and SM2Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM2ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
-  local numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
-  local odometerDistanceIncrement = 10  -- in meters
-
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
+  configuration.numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
+  configuration.odometerDistanceIncrement = 10  -- in meters
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld+10,   -- terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                   }
 
-  -- setting the EIO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                         }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM2Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM2
+  configuration.bitmap = {"SM2Active"}
+  configuration.name_time = "SM2Time"
+  configuration.name_distance = "SM2Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM2Time",Value=0},{Name="SM2Distance",Value=0},}
-	gateway.submitForwardMessage(message)
-
-  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM2 = ON
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for counter = 1, numberOfSteps, 1 do
-
-    -- terminal moving to another point distanceOfStep away from the initial position
-    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-    gps.set(gpsSettings)               -- applying gps settings
-    framework.delay(2)                 -- wait until settings are applied
-
-    gateway.setHighWaterMark()         -- to get the newest messages
-
-    -- sending getServiceMeter message
-    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-    gateway.submitForwardMessage(getServiceMeterMessage)
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
-    local expectedValues={
-                    gps = gpsSettings,
-                    messageName = "ServiceMeter",
-                    currentTime = os.time(),
-                    SM2Time = 0,                                 -- zero hours of SM2 is expected, value has been set to 0 a moment ago
-                    SM2Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                          }
-
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
-
- end
+  -- test implementation
+  generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
 
 end
 
@@ -584,63 +448,35 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM2Time and SM2Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM2TimeAndSM2DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+
+    -- test configuration
+
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                 }
 
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM2},    -- line number 1 set for SM2
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM2Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM2
+  configuration.bitmap = {"SM2Active"}
+  configuration.name_time = "SM2Time"
+  configuration.name_distance = "SM2Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM2Time",Value=SMTimeTC},{Name="SM2Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM2Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM2Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- test implementation (common for every SM)
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
 
@@ -659,82 +495,35 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM3Time and SM3Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
-  local numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
-  local odometerDistanceIncrement = 10  -- in meters
-
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
+  configuration.numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
+  configuration.odometerDistanceIncrement = 10  -- in meters
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld+10,   -- terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                   }
 
-  -- setting the EIO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                         }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM3Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM3
+  configuration.bitmap = {"SM3Active"}
+  configuration.name_time = "SM3Time"
+  configuration.name_distance = "SM3Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
+  -- test implementation
+  generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
 
-  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM3Time",Value=0},{Name="SM3Distance",Value=0},}
-	gateway.submitForwardMessage(message)
-
-  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM3 = ON
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for counter = 1, numberOfSteps, 1 do
-
-  -- terminal moving to another point distanceOfStep away from the initial position
-  gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-  gps.set(gpsSettings)               -- applying gps settings
-  framework.delay(2)                 -- wait until settings are applied
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM3Time = 0,                                   -- zero hours of SM3 is expected, value has been set to 0 a moment ago
-                  SM3Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
-
- end
 
 end
 
@@ -749,62 +538,35 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM3Time and SM3Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                   -- hours
+  configuration.SMDistanceTC = 500              -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                 }
 
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM3},    -- line number 1 set for SM3
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM3Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM3
+  configuration.bitmap = {"SM3Active"}
+  configuration.name_time = "SM3Time"
+  configuration.name_distance = "SM3Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM3Time",Value=SMTimeTC},{Name="SM3Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = os.time(),
-                  SM3Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM3Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- test implementation (common for every SM)
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
 
@@ -823,82 +585,34 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- ServiceMeter message send after GetServiceMeter request; SM4Time and SM4Distance correctly reported
-function test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
-  local numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
-  local odometerDistanceIncrement = 10  -- in meters
-
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.distanceOfStep = 1              -- degrees (1 degree = 111,12 km)
+  configuration.numberOfSteps = 4               -- number of steps in terminal travel (with length of stepOfTravel)
+  configuration.odometerDistanceIncrement = 10  -- in meters
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
-              speed = stationarySpeedThld+10,   -- terminal in moving state
+  configuration.gpsSettings={
+              speed = configuration.stationarySpeedThld+10,   -- terminal in moving state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                   }
 
-  -- setting the EIO properties
-  lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
-                                         }
-                   )
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
-                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM4Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM4Active"}
+  configuration.name_time = "SM4Time"
+  configuration.name_distance = "SM4Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
-
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM4Time",Value=0},{Name="SM4Distance",Value=0},}
-	gateway.submitForwardMessage(message)
-
-  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM4 = ON
-  framework.delay(5)  -- wait until IgnitionOn message
-
-  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
-  for counter = 1, numberOfSteps, 1 do
-
-    -- terminal moving to another point distanceOfStep away from the initial position
-    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
-    gps.set(gpsSettings)               -- applying gps settings
-    framework.delay(2)                 -- wait until settings are applied
-
-    gateway.setHighWaterMark()         -- to get the newest messages
-
-    -- sending getServiceMeter message
-    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-    gateway.submitForwardMessage(getServiceMeterMessage)
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
-
-    local expectedValues={
-                    gps = gpsSettings,
-                    messageName = "ServiceMeter",
-                    currentTime = os.time(),
-                    SM4Time = 0,                                   -- zero hours of SM4 is expected, value has been set to 0 a moment ago
-                    SM4Distance = (distanceOfStep*111.12)*counter  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
-                          }
-
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
-
- end
+  -- test implementation
+  generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
 
 end
 
@@ -914,63 +628,35 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- SetServiceMeter message correctly sets SM4Time and SM4Distance
-function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+function random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent()
+
+  -- test configuration
+
+  configuration = {}
 
   -- properties values to be used in TC
-  local movingDebounceTime = 1          -- seconds
-  local stationarySpeedThld = 5         -- kmh
-  local SMTimeTC = 10                  -- hours
-  local SMDistanceTC = 500             -- kilometers
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 10                  -- hours
+  configuration.SMDistanceTC = 500             -- kilometers
 
 
   -- gpsSettings table to be sent to simulator
-  local gpsSettings={
+  configuration.gpsSettings={
               speed = 0,                        -- terminal in stationary state
               latitude = 1,                     -- degrees
               longitude = 1,                    -- degrees
               fixType = 3,                      -- valid fix provided, no GpsFixAge expected in the report
               heading = 100,                    -- degrees
-                     }
+                 }
 
-  -- setting AVL properties
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                                {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp.SM4},    -- line number 1 set for SM4
-                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
-                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
-                                             }
-                 )
-  -- activating special input function
-  avlHelperFunctions.setDigStatesDefBitmap({"SM4Active"})
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM4Active"}
+  configuration.name_time = "SM4Time"
+  configuration.name_distance = "SM4Distance"
 
-  gps.set(gpsSettings) -- applying gps settings
-
-  framework.delay(2)  -- wait until settings are applied
-
-  timeOfEventTC = os.time()
-  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
-	message.Fields = {{Name="SM4Time",Value=SMTimeTC},{Name="SM4Distance",Value=SMDistanceTC},}
-	gateway.submitForwardMessage(message)
-
-  framework.delay(5)  -- wait until message is processed
-
-  gateway.setHighWaterMark()         -- to get the newest messages
-
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-	gateway.submitForwardMessage(getServiceMeterMessage)
-  gpsSettings.heading = 361  -- for stationary state
-  --ServiceMeter message is expected
-  message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-  assert_not_nil(message, "ServiceMeter message not received")
-  local expectedValues={
-                  gps = gpsSettings,
-                  messageName = "ServiceMeter",
-                  currentTime = timeOfEventTC,
-                  SM4Time = SMTimeTC,           -- excpected value is SMTimeTC
-                  SM4Distance =  SMDistanceTC   -- expected value is SMDistanceTC
-                        }
-
-  avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
+  -- test implementation (common for every SM)
+  generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
 
 end
 
@@ -1078,9 +764,12 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
     -- sending getServiceMeter message
     local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
     gateway.submitForwardMessage(getServiceMeterMessage)
-    --ServiceMeter message is expected
-    message = gateway.getReturnMessage(framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.serviceMeter),nil,GATEWAY_TIMEOUT)
-    assert_not_nil(message, "ServiceMeter message not received")
+
+    -- ServiceMeter message is expected
+    local expectedMins = {avlConstants.mins.serviceMeter}
+    local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+    assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+
     local expectedValues={
                     gps = gpsSettings,
                     messageName = "ServiceMeter",
@@ -1094,18 +783,859 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                     SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
                     SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                           }
-    if(hardwareVariant==3) then
+    -- device profile application
+    if profile:hasFourIOs() then
       expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
       expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
     end
 
-    avlHelperFunctions.reportVerification(message, expectedValues ) -- verification of the report fields
-
+    assert_equal(expectedValues.SM1Time,tonumber(colmsg.Payload.SM1Time), "SM1Time value is not correct in the report")
+    assert_equal(expectedValues.SM1Distance,tonumber(colmsg.Payload.SM1Distance), 2, "SM1Distance value is not correct")
+    assert_equal(expectedValues.SM2Time,tonumber(colmsg.Payload.SM2Time), "SM2Time value is not correct in the report")
+    assert_equal(expectedValues.SM2Distance,tonumber(colmsg.Payload.SM2Distance), 2, "SM2Distance value is not correct")
+    assert_equal(expectedValues.SM3Time,tonumber(colmsg.Payload.SM3Time), "SM3Time value is not correct in the report")
+    assert_equal(expectedValues.SM3Distance,tonumber(colmsg.Payload.SM3Distance), 2, "SM3Distance value is not correct")
+    -- device profile application
+    if profile:hasFourIOs() then
+      assert_equal(expectedValues.SM4Time,tonumber(colmsg.Payload.SM4Time), "SM4Time value is not correct in the report")
+      assert_equal(expectedValues.SM4Distance,tonumber(colmsg.Payload.SM4Distance), 2, "SM4Distance value is not correct")
+    end
 
  end
 
 end
 
---]]
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM0TimeAndSM0DistanceTestProperties()
 
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                    -- hours
+  configuration.SMDistanceTC = 0                -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+
+  configuration.funcDigInp = avlConstants.funcDigInp.IgnitionAndSM0
+  configuration.bitmap = {"IgnitionON"}
+  configuration.name_time = "SM0Time"
+  configuration.name_distance = "SM0Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+
+end
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM1TimeAndSM1DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                    -- hours
+  configuration.SMDistanceTC = 0                -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+
+  configuration.funcDigInp = avlConstants.funcDigInp.SM1
+  configuration.bitmap = {"SM1Active"}
+  configuration.name_time = "SM1Time"
+  configuration.name_distance = "SM1Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM2TimeAndSM2DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+
+  configuration.funcDigInp = avlConstants.funcDigInp.SM2
+  configuration.bitmap = {"SM2Active"}
+  configuration.name_time = "SM2Time"
+  configuration.name_distance = "SM2Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+
+end
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM3TimeAndSM3DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+
+  configuration.funcDigInp = avlConstants.funcDigInp.SM3
+  configuration.bitmap = {"SM3Active"}
+  configuration.name_time = "SM3Time"
+  configuration.name_distance = "SM3Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
+
+
+
+function random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM4TimeAndSM4DistanceTestProperties()
+  configuration = {}
+
+  -- properties values to be used in TC
+  configuration.movingDebounceTime = 1          -- seconds
+  configuration.stationarySpeedThld = 5         -- kmh
+  configuration.SMTimeTC = 0                  -- hours
+  configuration.SMDistanceTC = 0             -- kilometers
+  configuration.odometerDistanceIncrement = 10  -- in meters
+
+  -- gpsSettings table to be sent to simulator
+  configuration.gpsSettings={
+                {speed = 25, latitude = 23, longitude = 24, fixType = 3, heading = 100},
+                {speed = 25, latitude = 23.1, longitude = 24.1, fixType = 3, heading = 100}}
+
+  configuration.funcDigInp = avlConstants.funcDigInp.SM4
+  configuration.bitmap = {"SM4Active"}
+  configuration.name_time = "SM4Time"
+  configuration.name_distance = "SM4Distance"
+  configuration.expected_distance = 15 * 1000 -- 23,24 -> 23.1, 24.1 ~ 15km
+
+  return generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+end
+
+-- common implemetation for several of test cases
+function generic_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMX(configuration)
+
+  local movingDebounceTime = configuration.movingDebounceTime
+  local stationarySpeedThld = configuration.stationarySpeedThld
+  local SMTimeTC = configuration.SMTimeTC
+  local SMDistanceTC = configuration.SMDistanceTC
+  local gpsSettings= configuration.gpsSettings
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[1], configuration.funcDigInp},    -- line number 1 set for SM1
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap(configuration.bitmap)
+
+  gps.set(gpsSettings) -- applying gps settings
+
+  framework.delay(5)  -- wait until settings are applied
+
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
+	message.Fields = {{Name=configuration.name_time,Value=SMTimeTC},{Name=configuration.name_distance,Value=SMDistanceTC},}
+	gateway.submitForwardMessage(message)
+
+  framework.delay(5)  -- wait until message is processed
+
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+	gateway.submitForwardMessage(getServiceMeterMessage)
+
+  --ServiceMeter message is expected
+  local expectedMins = {avlConstants.mins.serviceMeter}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+
+  local expectedValues={
+                  gps = gpsSettings,
+                  messageName = "ServiceMeter",
+                  currentTime = os.time(),
+                  [configuration.name_time] = SMTimeTC,           -- excpected value is SMTimeTC
+                  [configuration.name_distance] =  SMDistanceTC   -- expected value is SMDistanceTC
+                      }
+
+  assert_equal(SMTimeTC,tonumber(colmsg.Payload[configuration.name_time]), configuration.name_time .." value is not correct in the report")
+  assert_equal(SMDistanceTC,tonumber(colmsg.Payload[configuration.name_distance]), 2, configuration.name_distance .. " value is not correct")
+
+
+  -- verify properties
+  propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+  expectedProperties = {[avlConstants.pins[configuration.name_time]] = expectedValues[configuration.name_time],
+                        [avlConstants.pins[configuration.name_distance]] = expectedValues[configuration.name_distance]}
+
+  local property = {}
+  local expected = {}
+  property.time = tonumber(currentProperties[avlConstants.pins[configuration.name_time]])
+  expected.time = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60
+
+  -- Check if time is correct
+  assert_equal(expected.time, property.time, 60, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+
+  -- Check if distance is correct
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance =  expectedProperties[avlConstants.pins[configuration.name_distance]]*1000
+  assert_equal(expected.distance, property.distance,
+               'Service Meter property ' .. configuration.name_distance .. ' value different than expected')
+
+
+end
+
+function generic_ServiceMeter_ForTerminalMovingWhenSMX(configuration)
+
+  local movingDebounceTime = configuration.movingDebounceTime
+  local stationarySpeedThld = configuration.stationarySpeedThld
+  local distanceOfStep = configuration.distanceOfStep
+  local numberOfSteps = configuration.numberOfSteps
+  local odometerDistanceIncrement = configuration.odometerDistanceIncrement
+
+  local gpsSettings= configuration.gpsSettings
+
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                                {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.funcDigInp[1], configuration.funcDigInp},    -- line number 1 set for SM1
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap(configuration.bitmap)
+
+  gps.set(gpsSettings) -- applying gps settings
+
+  framework.delay(movingDebounceTime+10)  -- wait until terminal goes into moving state
+
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
+
+	message.Fields = {{Name = configuration.name_time,Value=0},{Name = configuration.name_distance,Value=0},}
+	gateway.submitForwardMessage(message)
+
+  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM1 = ON
+  framework.delay(5)  -- wait until IgnitionOn message
+
+  -- loop with numberOfSteps iterations changing position of terminal and requesting ServiceMeter message with every run
+  for counter = 1, numberOfSteps, 1 do
+
+    -- terminal moving to another point distanceOfStep away from the initial position
+    gpsSettings.latitude = gpsSettings.latitude + distanceOfStep
+    gps.set(gpsSettings)               -- applying gps settings
+    framework.delay(4)                 -- wait until settings are applied
+
+    gateway.setHighWaterMark()         -- to get the newest messages
+
+    -- sending getServiceMeter message
+    local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+    gateway.submitForwardMessage(getServiceMeterMessage)
+
+    --ServiceMeter message is expected
+    local expectedMins = {avlConstants.mins.serviceMeter}
+    local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+    assert_not_nil(receivedMessages[avlConstants.mins.serviceMeter], "ServiceMeter message not received")
+
+    local expectedValues={
+                    gps = gpsSettings,
+                    messageName = "ServiceMeter",
+                    currentTime = os.time(),
+                    [configuration.name_time] = 0,                             -- zero hours of SM1 is expected, value has been set to 0 a moment ago
+                    -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
+                    [configuration.name_distance] = (distanceOfStep*111.12)*counter
+                          }
+
+    assert_equal(expectedValues[configuration.name_time],tonumber(colmsg.Payload[configuration.name_time]), configuration.name_time .." value is not correct in the report")
+    assert_equal(expectedValues[configuration.name_distance],tonumber(colmsg.Payload[configuration.name_distance]), 2, configuration.name_distance .. " value is not correct")
+
+
+    propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+    currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+    expectedProperties = {[avlConstants.pins[configuration.name_time]] = expectedValues[configuration.name_time],
+                          [avlConstants.pins[configuration.name_distance]] = expectedValues[configuration.name_distance]}
+
+    -- Check if time is correct (expected value is given in [hours], property value is given in [seconds]
+    -- expected value is converted from hours to seconds,
+    -- reported value is expecte to be in range Expected Seconds <= Reported Seconds < Expected Seconds + some tolerance (300s)
+
+    local tolerance = 300
+    local property = {}
+    local expected = {}
+    property.time = tonumber(currentProperties[avlConstants.pins[configuration.name_time]])
+    expected.timeLower = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60
+    expected.timeUpper = expectedProperties[avlConstants.pins[configuration.name_time]]*60*60 + tolerance
+
+    -- Check if time is correct
+    assert_gte(expected.timeLower, property.time, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+    assert_lt(expected.timeUpper, property.time, 'Service Meter property ' .. configuration.name_time .. ' incorrect')
+
+    -- Check if distance is correct
+    property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+    expected.distance =  expectedProperties[avlConstants.pins[configuration.name_distance]]*1000
+    assert_equal(expected.distance, property.distance, 500,
+                 'Service Meter property ' .. configuration.name_distance .. ' value different than expected')
+
+  end
+
+end
+
+-- test cases for Service Meter with small GPS movements - reading from properties
+function generic_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAndSMXDistanceTestProperties(configuration)
+  local movingDebounceTime = configuration.movingDebounceTime
+  local stationarySpeedThld = configuration.stationarySpeedThld
+  local SMTimeTC = configuration.SMTimeTC
+  local SMDistanceTC = configuration.SMDistanceTC
+  local gpsSettings= configuration.gpsSettings
+
+  gps.set(gpsSettings[1]) -- applying initial gps settings
+  framework.delay(configuration.movingDebounceTime + GPS_READ_INTERVAL)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                          {lsfConstants.pins.portConfig[1], 3},     -- port 1 as digital input
+                                          {lsfConstants.pins.portEdgeDetect[1], 3}, -- detection for both rising and falling edge
+                                         }
+                    )
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{{avlConstants.pins.funcDigInp[1], configuration.funcDigInp},    -- line number 1 set for SM1
+                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                              {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                              {avlConstants.pins.odometerDistanceIncrement, configuration.odometerDistanceIncrement}})
+
+  -- activating special input function
+  avlHelperFunctions.setDigStatesDefBitmap(configuration.bitmap)
+
+  local message = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.setServiceMeter}
+
+  -- reset the Service Meter values
+	message.Fields = {{Name = configuration.name_time, Value = configuration.SMTimeTC},
+                    {Name=configuration.name_distance,Value = configuration.SMDistanceTC}}
+	gateway.submitForwardMessage(message)
+  gateway.setHighWaterMark()         -- to get the newest messages
+
+  device.setIO(1, 0)  -- port 1 to low level - to toggle port
+
+  device.setIO(1, 1)  -- port 1 to high level - that should trigger SM = ON
+  framework.delay(2)  -- to activate Service Meter
+
+  propList = {avlConstants.pins[configuration.name_time], avlConstants.pins[configuration.name_distance]}
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+
+  property = {}
+  expected = {}
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance = configuration.SMDistanceTC * 1000
+  -- check initial state
+  assert_equal(expected.distance, property.distance, 0,
+               "Service meter distance property should match distance given by message")
+
+  gps.set(gpsSettings[2]) -- applying gps settings
+  framework.delay(5)
+  currentProperties = avlHelperFunctions.propertiesToTable(lsf.getProperties(avlConstants.avlAgentSIN, propList))
+  property.distance = tonumber(currentProperties[avlConstants.pins[configuration.name_distance]])
+  expected.distance = configuration.expected_distance
+  -- check new state
+  assert_equal(expected.distance, property.distance, 1000,
+               "Service meter distance property incorrect")
+
+end
+
+
+--- TC checks if Odometer is not increased when terminal travels distance below odometerDistanceIncrement .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some high value
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located closer than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. CdometerDistanceIncrement set to some high value
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values in Point#1 and Point#2 should be the same (no increment)
+function test_Odometer_WhenTerminalTravelsDistanceBelowOdometerDistanceIncrement_OdometerDoesNotIncrement()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 10000  -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 - 7,79 km away from Point#1 - that is below odometerDistanceIncrement (10 km)
+  gpsSettings[2]={
+                  latitude = 0,                     -- degrees
+                  longitude = 0.07,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  assert_equal(odometerValue1, odometerValue2, "Odometer has been incorrectly increased when travelled distance was below odometerDistanceIncrement value")
+
+end
+
+
+--- TC checks if Odometer is correctly increased when terminal travels distance above odometerDistanceIncrement from one random point to another .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some value
+  -- 2. Simulate terminal in random position in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to random position in Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. OdometerDistanceIncrement set to some value
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is increased by value of distance difference betweenn Point#1 and Point#2
+function test_Odometer_WhenTerminalTravelsDistanceBetweenTwoRandomPoints_OdometerIncremented()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 1000   -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                   )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,                       -- terminal in moving state
+                  latitude = lunatest.random_float(-90 , 90),             -- degrees
+                  longitude = lunatest.random_float(-180, 180),          -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = lunatest.random_float(-90 , 90),                       -- degrees
+                  longitude = lunatest.random_float(-180 , 180),                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  local distanceTravelled = avlHelperFunctions.geoDistance(gpsSettings[1].latitude, gpsSettings[1].longitude, gpsSettings[2].latitude, gpsSettings[2].longitude)
+  local odometerValueIncrement = odometerValue2 - odometerValue1
+
+  assert_equal(distanceTravelled*1000, odometerValueIncrement, 30000, "Odometer has been increased for incorrect value")
+
+end
+
+
+
+
+--- TC checks if Odometer is not increased when terminal changes position in stationary state .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some value
+  -- 2. Simulate terminal in Point#1 with speed below stationarySpeedThld
+  -- 3. Read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. OdometerDistanceIncrement set to some value
+  -- 2. Terminal in stationary state in Point#1
+  -- 3. Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is are the same for Point#1 and Point#2
+function test_Odometer_WhenTerminalChangesPositionInStationaryState_OdometerNotIncremented()
+
+  -- properties values to be used in TC
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 10     -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                              {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = 0,                          -- terminal in stationary state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = 0,                        -- degrees
+                  longitude = 0.09,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  assert_equal(odometerValue1, odometerValue2, 0, "Odometer has been increased for terminal in stationary state")
+
+end
+
+
+
+--- TC checks if Odometer is correctly increased when terminal travels distance above odometerDistanceIncrement .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set odometerDistanceIncrement (PIN 14) to some value
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. OdometerDistanceIncrement set to some value
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is increased by value of distance difference betweenn Point#1 and Point#2
+function test_Odometer_WhenTerminalTravelsDistanceAboveOdometerDistanceIncrement_OdometerIncremented()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 1000   -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = 0,                        -- degrees
+                  longitude = 0.09,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  local distanceTravelled = avlHelperFunctions.geoDistance(gpsSettings[1].latitude, gpsSettings[1].longitude, gpsSettings[2].latitude, gpsSettings[2].longitude)
+  local odometerValueIncrement = odometerValue2 - odometerValue1
+
+  assert_equal(distanceTravelled*1000, odometerValueIncrement, 100, "Odometer has been increased for incorrect value")
+
+end
+
+--- TC checks if Odometer field is populated when first bit in optionalFieldsInMsgs property is set to 1 .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set 1st bit in optionalFieldsInMsgs (PIN 27) to 1
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Request Position message, verify the content of the message sent in response
+  -- 5. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 6. Request Position message, verify the content of the message sent in response
+  -- 7. Set 1st bit in optionalFieldsInMsgs (PIN 27) to 0
+  -- 8. Request Position message, verify the content of the message sent in response
+  --
+  -- Results:
+  --
+  -- 1. 1st bit in optionalFieldsInMsgs (PIN 27) set to 1
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Received Position message contains Odometer field and the Odometer value is as in Point#1
+  -- 5. Terminal moves to Point#2, Odometer property read
+  -- 6. Received Position message contains Odometer field and the Odometer value is as in Point#2
+  -- 7. 1st bit in optionalFieldsInMsgs (PIN 27) set to 0
+  -- 8. Received Position message does not contain Odometer field
+function test_Odometer_WhenOdometerFieldIsSetToBePopulatedInOptionalFieldsInMsgsProperty_OdometerFieldPopulatedInReports()
+
+  -- properties values to be used in TC
+  local OPTIONAL_FIELDS_IN_MSGS_BITMAP = 1 -- 1 st bit is related to Odometer
+  local movingDebounceTime = 1             -- seconds
+  local stationarySpeedThld = 5            -- kmh
+  local odometerDistanceIncrement = 1000   -- in meters
+  local gpsSettings = {}                   -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.optionalFieldsInMsgs, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.optionalFieldsInMsgs, OPTIONAL_FIELDS_IN_MSGS_BITMAP},
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = 0,                        -- degrees
+                  longitude = 0.09,                    -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  -- sending getPositionMessage message - initial Odometer value expected
+  local getPositionMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.positionRequest}    -- to trigger Position message
+	gateway.submitForwardMessage(getPositionMessage)
+
+  local expectedMins = {avlConstants.mins.position}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
+
+  assert_equal(odometerValue1, tonumber(receivedMessages[avlConstants.mins.position].Odometer)*1000, 1000, "Position message has incorrect Odometer value")
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  -- sending getPositionMessage message - new Odometer value expected
+  getPositionMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.positionRequest}    -- to trigger Position message
+	gateway.submitForwardMessage(getPositionMessage)
+
+  expectedMins = {avlConstants.mins.position}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
+  assert_equal(odometerValue2, tonumber(receivedMessages[avlConstants.mins.position].Odometer)*1000, 1000,  "Position message has incorrect Odometer value")
+
+  -- disabling Odometer reporting
+  OPTIONAL_FIELDS_IN_MSGS_BITMAP = 0 -- 1 st bit is related to Odometer
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.optionalFieldsInMsgs, OPTIONAL_FIELDS_IN_MSGS_BITMAP},
+                                             }
+                   )
+
+  -- sending getPositionMessage message - new Odometer value expected
+  getPositionMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.positionRequest}    -- to trigger Position message
+	gateway.submitForwardMessage(getPositionMessage)
+
+  expectedMins = {avlConstants.mins.position}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.position], "Position message not received after request")
+  assert_nil(receivedMessages[avlConstants.mins.position].Odometer, "Position message incorrectly contains Odometer field")
+
+end
+
+
+--- TC checks if Odometer is correctly increased when terminal travels distance above odometerDistanceIncrement and odometer is read from external source .
+  -- Initial Conditions:
+  --
+  -- * Terminal moving
+  -- * Air communication not blocked
+  -- * GPS is good
+  --
+  -- Steps:
+  --
+  -- 1. Set externalOdometerSource (PIN 135) to SIN = 20, PIN = 6 (position service, latitude property)
+  -- 2. Simulate terminal in Point#1 with speed above stationarySpeedThld
+  -- 3. Wait until terminal goes to moving state and read Odometer property in Point#1
+  -- 4. Simulate terminal move to Point#2 that is located further than odometerDistanceIncrement from Point#1
+  -- 5. Read Odometer property and compare it's value against the one from Point#1
+  --
+  -- Results:
+  --
+  -- 1. ExternalOdometerSource (PIN 135) set to SIN = 20, PIN = 6 (position service, latitude property)
+  -- 2. Terminal in moving state in Point#1
+  -- 3. Terminal enters moving state, Odometer property read
+  -- 4. Terminal moves to Point#2, Odometer property read
+  -- 5. Odometer values is increased by value of distance difference betweenn Point#1 and Point#2
+function test_ExternalOdometerSource_WhenTerminalTravelsDistanceAboveOdometerDistanceIncrementForExternalOdometerSource_OdometerIncremented()
+
+  -- properties values to be used in TC
+  local movingDebounceTime = 1                   -- seconds
+  local stationarySpeedThld = 5                  -- kmh
+  local odometerDistanceIncrement = 100          -- in meters
+  local DISTANCE_INCREMENT = 100000              -- in meters
+  local EXTERNAL_ODOMETER_FACTOR = 0.00000013333 -- that comes from divison of 0,008 for external odometer and 60000 for passing latitude in degrees
+  local gpsSettings = {}                         -- gpsSettings table to be sent to simulator
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                                {avlConstants.pins.odometerDistanceIncrement, odometerDistanceIncrement},
+                                                {avlConstants.pins.stationarySpeedThld, stationarySpeedThld},
+                                                {avlConstants.pins.movingDebounceTime, movingDebounceTime},
+                                                {avlConstants.pins.externalOdometerSource, framework.base64Encode({lsfConstants.sins.position, lsfConstants.pins.latitude}), "data" }
+                                             }
+                 )
+
+  -- Point#1 - initial position of terminal
+  gpsSettings[1]={
+                  speed = stationarySpeedThld + 10,   -- terminal in moving state
+                  latitude = 0,                       -- degrees
+                  longitude = 0,                      -- degrees
+                 }
+  -- Point#2 -
+  gpsSettings[2]={
+                  latitude = DISTANCE_INCREMENT*EXTERNAL_ODOMETER_FACTOR,
+                  longitude = 0,                                                   -- degrees
+                 }
+
+  gps.set(gpsSettings[1]) -- applying gps settings of Point#1
+
+  framework.delay(movingDebounceTime + GPS_READ_INTERVAL + GPS_PROCESS_TIME + 5)  -- wait until terminal goes into moving state
+  -- getting odometer property
+  local odometerProperty1 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue1 = tonumber(odometerProperty1[1].value)
+
+  gps.set(gpsSettings[2]) -- applying gps settings of Point#2
+
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 2 )
+  local odometerProperty2 = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.odometer)
+  local odometerValue2 = tonumber(odometerProperty2[1].value)
+
+  local odometerValueIncrement = odometerValue2 - odometerValue1
+
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data" }
+                                             }
+                 )
+
+  assert_equal(DISTANCE_INCREMENT, odometerValueIncrement, 10, "Odometer has been increased for incorrect value for external source of odometer")
+
+end
 
