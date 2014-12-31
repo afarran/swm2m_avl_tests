@@ -326,10 +326,9 @@ end
                                              }
                    )
 
-  gateway.setHighWaterMark()         -- to get the newest messages
-
   device.setIO(1, 1)                 -- port 1 to high level
   framework.delay(2)
+  gateway.setHighWaterMark()         -- to get the newest messages
   device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOn
 
   -- IgnitionOn message expected
