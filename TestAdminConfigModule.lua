@@ -497,9 +497,11 @@ end
 
 function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_PreviousLatLngShouldBeTheSameAsBeforeRestart()
   
+  local PROPS_SAVE_TIMEOUT = 1
+  
   --continous gps fix
   lsf.setProperties(lsfConstants.sins.position,{
-                                                {lsfConstants.pins.gpsReadInterval,1}     
+                                                {lsfConstants.pins.gpsReadInterval,1}
                                                }
                     )
   framework.delay(2)
@@ -509,10 +511,16 @@ function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_Previ
                   latitude = 3,                        -- degrees
                   longitude = 3,                       -- degrees
                  }
-  
   gps.set(gpsSettings)
-  local stime = os.time()
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  
+  
+  --params save interval
+  lsf.setProperties(avlConstants.avlAgentSIN, {
+                                                {avlConstants.pins.ParamSaveInterval,PROPS_SAVE_TIMEOUT}
+                                              }
+                    )
+  framework.delay(PROPS_SAVE_TIMEOUT*60)
   
   -- restarting AVL agent after 
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
@@ -527,5 +535,3 @@ function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_Previ
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.reset].PrevLongitude), 0 , "Wrong previous longitude" )
   
 end
-
-
