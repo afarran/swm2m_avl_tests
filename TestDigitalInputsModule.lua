@@ -120,7 +120,6 @@ end
   -- 3. All 4 ports in low state
   -- 4. Digital input lines 1-4 disabled
  function setup()
-  print("setup ..")
   -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
                                                   {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
@@ -174,8 +173,6 @@ end
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
 function teardown()
-
-  print("teardown ..")
 
   local gpsSettings={
                       fixType = 3,                     -- valid fix provided
