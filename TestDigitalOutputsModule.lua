@@ -2188,11 +2188,11 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeG
                                                  {Index=3,Fields={{Name="LineNum",Value=4},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(10)
+  framework.delay(20)
 
   -- checking if all 4 ports has been correctly set to high level
   for counter = 1, 4, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+    assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message , LINE NO "..counter)
   end
 
   framework.delay(invertTime*60+2) -- wait longer than invertTime to let the outputs change its states
