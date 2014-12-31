@@ -5,10 +5,6 @@
 
 module("TestDigitalInputsModule", package.seeall)
 
--- tests are very similiar for every SM, so sm number is randomized
--- you can turn it off/on here
-RANDOM_SM = false
-
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -124,7 +120,7 @@ end
   -- 3. All 4 ports in low state
   -- 4. Digital input lines 1-4 disabled
  function setup()
-
+  print("setup ..")
   -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
                                                   {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
@@ -178,6 +174,8 @@ end
 -----------------------------------------------------------------------------------------------
 --- teardown function executed after each unit test
 function teardown()
+
+  print("teardown ..")
 
   local gpsSettings={
                       fixType = 3,                     -- valid fix provided
@@ -1724,7 +1722,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 end
 
 -- Test cases for every IO are quite the same, so we are randomizing only one
--- You can force firing every test by changing constant RANDOM_SM ..
+-- You can force firing every test by changing constant RANDOM_SM .. 
 function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToHigh_DigInpRandomHiMessageSent()
 
     local tests = {}
@@ -1737,7 +1735,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToH
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromLowToHigh_DigInp4HiMessageSent
     end
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('Port', tests, setup, teardown)
 
 end
 
@@ -1876,7 +1874,7 @@ function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromHighTo
       tests['Port4'] = random_test_DigitalInput_WhenTerminalMovingAndPort4StateChangesFromHighToLow_DigInp4LoMessageSent
     end
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('Port', tests, setup, teardown)
 
 end
 
@@ -3059,31 +3057,7 @@ function generic_test_DigitalInput_WhenTerminalMovingAndPortXStateChangesFromHig
 
 end
 
---
--- Stuff for randomizing tests
---
 
--- Randomizing SM test case (0 - 4)
-function getRandomSm()
-  testCase = lunatest.random_int (0, 4)
-  print("Port"..testCase.." choosen.")
-  return testCase
-end
-
--- Choosing tc or firing all.
-function chooseTest(tests)
-  if RANDOM_SM == true then
-    testCase = getRandomSm()
-    tests['Port'..testCase]()
-  else
-    for i, tc in pairs(tests) do
-        print(i.." choosen.")
-        setup()
-        tc()
-        teardown()
-    end
-  end
-end
 
 
 

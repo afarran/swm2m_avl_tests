@@ -5,6 +5,7 @@ lsfConstantsAllTerminals = require("LsfConstants")
 lunatest = require "lunatest"
 AvlDebuger = require "AvlDebuger"()
 profileFactory = require("Profile/ProfileFactory")()
+tcRandomizer =  require "Randomizer"()
 
 -- global variables used in the tests
 FORCE_ALL_TESTCASES = false                                         -- determines whether to run all TCs or to use random TC for similar features - e.g Sensors / ServiceMeters
@@ -24,16 +25,16 @@ local function setup()
   math.randomseed(os.time())
   io.output():setvbuf("no")
   --include the following test suites in the feature tests:
-  lunatest.suite("TestGPSModule")
-  lunatest.suite("TestLPMModule")
+  --lunatest.suite("TestGPSModule")
+  --lunatest.suite("TestLPMModule")
   lunatest.suite("TestDigitalInputsModule")
-  lunatest.suite("TestServiceMeterModule")
-  lunatest.suite("TestDigitalOutputsModule")
-  lunatest.suite("TestGeofencesModule")
-  lunatest.suite("TestPeriodicReportsModule")
-  lunatest.suite("TestSensorsModule")
-  lunatest.suite("TestAdminConfigModule")
-  lunatest.suite("TestDriverIdentModule")
+  --lunatest.suite("TestServiceMeterModule")
+  --lunatest.suite("TestDigitalOutputsModule")
+  --lunatest.suite("TestGeofencesModule")
+  --lunatest.suite("TestPeriodicReportsModule")
+  --lunatest.suite("TestSensorsModule")
+  --lunatest.suite("TestAdminConfigModule")
+  --lunatest.suite("TestDriverIdentModule")
 
 end
 
