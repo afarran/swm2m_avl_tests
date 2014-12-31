@@ -44,11 +44,13 @@ module("TestDigitalInputsModule", package.seeall)
  function suite_setup()
 
   -- reset of properties of SIN 126 and 25
+  -- lsf.resetProperties() 
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
 	gateway.submitForwardMessage(message)
 
   -- restarting AVL agent after running module
+  -- lsf.restartService()
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
   message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
   gateway.submitForwardMessage(message)

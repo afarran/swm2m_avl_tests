@@ -903,7 +903,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM4 state
-function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter4IsON_DigitalOutputPortAssociatedWithSM4InHighState()
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
