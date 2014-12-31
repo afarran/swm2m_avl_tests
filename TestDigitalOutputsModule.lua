@@ -1088,7 +1088,11 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
                      }
 
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+3)
+  framework.delay(movingDebounceTime)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
   -- asserting state of port 1 - low state is expected as terminal moving but seatbelt is fastened
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
@@ -1112,10 +1116,13 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
   -- checking if the Seatbelt Violation line is not active when SeatbeltOff is active but terminal is not moving
   gpsSettings.speed = 0  -- terminal stationary
   gps.set(gpsSettings)   -- applying gps settings
-  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+2) -- wait until terminal is stationary
+  framework.delay(stationaryDebounceTime + GPS_READ_INTERVAL) -- wait until terminal is stationary
 
+  expectedMins = {avlConstants.mins.movingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
 
-  -- asserting state of port 1 - low state is expected as - SeatBelt fastened
+  -- asserting state of port 1 - low state is expected - terminal not moving
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
 
 end
@@ -1851,12 +1858,9 @@ end
 --TCs for digital outputs associated with following functions:
 
 -- - Towing
--- - GpsJammed
 -- - CellJammed
 -- - Tamper
--- - AirBlocked
 -- - LoggedIn
--- - AntCut
 -- - add FuncDigOut5 - outputSink18 for 780
 
 
