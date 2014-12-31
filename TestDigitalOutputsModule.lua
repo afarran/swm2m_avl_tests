@@ -20,7 +20,7 @@ module("TestDigitalOutputsModule", package.seeall)
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
 function suite_setup()
-
+  
   -- reset of properties of SIN 126 and 25
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}

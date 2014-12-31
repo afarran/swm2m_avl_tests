@@ -131,10 +131,6 @@ end
   -- put terminal into stationary state
   avlHelperFunctions.putTerminalIntoStationaryState()
 
-  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
-  device.setIO(1, 1)
-  framework.delay(2)
-
   ----------------------------------------------------------------------
   -- Putting terminal in IgnitionOn = false state
   ----------------------------------------------------------------------
@@ -157,6 +153,10 @@ end
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
   framework.delay(2)
 
+  -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
+  device.setIO(1, 1)
+  framework.delay(2)
+  
   -- device profile application
   profile:setupIO(lsf, device, lsfConstants)
 
@@ -336,14 +336,6 @@ end
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   assert_not_nil(receivedMessages[avlConstants.mins.ignitionON], "IgnitionOn message not received")
-
-  -- following code is only not to make problems with setup function
-  avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})  -- setting bitmap to make high state the trigger of ignitionON
-  framework.delay(2)
-  device.setIO(1, 1)                 -- port 1 to high level - that should trigger IgnitionOff
-  framework.delay(2)
-  device.setIO(1, 0)                 -- port 1 to low level - that should trigger IgnitionOff
-
 
 end
 
