@@ -412,7 +412,7 @@ end
 -- Test for: Periodically sending a message
 -- Testing if report timeout is set properly
 -- Testing if report has proper value
-function test_PeriodicalReports_whenReportTimeoutIsSetProperly_ReceiveMessageContainsProperSensorValues()
+function test_SensorsPeriodicalReports_whenReportTimeoutIsSetProperly_ReceiveMessageContainsProperSensorValues()
   RandomSensorRun(generic_test_PeriodicallySendingMessageContainingSensorValues)
 end
 
