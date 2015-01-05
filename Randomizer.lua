@@ -48,5 +48,19 @@ local Randomizer = {}
     return testCase
   end
   
+  function Randomizer:runTestRandomParam(min, max, ptest, psetup, pteardown, ...)
+    if FORCE_ALL_TESTCASES then
+      for i= min, max do
+        ptest(i, ...)
+        if (i < max) then
+          pteardown()
+          psetup()
+        end
+      end
+      pteardown()
+    else
+      return ptest(math.random(min, max), ...)
+    end
+  end
   
 return Randomizer
