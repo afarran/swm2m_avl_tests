@@ -558,21 +558,24 @@ verbose_hooks = {
    begin = function(res, suites)
               local s_ct = count(suites)
               if s_ct > 0 then
-                 printf("Starting tests, %d suite(s)", s_ct)
+                 --printf("Starting tests, %d suite(s)", s_ct)
               end
            end,
    begin_suite = function(s_env, tests)
                     dot_ct = 0
+                    print("")
                     printf("-- Starting suite %q, %d test(s)",
                            s_env.name, count(tests))
+                    print("")
                  end,
    end_suite =
       function(s_env)
          local ps, fs = count(s_env.pass), count(s_env.fail)
          local ss, es = count(s_env.skip), count(s_env.err)
          dot_ct = 0
-         printf("    Finished suite %q, +%d -%d E%d s%d",
+         printf("-- Finished suite %q, +%d -%d E%d s%d",
                 s_env.name, ps, fs, es, ss)
+         print(" ")
       end,
    pre_test = false,
    post_test = function(name, res)
@@ -752,9 +755,15 @@ local function run_suite(hooks, opts, results, sname, tests)
 
          if hooks.begin_suite then hooks.begin_suite(res, tests) end
          res.tests = tests
+         local test_counter = 1
          for name, test in pairs(tests) do
             if not opts.test_pat or name:match(opts.test_pat) then
-               run_test(name, test, res, hooks, setup, teardown)
+              print (test_counter.." "..name)
+              print("started at "..os.date())
+              run_test(name, test, res, hooks, setup, teardown)
+              print("finished at "..os.date())
+              print(" ")
+              test_counter = test_counter + 1 
             end
          end
          if steardown then pcall(steardown) end

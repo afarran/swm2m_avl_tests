@@ -25,16 +25,18 @@ local function setup()
   math.randomseed(os.time())
   io.output():setvbuf("no")
   --include the following test suites in the feature tests:
-  lunatest.suite("TestGPSModule")
-  lunatest.suite("TestLPMModule")
-  lunatest.suite("TestDigitalInputsModule")
-  lunatest.suite("TestServiceMeterModule")
-  lunatest.suite("TestDigitalOutputsModule")
-  lunatest.suite("TestGeofencesModule")
-  lunatest.suite("TestPeriodicReportsModule")
-  lunatest.suite("TestSensorsModule")
-  lunatest.suite("TestAdminConfigModule")
-  lunatest.suite("TestDriverIdentModule")
+  --lunatest.suite("TestGPSModule")
+  --lunatest.suite("TestLPMModule")
+  --lunatest.suite("TestDigitalInputsModule")
+  --lunatest.suite("TestServiceMeterModule")
+  --lunatest.suite("TestDigitalOutputsModule")
+  --lunatest.suite("TestGeofencesModule")
+  --lunatest.suite("TestPeriodicReportsModule")
+  --lunatest.suite("TestSensorsModule")
+  --lunatest.suite("TestAdminConfigModule")
+  --lunatest.suite("TestDriverIdentModule")
+  lunatest.suite("TestPblo")
+  lunatest.suite("TestPblo2")
 end
 
 local function teardown()
@@ -48,10 +50,11 @@ end
 -- [-v]                     Verbose option
 -- [-t] [<string pattern>]  Execute test cases that match string pattern
 -- [-s] [<string pattern>]  Execute test suites that match string pattern
-for idx, val in ipairs(arg) do print(idx, val) end
-
+print("\nCLI Arguments:")
+for idx, val in ipairs(arg) do
+  print(idx, val) 
+end
+print("")
 setup()
-
 lunatest.run(nil, arg)
-
 teardown()
