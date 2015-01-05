@@ -5,10 +5,6 @@
 
 module("TestServiceMeterModule", package.seeall)
 
--- tests are very similiar for every SM, so sm number is randomized
--- you can turn it off/on here
-RANDOM_SM = not FORCE_ALL_TESTCASES
-
 -------------------------
 -- Setup and Teardown
 -------------------------
@@ -173,7 +169,7 @@ function test_ServiceMeter_ForTerminalMovingWhenSMRandomActiveAndGetServiceMeter
     tests['SM3'] = random_test_ServiceMeter_ForTerminalMovingWhenSM3ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
     tests['SM4'] = random_test_ServiceMeter_ForTerminalMovingWhenSM4ActiveAndGetServiceMeterRequestSent_ServiceMeterMessageSent
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('SM', tests, setup, teardown)
 
 end
 
@@ -188,7 +184,7 @@ function test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSMRand
     tests['SM3']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM3TimeAndSM3DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
     tests['SM4']=random_test_ServiceMeter_ForTerminalStationarySetServiceMeterMessageSetsSM4TimeAndSM4DistanceAndAfterServiceMeterRequestSent_ServiceMeterMessageSent
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('SM', tests, setup, teardown)
 
 end
 
@@ -203,7 +199,7 @@ function test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSMXTimeAnd
     tests['SM3']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM3TimeAndSM3DistanceTestProperties
     tests['SM4']=random_test_ServiceMeter_ForTerminalMovingSetServiceMeterMessageSetsSM4TimeAndSM4DistanceTestProperties
 
-    chooseTest(tests)
+    tcRandomizer:chooseTest('SM', tests, setup, teardown)
 
 end
 
@@ -1641,32 +1637,5 @@ function test_ExternalOdometerSource_WhenTerminalTravelsDistanceAboveOdometerDis
 
   assert_equal(DISTANCE_INCREMENT, odometerValueIncrement, 10, "Odometer has been increased for incorrect value for external source of odometer")
 
-end
-
-
---
--- Stuff for randomizing tests
---
-
--- Randomizing SM test case (0 - 4)
-function getRandomSm()
-  testCase = lunatest.random_int (0, 4)
-  print("SM"..testCase.." choosen.")
-  return testCase
-end
-
--- Choosing tc or firing all.
-function chooseTest(tests)
-  if RANDOM_SM == true then
-    testCase = getRandomSm()
-    tests['SM'..testCase]()
-  else
-    for i, tc in pairs(tests) do
-        print(i.." choosen.")
-        setup()
-        tc()
-        teardown()
-    end
-  end
 end
 

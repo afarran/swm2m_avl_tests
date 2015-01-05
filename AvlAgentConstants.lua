@@ -40,6 +40,7 @@ avlConstants = {
                               geoDwellStart = 30,
                               serviceMeter = 31,
                               diagnosticsInfo = 32,
+                              airCommBlocked = 33,
                               antennaCutEnd = 37,
                               geoDwellEnd = 40,
                               idlingEnd = 41,
@@ -149,8 +150,7 @@ avlConstants = {
 
                               -- Air Blockage
                               AirBlockageTime = 22,
-
-
+                              ParamSaveInterval = 202
 
                     },
 

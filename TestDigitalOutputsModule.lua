@@ -20,7 +20,7 @@ module("TestDigitalOutputsModule", package.seeall)
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
 function suite_setup()
-
+  
   -- reset of properties of SIN 126 and 25
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
@@ -113,7 +113,15 @@ function setup()
   local digOutActiveBitmap = 0          -- setting DigOutActiveBitmap 0
   local geofenceEnabled = false        -- to enable geofence feature
 
-  --applying properties of geofence service
+  -- antenna not cut, jamming not detected and air communication not blocked
+  local gpsSettings={
+                      jammingDetect = false,
+                      blockage = false,
+                      antennaCutDetect = false,
+                     }
+  gps.set(gpsSettings)
+
+  -- applying properties of geofence service
   lsf.setProperties(lsfConstants.sins.geofence,{
                                                 {lsfConstants.pins.geofenceEnabled, geofenceEnabled, "boolean"}
                                                }
@@ -188,6 +196,7 @@ function setup()
 
                                         }
                     )
+
 
 
 
@@ -268,6 +277,223 @@ function test_DigitalOutput_WhenTerminalInIgnitionOnState_DigitalOutputPortAssoc
 end
 
 
+--- TC checks if digital output line associated with GpsJammed state is changing when GPS jamming is detected .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  -- * GPS signal is not jammed
+  --
+  -- Steps:
+  --
+  -- 1. Set port 1 to be digital output and associate it with GpsJammed function
+  -- 2. Set the high state of port to indicate line active state
+  -- 3. Simulate gps jamming for time longer than gpsJamDebounceTime
+  -- 4. Check the state of port 1
+  -- 5. Simulate gps signal not jammed fot time longer than gpsJamDebounceTime
+  -- 6. Check the state of port 1
+  --
+  -- Results:
+  --
+  -- 1. Port 1 set to be digital output and associated with GpsJammed function
+  -- 2. High state of port set to be an indicator of active line
+  -- 3. Terminal enters GpsJammed state
+  -- 4. Port 1 is in high state
+  -- 5. Terminal leaves GPSJammed state
+  -- 6. Port 1 is in low state
+function test_DigitalOutput_WhenTerminalIsInGpsJammedState_DigitalOutputPortAssociatedWithGpsJammingInHighState()
+
+  -- *** Setup
+  local GPS_JAMMING_DEBOUNCE_TIME = 1    -- seconds
+  local JAMMING_LEVEL = 10               -- integer
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                           {lsfConstants.pins.portConfig[1], 6},                              -- port 1 as digital output
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["GpsJammed"]},    -- digital output line number 1 set for GpsJammed function
+                                              {avlConstants.pins.gpsJamDebounceTime, GPS_JAMMING_DEBOUNCE_TIME},
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- *** Execute
+  gateway.setHighWaterMark() -- to get the newest messages
+  -- GPS signal is jammed from now
+  local gpsSettings={
+                      jammingDetect = true,
+                      jammingLevel = JAMMING_LEVEL,
+                    }
+  gps.set(gpsSettings)
+
+  framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_PROCESS_TIME)   -- wait until terminal enters GpsJammed state
+
+  local expectedMins = {avlConstants.mins.gpsJammingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingStart], "GpsJammingStart message not received")
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(1, device.getIO(1), "Port1 associated with GpsJammed state is not in high state as expected")
+
+  gateway.setHighWaterMark()
+  -- GPS signal is not jammed from now
+  gps.set({jammingDetect = false})
+
+  framework.delay(GPS_JAMMING_DEBOUNCE_TIME + GPS_PROCESS_TIME)   -- wait until terminal leaves GpsJammed state
+
+  expectedMins = {avlConstants.mins.gpsJammingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.gpsJammingEnd], "GpsJammingEnd message not received")
+
+  -- asserting state of port 1 - low state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with GpsJammed state is not in low state as expected")
+
+
+end
+
+
+--- TC checks if digital output line associated with AntennaCut state is changing when antenna cut is detected .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  -- * Antenna cut not detected
+  --
+  -- Steps:
+  --
+  -- 1. Set port 1 to be digital output and associate it with AntennaCut function
+  -- 2. Set the high state of port to indicate line active state
+  -- 3. Simulate antenna cut
+  -- 4. Check the state of port 1
+  -- 5. Simulate antenna not cut
+  -- 6. Check the state of port 1
+  --
+  -- Results:
+  --
+  -- 1. Port 1 set to be digital output and associated with AntennaCut function
+  -- 2. High state of port set to be an indicator of active line
+  -- 3. Terminal enters AnennaCut state
+  -- 4. Port 1 is in high state
+  -- 5. Terminal leaves AnennaCut state
+  -- 6. Port 1 is in low state
+function test_DigitalOutput_WhenTerminalIsInAnennaCutState_DigitalOutputPortAssociatedWithAntennaCutInHighState()
+
+  -- *** Setup
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                           {lsfConstants.pins.portConfig[1], 6},                              -- port 1 as digital output
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["AntCut"]},    -- digital output line number 1 set for Antenna cut function
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- *** Execute
+  gateway.setHighWaterMark()          -- to get the newest messages
+  gps.set({antennaCutDetect = true}) -- antenna cut from this point
+
+  local expectedMins = {avlConstants.mins.antennaCutStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.antennaCutStart], "AntennaCutStart message not received")
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(1, device.getIO(1), "Port1 associated with AntennaCut state is not in high state as expected")
+
+  gateway.setHighWaterMark()
+  gps.set({antennaCutDetect = false}) -- antenna not cut from this point
+
+  expectedMins = {avlConstants.mins.antennaCutEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.antennaCutEnd], "AntennaCutEnd message not received")
+
+  -- asserting state of port 1 - low state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with AntennaCut state is not in low state as expected")
+
+
+end
+
+
+--- TC checks if digital output line associated with AirCommunicationBlocked state is changing when air communication blockage cut is detected .
+  -- Initial Conditions:
+  --
+  -- * Running Terminal Simulator
+  -- * Webservices: Device, GPS, Gateway running
+  -- * Air communication not blocked
+  --
+  -- Steps:
+  --
+  -- 1. Set port 1 to be digital output and associate it with Air Communication Blockage function
+  -- 2. Set the high state of port to indicate line active state
+  -- 3. Simulate Air Communication Blockage for time longer than AIR_BLOCKAGE_TIME
+  -- 4. Check the state of port 1
+  -- 5. Simulate Air Communication nit blocked
+  -- 6. Check the state of port 1
+  --
+  -- Results:
+  --
+  -- 1. Port 1 set to be digital output and associated with AntennaCut function
+  -- 2. High state of port set to be an indicator of active line
+  -- 3. Terminal enters AirCommunicationBlocked state
+  -- 4. Port 1 is in high state
+  -- 5. Terminal leaves AirCommunicationBlocked state
+  -- 6. Port 1 is in low state
+function test_DigitalOutput_WhenTerminalIsInAirCommunicationBlockedState_DigitalOutputPortAssociatedWithAirCommunicationBlockageInHighState()
+
+  -- *** Setup
+  local AIR_BLOCKAGE_TIME = 1                            -- minutes
+  local STATIONARY_SPEED_THLD = 10                       -- kmh
+  local MOVING_DEBOUNCE_TIME = 5                         -- seconds
+
+  -- setting the EIO properties
+  lsf.setProperties(lsfConstants.sins.io,{
+                                           {lsfConstants.pins.portConfig[1], 6},          -- port 1 as digital output
+                                         }
+                   )
+  -- setting AVL properties
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["AirBlocked"]},    -- digital output line number 1 set for Antenna cut function
+                                              {avlConstants.pins.AirBlockageTime, AIR_BLOCKAGE_TIME},
+                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME},
+                                             }
+                   )
+  -- setting digital input bitmap describing when special function inputs are active
+  avlHelperFunctions.setDigOutActiveBitmap({"FuncDigOut1"})
+  framework.delay(2)                 -- wait until settings are applied
+
+  -- *** Execute
+  gps.set({speed = STATIONARY_SPEED_THLD + 10})  -- movingStart is used as a message activating airCommBlockage timer
+  gateway.setHighWaterMark()                     -- to get the newest messages
+  gps.set({blockage = true})                     -- air communication is blocked from now
+
+  framework.delay(AIR_BLOCKAGE_TIME*60 + 10)
+
+  -- asserting state of port 1 - high state is expected
+  assert_equal(1, device.getIO(1), "Port1 associated with AirCommBlocked state is not in high state as expected")
+
+  gateway.setHighWaterMark()
+  gps.set({blockage = false})           -- air communication is not blocked from now
+
+  framework.delay(2)
+  -- asserting state of port 1 - low state is expected
+  assert_equal(0, device.getIO(1), "Port1 associated with AirCommBlocked state is not in low state as expected")
+
+
+end
+
+
 
 --- TC checks if digital output line associated with Moving state is changing when speed is above Stationary Speed Threshold
   -- *actions performed:
@@ -301,8 +527,8 @@ function test_DigitalOutput_WhenSpeedAboveStationarySpeedThreshold_DigitalOutput
   -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["Moving"]},   -- digital output line number 1 set for Moving function
-                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},            -- moving related
-                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},          -- moving related
+                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},              -- moving related
+                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},            -- moving related
                                              }
                    )
   -- activating special output function
@@ -677,7 +903,7 @@ end
   -- GPS_READ_INTERVAL; all 4 ports in LOW state, terminal not in the IgnitionOn state
   -- *expected results:
   -- port 1 state changes according to SM4 state
-function test_DigitalOutput_WhenServiceMeter4IsON_AssociatedDigitalOutputPortInHighState()
+function test_DigitalOutput_WhenServiceMeter4IsON_DigitalOutputPortAssociatedWithSM4InHighState()
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -862,7 +1088,11 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
                      }
 
   gps.set(gpsSettings)
-  framework.delay(movingDebounceTime+3)
+  framework.delay(movingDebounceTime)
+
+  local expectedMins = {avlConstants.mins.movingStart}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
 
   -- asserting state of port 1 - low state is expected as terminal moving but seatbelt is fastened
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
@@ -886,10 +1116,13 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
   -- checking if the Seatbelt Violation line is not active when SeatbeltOff is active but terminal is not moving
   gpsSettings.speed = 0  -- terminal stationary
   gps.set(gpsSettings)   -- applying gps settings
-  framework.delay(stationaryDebounceTime+GPS_READ_INTERVAL+2) -- wait until terminal is stationary
+  framework.delay(stationaryDebounceTime + GPS_READ_INTERVAL) -- wait until terminal is stationary
 
+  expectedMins = {avlConstants.mins.movingEnd}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
 
-  -- asserting state of port 1 - low state is expected as - SeatBelt fastened
+  -- asserting state of port 1 - low state is expected - terminal not moving
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
 
 end
@@ -1625,12 +1858,9 @@ end
 --TCs for digital outputs associated with following functions:
 
 -- - Towing
--- - GpsJammed
 -- - CellJammed
 -- - Tamper
--- - AirBlocked
 -- - LoggedIn
--- - AntCut
 -- - add FuncDigOut5 - outputSink18 for 780
 
 
@@ -1962,11 +2192,11 @@ function test_DigitalOutputIDP600_WhenSetDigitalOutputsMessageSentAndInvertTimeG
                                                  {Index=3,Fields={{Name="LineNum",Value=4},{Name="LineState",Value=1},{Name="InvertTime",Value=invertTime}}}}}}
 
   gateway.submitForwardMessage(message)
-  framework.delay(10)
+  framework.delay(20)
 
   -- checking if all 4 ports has been correctly set to high level
   for counter = 1, 4, 1 do
-  assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message")
+    assert_equal(1, device.getIO(counter), "Digital output port has not been correctly set to high level by setDigitalOutputs message , LINE NO "..counter)
   end
 
   framework.delay(invertTime*60+2) -- wait longer than invertTime to let the outputs change its states
