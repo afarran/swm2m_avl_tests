@@ -705,3 +705,55 @@ function generic_test_Sensors_NormalSamplingIntervalSetToZero_MaxStartMessageNot
   assert_nil(msg, "SensorMaxStart message not expected")
 
 end
+
+-- Check if correnct Messages are sent if sensor value goes above max threshold and then jumps below min threshold
+function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval(sensorNo)
+  -- print("Testing test_Sensors_SendMessageMaxMinDependingOnNormalSamplingInterval using sensor " .. sensorNo)
+  local sensor = Sensor(sensorNo)
+  local INITIAL_SAMPLE_INTERVAL = 1
+  sensor.pinValues.Source.SIN = sensorTester:getSin()
+  sensor.pinValues.Source.PIN = sensorTester:getPin()
+  sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+  sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+  sensor.pinValues.ChangeThld = 0
+  sensor.pinValues.MaxReportInterval = 0
+  sensor.pinValues.NormalSampleInterval = INITIAL_SAMPLE_INTERVAL
+  sensor.pinValues.LpmSampleInterval = 15
+
+  sensorTester:setValueToInitial()
+  sensor:applyPinValues()
+  gateway.setHighWaterMark()
+
+  -- to make sure the test starts from initial point
+  framework.delay(sensor.pinValues.NormalSampleInterval)
+  sensor.pinValues.NormalSampleInterval = 7
+  sensor:applyPinValues()
+  framework.delay(sensor.pinValues.NormalSampleInterval)
+
+  sensorTester:setValueToMax(sensorTester.step)
+  -- wait for max start message
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart}, GATEWAY_TIMEOUT)
+  local msg = receivedMessages[sensor.mins.MaxStart]
+  assert_not_nil(msg, 'Sensor did not send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
+  assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, sensor.name.. " has incorrect value")
+  local FirstSampleTimestamp = msg.EventTime
+
+  -- Check if Max End message is send after time determined by Sample Interval
+  sensorTester:setValueToMax(-sensorTester.step)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxEnd,}, 1.5 * sensor.pinValues.NormalSampleInterval)
+  msg = receivedMessages[sensor.mins.MaxEnd]
+  local SecondSampleTimestamp = msg.EventTime
+  assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, sensor.pinValues.NormalSampleInterval, 1, 'Message Timestamps do not match sampling interval')
+
+  -- Check if going above max and below max during single sampling time frame will not generate an event
+  sensorTester:setValueToMax(sensorTester.step)
+  framework.delay(INITIAL_SAMPLE_INTERVAL)
+  sensorTester:setValueToMax(-sensorTester.step)
+  framework.delay(INITIAL_SAMPLE_INTERVAL)
+  receivedMessages = avlHelperFunctions.matchReturnMessages({sensor.mins.MaxStart,
+                                                             sensor.mins.MaxEnd}, 1.5 * sensor.pinValues.NormalSampleInterval)
+  -- check if MaxStart or MaxEnd message was sent
+  assert_nil(receivedMessages[sensor.mins.MaxEnd], 'Sensor send Max End message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
+  assert_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
+
+end
