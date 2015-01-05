@@ -229,6 +229,95 @@ function test_Sensors_ForPeriodicalReportsWhenSensorReportingIntervalIsSetProper
   RandomSensorRun(generic_test_PeriodicallySendingMessageContainingSensorValues)
 end
 
+-- Sending a message when a sensor value has changed by more than set threshold
+function test_Sensors_whenSensorValueChangedByMoreThanThresholdForReportingIntervalAboveZero_SensorChangeMessageIsSent()
+  local ReportingInterval = 1
+  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
+end
+
+-- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
+function test_Sensors_whenSensorValueChangedByMoreThanThresholdAndReportIntervalZero_SensorChangeMessageIsSent()
+  local ReportingInterval = 0
+  local NormalSampleInterval = 1
+  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval, NormalSampleInterval)
+end
+
+-- Sending a message when a sensor value has changed by less than set threshold
+function test_Sensors_whenSensorValueChangedByLessThanThreshold_SensorChangeMessageNotSent()
+  ReportingInterval = 1
+  RandomSensorRun(generic_test_changeSensorValueByLessThanAmount, ReportingInterval)
+end
+
+function test_Sensors_WhenSensorValueGoesAboveMaxThresholdAndThenGoesBackBelowMaxThreshold_MaxStartAndMaxEndMessageSent()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveThreshold)
+end
+
+function test_Sensors_WhenSensorValueGoesBelowMinThresholdAndThenGoesBackAboveMinThreshold_MinStartAndMinEndMessageSent()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowThreshold)
+end
+
+function test_Sensors_WhenSensorValueBelowMinThresholdAndThenAboveMaxThreshold_MinStartMessageMinEndMessageAndMaxStartMessageSent()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold)
+end
+
+function test_Sensors_WhenSensorValueAboveMaxThresholdAndThenBelowMinThreshold_MaxStartMessageMaxEndMessageAndMinStartMessageSent()
+  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold)
+end
+
+-- test verifies whether SensorXNormalSampleInterval property works properly
+-- Messages timestamps are checked when terminal is in Normal mode
+function test_Sensors_WhenTerminalNotInLPMAndSamplingIntervalSetToValueAboveZero_MaxStartAndMaxEndMessagesAreSentAccordingToSamplingInterval()
+  RandomSensorRun(generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval)
+end
+
+-- test verifies whether SensorXLpmSampleInterval property works properly
+-- Messages timestamps are checked when terminal is in LPM mode
+function test_Sensors_WhenTerminalInLPM_MaxStartAndMaxEndMessagesAreSentAfterLPMSampleInterval()
+  RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
+end
+
+-- test verifies if MaxReportInterval sensor property works properly
+-- Two messages timestamps are checked
+function test_Sensors_WhenMaxReportIntervalSetAboveZero_SensorMaxStartAndSensorMaxEndMessagesSentAccordingMaxRerportInterval()
+  RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
+end
+
+-- test verifies whether Messages are sent from all Sensors at the same time
+function test_Sensors_ForAll4SenorsActive_SensorMaxStartMessagesSentFromAll4Sensors()
+  sensors = {Sensor(1), Sensor(2), Sensor(3), Sensor(4)}
+
+  for i=1, #sensors do
+    local sensor = sensors[i]
+    sensor.pinValues.Source.SIN = sensorTester:getSin()
+    sensor.pinValues.Source.PIN = sensorTester:getPin()
+    sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
+    sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
+    sensor.pinValues.ChangeThld = 0
+    sensor.pinValues.MaxReportInterval = 0
+    sensor.pinValues.NormalSampleInterval = 1
+    sensor.pinValues.LpmSampleInterval = 0
+    sensor:applyPinValues()
+  end
+
+  sensorTester:setValueToMax(sensorTester.step)
+
+  local messagesToGet = {}
+  for i=1,#sensors do
+    messagesToGet[#messagesToGet +1] = sensors[i].mins.MaxStart
+  end
+
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(messagesToGet, GATEWAY_TIMEOUT)
+
+  for i=1, #sensors do
+    local sensor = sensors[i]
+    msg = receivedMessages[sensor.mins.MaxStart]
+    assert_not_nil(msg, 'MaxStart message not received from sensor ' .. i)
+    assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, 'MaxStart message Sensor value not correct')
+  end
+
+end
+
+
 -- Test logic
 function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
   -- print("Testing test_PeriodicallySendingMessageContainingSensorValues using sensor " .. sensorNo)
@@ -259,12 +348,6 @@ function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
 
 end
 
-
--- Sending a message when a sensor value has changed by more than set threshold
-function test_Sensors_whenSensorValueChangedByMoreThanThresholdForReportingIntervalAboveZero_SensorChangeMessageIsSent()
-  local ReportingInterval = 1
-  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
-end
 
 --Sending a message when a sensor value has changed by more than change threshold
 -- generic logic
@@ -319,18 +402,6 @@ function generic_test_changeSensorValueByLessThanAmount(sensorNo, ReportingInter
 
 end
 
--- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
-function test_Sensors_whenSensorValueChangedByMoreThanThresholdAndReportIntervalZero_SensorChangeMessageIsSent()
-  local ReportingInterval = 0
-  local NormalSampleInterval = 1
-  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval, NormalSampleInterval)
-end
-
--- Sending a message when a sensor value has changed by less than set threshold
-function test_Sensors_whenSensorValueChangedByLessThanThreshold_SensorChangeMessageNotSent()
-  ReportingInterval = 1
-  RandomSensorRun(generic_test_changeSensorValueByLessThanAmount, ReportingInterval)
-end
 
 -------------------------
 
@@ -498,21 +569,6 @@ function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sen
 
 end
 
-function test_Sensors_WhenSensorValueGoesAboveMaxThresholdAndThenGoesBackBelowMaxThreshold_MaxStartAndMaxEndMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveThreshold)
-end
-
-function test_Sensors_WhenSensorValueGoesBelowMinThresholdAndThenGoesBackAboveMinThreshold_MinStartAndMinEndMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowThreshold)
-end
-
-function test_Sensors_WhenSensorValueBelowMinThresholdAndThenAboveMaxThreshold_MinStartMessageMinEndMessageAndMaxStartMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold)
-end
-
-function test_Sensors_WhenSensorValueAboveMaxThresholdAndThenBelowMinThreshold_MaxStartMessageMaxEndMessageAndMinStartMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold)
-end
 
 -- Check if correnct Messages are sent if sensor value goes above max threshold and then jumps below min threshold
 function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval(sensorNo)
@@ -564,12 +620,6 @@ function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestamps
   assert_nil(receivedMessages[sensor.mins.MaxEnd], 'Sensor send Max End message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
   assert_nil(receivedMessages[sensor.mins.MaxStart], 'Sensor send Max Start message. Sensor property value is: ' .. sensorTester:getNormalizedValue() .. ' thresholds are: MIN ' .. sensor.pinValues.MinThld .. ' MAX ' .. sensor.pinValues.MaxThld )
 
-end
-
--- test verifies whether SensorXNormalSampleInterval property works properly
--- Messages timestamps are checked when terminal is in Normal mode
-function test_Sensors_WhenTerminalNotInLPMAndSamplingIntervalSetToValueAboveZero_MaxStartAndMaxEndMessagesAreSentAccordingToSamplingInterval()
-  RandomSensorRun(generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval)
 end
 
 function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval(sensorNo)
@@ -651,13 +701,6 @@ function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPM
 
   assert_equal(SecondSampleTimestamp - FirstSampleTimestamp, sensor.pinValues.LpmSampleInterval, 1, 'Message Timestamps do not match LPM sampling interval')
 
-
-end
-
--- test verifies whether SensorXLpmSampleInterval property works properly
--- Messages timestamps are checked when terminal is in LPM mode
-function test_Sensors_WhenTerminalInLPM_MaxStartAndMaxEndMessagesAreSentAfterLPMSampleInterval()
-  RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
 end
 
 function generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval(sensorNo)
@@ -703,46 +746,5 @@ function generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportIn
   assert_not_nil(msg2, 'MaxStart message not received')
   assert_nil(receivedMessages[sensor.mins.MaxEnd], 'MaxEnd message unexpectedly received')
   assert_equal(SecondSampleTime - FirstSampleTime, sensor.pinValues.MaxReportInterval, 1, 'Report intervals are incorrect')
-
-end
-
--- test verifies if MaxReportInterval sensor property works properly
--- Two messages timestamps are checked
-function test_Sensors_WhenMaxReportIntervalSetAboveZero_SensorMaxStartAndSensorMaxEndMessagesSentAccordingMaxRerportInterval()
-  RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
-end
-
--- test verifies whether Messages are sent from all Sensors at the same time
-function test_Sensors_ForAll4SenorsActive_SensorMaxStartMessagesSentFromAll4Sensors()
-  sensors = {Sensor(1), Sensor(2), Sensor(3), Sensor(4)}
-
-  for i=1, #sensors do
-    local sensor = sensors[i]
-    sensor.pinValues.Source.SIN = sensorTester:getSin()
-    sensor.pinValues.Source.PIN = sensorTester:getPin()
-    sensor.pinValues.MinThld = sensorTester:getNormalized(sensorTester.min)
-    sensor.pinValues.MaxThld = sensorTester:getNormalized(sensorTester.max)
-    sensor.pinValues.ChangeThld = 0
-    sensor.pinValues.MaxReportInterval = 0
-    sensor.pinValues.NormalSampleInterval = 1
-    sensor.pinValues.LpmSampleInterval = 0
-    sensor:applyPinValues()
-  end
-
-  sensorTester:setValueToMax(sensorTester.step)
-
-  local messagesToGet = {}
-  for i=1,#sensors do
-    messagesToGet[#messagesToGet +1] = sensors[i].mins.MaxStart
-  end
-
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(messagesToGet, GATEWAY_TIMEOUT)
-
-  for i=1, #sensors do
-    local sensor = sensors[i]
-    msg = receivedMessages[sensor.mins.MaxStart]
-    assert_not_nil(msg, 'MaxStart message not received from sensor ' .. i)
-    assert_equal(sensorTester:getNormalizedValue(), tonumber(msg[sensor.name]), NEAR_ZERO, 'MaxStart message Sensor value not correct')
-  end
 
 end
