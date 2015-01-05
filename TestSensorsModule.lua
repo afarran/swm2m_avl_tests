@@ -412,7 +412,7 @@ end
 -- Test for: Periodically sending a message
 -- Testing if report timeout is set properly
 -- Testing if report has proper value
-function test_SensorsPeriodicalReports_whenReportTimeoutIsSetProperly_ReceiveMessageContainsProperSensorValues()
+function test_Sensors_PeriodicalReportswhenReportTimeoutIsSetProperly_ReceiveMessageContainsProperSensorValues()
   RandomSensorRun(generic_test_PeriodicallySendingMessageContainingSensorValues)
 end
 
@@ -452,7 +452,7 @@ end
 
 
 -- Sending a message when a sensor value has changed by more than set amount
-function test_SensorsChange_whenSensorValueChangedByMoreThanAmount_messageIsSent()
+function test_Sensors_whenSensorValueChangedByMoreThanThreshold_ChangeMessageIsSent()
   local ReportingInterval = 1
   RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
 end
@@ -511,14 +511,14 @@ function generic_test_changeSensorValueByLessThanAmount(sensorNo, ReportingInter
 end
 
 -- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
-function test_SensorsChange_whenSensorValueChangedByMoreThanAmountAndReportIntervalZero_messageIsSent()
+function test_Sensors_whenSensorValueChangedByMoreThanThresholdAndReportIntervalZero_ChangeMessageIsSent()
   local ReportingInterval = 0
   local NormalSampleInterval = 1
   RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval, NormalSampleInterval)
 end
 
--- Sending a message when a sensor value has changed by less than set amount
-function test_SensorsChange_whenSensorValueChangedByLessThanAmount_noMessageReceived()
+-- Sending a message when a sensor value has changed by less than set threshold
+function test_Sensors_whenSensorValueChangedByLessThanThreshold_NoChangeMessageReceived()
   ReportingInterval = 1
   RandomSensorRun(generic_test_changeSensorValueByLessThanAmount, ReportingInterval)
 end
@@ -846,7 +846,7 @@ end
 
 -- test verifies whether SensorXLpmSampleInterval property works properly
 -- Messages timestamps are checked when terminal is in LPM mode
-function test_SensorsLPMSampling_whenSamplingIntervalAndLPM_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval()
+function test_Sensors_LPMSampleInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSampleInterval()
   RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
 end
 
@@ -898,12 +898,12 @@ end
 
 -- test verifies if MaxReportInterval sensor property works properly
 -- Two messages timestamps are checked 
-function test_SensorsReports_whenMaxReportInterval_MessageReceivedAfterMaxRerportInterval()
+function test_Sensors_MaxReportInterval_MessagesTimestampsDifferByMaxRerportInterval()
   RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
 end
 
 -- test verifies whether Messages are sent from all Sensors at the same time
-function test_SensorsAll_whenAllSensorsAtTime_ReceiveMessagesFromAllSensors()
+function test_Sensors_AllSensorsAtTime_ReceiveMessagesFromAllSensors()
   sensors = {Sensor(1), Sensor(2), Sensor(3), Sensor(4)}
 
   for i=1, #sensors do
