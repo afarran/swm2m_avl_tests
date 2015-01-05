@@ -2296,6 +2296,7 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   -- *** Setup
   local EXT_VOLTAGE = 17000     -- milivolts
   local BATT_VOLTAGE = 23000    -- milivolts
+  local TEMPERATURE = 23        -- degrees Celsius
 
   -- gps settings table to be sent to simulator
   local gpsSettings={
@@ -2313,15 +2314,20 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   profile:setupBatteryVoltage(device,EXT_VOLTAGE,BATT_VOLTAGE)
 
   -- *** Execute
-  gateway.setHighWaterMark() -- to get the newest messages
+  gateway.setHighWaterMark()    -- to get the newest messages
+
+  device.setIO(31, EXT_VOLTAGE) -- setting external power voltage (in eio service)
+  device.setIO(30, TEMPERATURE) -- setting temperature (in eio service)
 
   -- getting AvlStates and DigPorts properties for analysis
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   -- getting digPortsProperty and DigPorts properties for analysis
   local digStatesDefBitmapProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.digStatesDefBitmap)
+
+--[[
   -- getting current temperature value
   local temperature = lsf.getProperties(lsfConstants.sins.io,lsfConstants.pins.temperatureValue)
-
+--]]
   -- sending getDiagnostics message
   local getDiagnosticsMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.getDiagnostics}    -- to trigger DiagnosticsInfo message
 	gateway.submitForwardMessage(getDiagnosticsMessage)
@@ -2341,16 +2347,14 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   assert_equal("Disabled", receivedMessages[avlConstants.mins.diagnosticsInfo].BattChargerState, "DiagnosticsInfo message has incorrect BattChargerState value")
   assert_equal(tonumber(avlStatesProperty[1].value), tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].AvlStates), "DiagnosticsInfo message has incorrect AvlStates value")
   assert_equal(tonumber(digStatesDefBitmapProperty[1].value), tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].DigStatesDefMap), "DiagnosticsInfo message has incorrect DigStatesDefMap value")
-  assert_equal(tonumber(temperature[1].value), tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].Temperature), "DiagnosticsInfo message has incorrect Temperature value")
+  assert_equal(TEMPERATURE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].Temperature), "DiagnosticsInfo message has incorrect Temperature value")
   assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].SatCnr), "DiagnosticsInfo message has incorrect SatCnr value")
   assert_equal(99, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].CellRssi), "DiagnosticsInfo message has incorrect CellRssi value")
+  assert_equal(EXT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].ExtVoltage), "DiagnosticsInfo has incorrect ExtVoltage value")
 
   -- device profile application
   if profile:isBatteryVoltageSetup() then
     assert_equal(BATT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
-    assert_equal(EXT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].ExtVoltage), "DiagnosticsInfo has incorrect ExtVoltage value")
-  else
-    assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
   end
 
 end
