@@ -35,7 +35,6 @@ local function setup()
   lunatest.suite("TestSensorsModule")
   lunatest.suite("TestAdminConfigModule")
   lunatest.suite("TestDriverIdentModule")
-
 end
 
 local function teardown()
@@ -49,11 +48,10 @@ end
 -- [-v]                     Verbose option
 -- [-t] [<string pattern>]  Execute test cases that match string pattern
 -- [-s] [<string pattern>]  Execute test suites that match string pattern
-print("\nCLI Arguments:")
-for idx, val in ipairs(arg) do
-  print(idx, val) 
-end
-print("")
+for idx, val in ipairs(arg) do print(idx, val) end
+
 setup()
+
 lunatest.run(nil, arg)
+
 teardown()
