@@ -73,7 +73,7 @@ Profile800 = {}
     device.setPower(3, batt_voltage) -- setting battery voltage
     device.setPower(9, ext_voltage)  -- setting external power voltage
     -- setting external power source
-    device.setPower(8,0)                    -- external power present (terminal plugged to external power source)
+    device.setPower(8,0)                    -- external power not present (terminal unplugged from external power source)
     framework.delay(2)
     self.isBVSetup = true
   end
