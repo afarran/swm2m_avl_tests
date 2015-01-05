@@ -11,24 +11,6 @@ require "Sensors/SensorTester"
 -- initialize sensor tester, (current_value, MIN, MAX, STEP)
 local sensorTester = SensorTesterGps(-0.05, -0.07, -0.03, 0.01)
 local NEAR_ZERO = 0.0001
--- Run for all Sensors or only one random per each test
-local RUN_ALL = FORCE_ALL_TESTCASES
-
--- simple wraper which runs test case for random Sensor
-local function tcRandomizer:runTestRandomParam(1, 4, func, ...)
-  if RUN_ALL then
-    for i=1,4 do
-      func(i, ...)
-      if (i < 4) then
-        teardown()
-        setup()
-      end
-    end
-    teardown()
-  else
-    return func(math.random(1,4), ...)
-  end
-end
 
 -------------------------------------------------------------------------------------
 
