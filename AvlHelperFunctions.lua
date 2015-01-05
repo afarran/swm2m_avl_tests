@@ -585,4 +585,11 @@ function avlHelperFunctions.matchParameters(expectedProps, timeout)
   return nil
 end
 
+function avlHelperFunctions.niceTimeDifference(seconds)
+  return seconds
+end
+
+
+
+
 return function() return avlHelperFunctions end
