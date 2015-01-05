@@ -689,20 +689,19 @@ function generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold(sen
 
 end
 
---666
-function test_SensorsChange_whenValueAboveAndBelowMaxThreshold_MaxStartMaxEndReceived()
+function test_Sensors_whenValueAboveAndBelowMaxThreshold_MaxStartMaxEndReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveThreshold)
 end
 
-function test_SensorsChange_whenValueBelowAndAboveMinThreshold_MinStartMinEndReceived()
+function test_Sensors_whenValueBelowAndAboveMinThreshold_MinStartMinEndReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowThreshold)
 end
 
-function test_SensorsChange_whenValueBelowMinThenAboveMaxThreshold_MinStartMinEndMaxStartReceived()
+function test_Sensors_whenValueBelowMinThenAboveMaxThreshold_MinStartMinEndMaxStartReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold)
 end
 
-function test_SensorsChange_whenValueAboveMaxThenBelowMinThreshold_MaxStartMaxEndMinStartReceived()
+function test_Sensors_whenValueAboveMaxThenBelowMinThreshold_MaxStartMaxEndMinStartReceived()
   RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold)
 end
 
@@ -758,7 +757,8 @@ function generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestamps
 
 end
 
-function test_SensorsSampling_whenNormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval()
+-- test verifies whether SensorXNormalSampleInterval property works properly
+-- Messages timestamps are checked when terminal is in Normal mode
   RandomSensorRun(generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval)
 end
 
@@ -844,6 +844,8 @@ function generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPM
 
 end
 
+-- test verifies whether SensorXLpmSampleInterval property works properly
+-- Messages timestamps are checked when terminal is in LPM mode
 function test_SensorsLPMSampling_whenSamplingIntervalAndLPM_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval()
   RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
 end
@@ -894,10 +896,13 @@ function generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportIn
 
 end
 
+-- test verifies if MaxReportInterval sensor property works properly
+-- Two messages timestamps are checked 
 function test_SensorsReports_whenMaxReportInterval_MessageReceivedAfterMaxRerportInterval()
   RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
 end
 
+-- test verifies whether Messages are sent from all Sensors at the same time
 function test_SensorsAll_whenAllSensorsAtTime_ReceiveMessagesFromAllSensors()
   sensors = {Sensor(1), Sensor(2), Sensor(3), Sensor(4)}
 
