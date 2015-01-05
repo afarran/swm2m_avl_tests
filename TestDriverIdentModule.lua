@@ -72,7 +72,7 @@ end
   -- 2. GetDriverIds message is correctly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Only one ID exists in a driver ids collection and driverId value is correct.
-function test_SetDriverId_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriverIdCorrectlyDefined()
+function test_DriverIdsSet_WhenSetDriverIdMessageIsSentWithOneDriverId_SingleDriverIdCorrectlyDefined()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -125,7 +125,7 @@ end
   -- 3. GetDriverIds message is correctlly send.
   -- 4. DefindedDriverIds message is received.
   -- 5. No ID exists in a driver ids collection.
-function test_DeleteAllDriverIds_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSetToTrueAndNoOtherFields_AllExistingDriverIdsAreDeleted()
+function test_DriverIdsDelete_WhenSetDriverIdMessageIsSentWithDeleteAllFlagSetToTrueAndNoOtherFields_AllExistingDriverIdsAreDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -175,7 +175,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Only specific IDs deleted.
-function test_DeleteSpecificDriverIds_WhenSetDriverIdsMessageIsSentWithTwoSpecificDriverIdsToDelete_SpecificDriverIdsAreDeleted()
+function test_DriverIdsDelete_WhenSetDriverIdsMessageIsSentWithTwoSpecificDriverIdsToDelete_SpecificDriverIdsAreDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -231,7 +231,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Only one ID is set from each two duplicated. 
-function test_SetDriverId_WhenSetDriverIdMessageIsSentWithDuplicatedIndexes_DriverIdsAreCorectlySet()
+function test_DriverIdsSet_WhenSetDriverIdMessageIsSentWithDuplicatedIndexes_DriverIdsAreCorectlySet()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -278,7 +278,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. There is the same number of driver IDs as before deleting. 
-function test_DeleteNonExistentDriverId_WhenSetDriverIdsMessageIsSentWithOneNonExistentDriverIdToDelete_ExistingDriverIdsAreNotDeleted()
+function test_DriverIdsDelete_WhenSetDriverIdsMessageIsSentWithOneNonExistentDriverIdToDelete_ExistingDriverIdsAreNotDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -326,7 +326,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. There is the same number of driver IDs as before deleting. 
-function test_DeleteDriverIds_WhenSetDriverIdsMessageContainsOptionalEmptyDeleteIdsField_ExistingDriverIdsAreNotDeleted()
+function test_DriverIdsDelete_WhenSetDriverIdsMessageContainsOptionalEmptyDeleteIdsField_ExistingDriverIdsAreNotDeleted()
   local SET_DRIVER_IDS_MIN = avlConstants.mins.SetDriverIds
   local GET_DRIVER_IDS_MIN = avlConstants.mins.GetDriverIds
   local DEFINED_DRIVER_IDS_MIN = avlConstants.mins.DefindedDriverIds
@@ -374,7 +374,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Existing driver ID is modified
-function test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithExistingIndexIsSend_ExistingDriverIdIsModified()
+function test_DriverIdsSet_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithExistingIndexIsSend_ExistingDriverIdIsModified()
   generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 0, 4)
 end
 
@@ -396,7 +396,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. New driver ID is defined
-function test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithNewIndexIsSend_NewDriverIdIsDefined()
+function test_DriverIdsSet_WhenSomeDriverIdsAreAlreadyDefinedAndMessageWithNewIndexIsSend_NewDriverIdIsDefined()
   generic_test_setDriverIds_WhenSomeDriverIdsAreAlreadyDefined(4, 1, 5)
 end
 
@@ -454,7 +454,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Driver IDs are correctly defined
-function test_DriverIds_setDriverIdsMessageSentWithNumberOfDriverIdsEqualToLimit_DriverIdsCorrectlyDefined()
+function test_DriverIdsSet_setDriverIdsMessageSentWithNumberOfDriverIdsEqualToLimit_DriverIdsCorrectlyDefined()
   generic_test_BatchSendingAndReceivingDriverId(DEVICE_IDS_LIMIT)
 end
 
@@ -474,7 +474,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Driver IDs are correctly defined
-function test_DriverIds_setDriverIdsMessageSentWithNumberOfDriverIdsBelowLimit_DriverIdsCorrectlyDefined()
+function test_DriverIdsSet_setDriverIdsMessageSentWithNumberOfDriverIdsBelowLimit_DriverIdsCorrectlyDefined()
   generic_test_BatchSendingAndReceivingDriverId(DEVICE_IDS_LIMIT-1)
 end
 
@@ -494,7 +494,7 @@ end
   -- 2. GetDriverIds message is correctlly send.
   -- 3. DefindedDriverIds message is received.
   -- 4. Driver IDs are correctly defined.
-function test_DriverIds_setDriverIdsMessageSentWithNumberOfDriverIdsAboveToLimit_DriverIdsCorrectlyDefinedAndDeviceLimitIsRespected()
+function test_DriverIdsSet_setDriverIdsMessageSentWithNumberOfDriverIdsAboveToLimit_DriverIdsCorrectlyDefinedAndDeviceLimitIsRespected()
   generic_test_BatchSendingAndReceivingDriverId(DEVICE_IDS_LIMIT+1)
 end
 
