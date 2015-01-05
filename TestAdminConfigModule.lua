@@ -520,7 +520,7 @@ function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_Previ
                                                 {avlConstants.pins.ParamSaveInterval,PROPS_SAVE_TIMEOUT}
                                               }
                     )
-  framework.delay(PROPS_SAVE_TIMEOUT*60)
+  framework.delay( PROPS_SAVE_TIMEOUT *60 + 5)
   
   -- restarting AVL agent after 
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}

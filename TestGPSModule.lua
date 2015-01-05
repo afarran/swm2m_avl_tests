@@ -2378,7 +2378,7 @@ end
   -- 3. GpsJammingStart message sent by terminal
   -- 4. Message contains simulated jamming level information
   -- 5. Terminal enters GPSJammed state
-function test_GpsJamming__WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceTimePeriod_GpsJammingStartMessageSent()
+function test_GpsJamming_WhenGpsJammingDetectedForTimeLongerThanGpsJamDebounceTimePeriod_GpsJammingStartMessageSent()
 
   -- *** Setup
   local GPS_JAMMING_DEBOUNCE_TIME = 5    -- seconds
@@ -2460,7 +2460,7 @@ end
   -- 2. Gps jamming simulated for time shorter than gpsJamDebounceTime
   -- 3. GpsJammingStart message not sent by terminal
   -- 4. Terminal does not enter GPSJammed state
-function test_GpsJamming__WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounceTimePeriod_GpsJammingStartMessageNotSent()
+function test_GpsJamming_WhenGpsJammingDetectedForTimeShorterThanGpsJamDebounceTimePeriod_GpsJammingStartMessageNotSent()
 
   -- *** Setup
   local GPS_JAMMING_DEBOUNCE_TIME = 100  -- seconds
@@ -2527,7 +2527,7 @@ end
   -- 5. GpsJammingEnd (MIN 26) message sent by terminal
   -- 6. Message contains simulated jamming level information
   -- 7. Terminal enters GPSJammed false state
-function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedForTimeLongerThanGpsJamDebounceTimePeriod_GpsJammingEndMessageSent()
+function test_GpsJamming_ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedForTimeLongerThanGpsJamDebounceTimePeriod_GpsJammingEndMessageSent()
 
   -- *** Setup
   local GPS_JAMMING_DEBOUNCE_TIME = 5    -- seconds
@@ -2606,7 +2606,7 @@ end
   -- 4. Gps signal not jammed for time shorter than gpsJamDebounceTime
   -- 5. GpsJammingEnd (MIN 26) message not sent by terminal
   -- 7. Terminal does not leave GPSJammed  state
-function test_GpsJamming__ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedForTimeShorterThanGpsJamDebounceTimePeriod_GpsJammingEndMessageNotSent()
+function test_GpsJamming_ForTerminalInGPSJammedStateWhenGpsJammingNotDetectedForTimeShorterThanGpsJamDebounceTimePeriod_GpsJammingEndMessageNotSent()
 
   -- *** Setup
   local GPS_JAMMING_DEBOUNCE_TIME = 20    -- seconds
