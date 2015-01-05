@@ -431,20 +431,15 @@ function generic_test_PeriodicallySendingMessageContainingSensorValues(sensorNo)
   -- waiting for periodical report 1
   local expectedMins = {sensor.mins.SensorInterval}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, sensor.pinValues.SensorReportingInterval*60 + 10)
-
+  local firstMessage = receivedMessages[sensor.mins.SensorInterval]
   -- set monitored value in position service to expected value
   sensorTester:stepUp()
-
-  local startTime = os.time()
-
-  --TODO: add checking messages timestamps instead of checking os time
-
+  
   -- waiting for periodical report no 2
   receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins,sensor.pinValues.SensorReportingInterval*60 + 10)
-
-  -- checking if time difference between two reports is ok
-  local timeDiff = os.time() - startTime
-  assert_equal(timeDiff , sensor.pinValues.SensorReportingInterval*60, 5, "Sensor Reporting Interval test failed - wrong time difference between two periodic messages")
+  local secondMessage = receivedMessages[sensor.mins.SensorInterval]
+  
+  assert_equal(secondMessage.EventTime - firstMessage.EventTime , sensor.pinValues.SensorReportingInterval*60, 1, "Sensor Reporting Interval test failed - wrong time difference between two periodic messages")
 
   -- checking if reported value is monitored properly
   assert_equal(sensorTester:getNormalizedValue() , tonumber(receivedMessages[sensor.mins.SensorInterval][sensor.name]), 0, "Sensor Reporting Interval test failed - wrong expected value of sensor")
