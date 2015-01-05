@@ -15,7 +15,7 @@ local NEAR_ZERO = 0.0001
 local RUN_ALL = FORCE_ALL_TESTCASES
 
 -- simple wraper which runs test case for random Sensor
-local function RandomSensorRun(func, ...)
+local function tcRandomizer:runTestRandomParam(1, 4, func, ...)
   if RUN_ALL then
     for i=1,4 do
       func(i, ...)
@@ -226,64 +226,64 @@ end
 -- Testing if report timeout is set properly
 -- Testing if report has proper value
 function test_Sensors_ForPeriodicalReportsWhenSensorReportingIntervalIsSetProperly_SensorIntervalMessagesAreSentPeriodicallyAndContainCorrectSensorValues()
-  RandomSensorRun(generic_test_PeriodicallySendingMessageContainingSensorValues)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_PeriodicallySendingMessageContainingSensorValues)
 end
 
 -- Sending a message when a sensor value has changed by more than set threshold
 function test_Sensors_whenSensorValueChangedByMoreThanThresholdForReportingIntervalAboveZero_SensorChangeMessageIsSent()
   local ReportingInterval = 1
-  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_changeSensorValueByAmount, setup, teardown, ReportingInterval)
 end
 
 -- Sending a message when a sensor 1 value has changed by more than set amount (when report interval zero)
 function test_Sensors_whenSensorValueChangedByMoreThanThresholdAndReportIntervalZero_SensorChangeMessageIsSent()
   local ReportingInterval = 0
   local NormalSampleInterval = 1
-  RandomSensorRun(generic_test_changeSensorValueByAmount, ReportingInterval, NormalSampleInterval)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_changeSensorValueByAmount, setup, teardown, ReportingInterval, NormalSampleInterval)
 end
 
 -- Sending a message when a sensor value has changed by less than set threshold
 function test_Sensors_whenSensorValueChangedByLessThanThreshold_SensorChangeMessageNotSent()
   ReportingInterval = 1
-  RandomSensorRun(generic_test_changeSensorValueByLessThanAmount, ReportingInterval)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_changeSensorValueByLessThanAmount, setup, teardown, ReportingInterval)
 end
 
 function test_Sensors_WhenSensorValueGoesAboveMaxThresholdAndThenGoesBackBelowMaxThreshold_MaxStartAndMaxEndMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveThreshold)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_SendMessageWhenValueAboveThreshold, setup, teardown)
 end
 
 function test_Sensors_WhenSensorValueGoesBelowMinThresholdAndThenGoesBackAboveMinThreshold_MinStartAndMinEndMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowThreshold)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_SendMessageWhenValueBelowThreshold, setup, teardown)
 end
 
 function test_Sensors_WhenSensorValueBelowMinThresholdAndThenAboveMaxThreshold_MinStartMessageMinEndMessageAndMaxStartMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_SendMessageWhenValueBelowAndJumpAboveThreshold, setup, teardown)
 end
 
 function test_Sensors_WhenSensorValueAboveMaxThresholdAndThenBelowMinThreshold_MaxStartMessageMaxEndMessageAndMinStartMessageSent()
-  RandomSensorRun(generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_SendMessageWhenValueAboveAndJumpBelowThreshold, setup, teardown)
 end
 
 -- test verifies whether SensorXNormalSampleInterval property works properly
 -- Messages timestamps are checked when terminal is in Normal mode
 function test_Sensors_WhenTerminalNotInLPMAndSamplingIntervalSetToValueAboveZero_MaxStartAndMaxEndMessagesAreSentAccordingToSamplingInterval()
-  RandomSensorRun(generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_NormalSamplingInterval_MaxStartMaxEndMsgTimestampsDifferBySamplingInterval, setup, teardown)
 end
 
 function test_Sensors_WhenTerminalNotInLPMAndSamplingIntervalSetToZero_MaxStartMessageNotSent()
-  RandomSensorRun(generic_test_Sensors_NormalSamplingIntervalSetToZero_MaxStartMessageNotSent)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_NormalSamplingIntervalSetToZero_MaxStartMessageNotSent, setup, teardown)
 end
 
 -- test verifies whether SensorXLpmSampleInterval property works properly
 -- Messages timestamps are checked when terminal is in LPM mode
 function test_Sensors_WhenTerminalInLPM_MaxStartAndMaxEndMessagesAreSentAfterLPMSampleInterval()
-  RandomSensorRun(generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_LPMSamplingInterval_MaxStartMaxEndMsgTimestampsDifferByLPMSamplingInterval, setup, teardown)
 end
 
 -- test verifies if MaxReportInterval sensor property works properly
 -- Two messages timestamps are checked
 function test_Sensors_WhenMaxReportIntervalSetAboveZero_SensorMaxStartAndSensorMaxEndMessagesSentAccordingMaxRerportInterval()
-  RandomSensorRun(generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval)
+  tcRandomizer:runTestRandomParam(1, 4, generic_test_Sensors_MaxReportInterval_MessageReceivedAfterMaxRerportInterval, setup, teardown)
 end
 
 -- test verifies whether Messages are sent from all Sensors at the same time
