@@ -750,6 +750,7 @@ local function run_suite(hooks, opts, results, sname, tests)
       end
       
       if run_suite and count(tests) > 0 then
+         local suite_start_time = os.time()
          local setup, teardown = tests.setup, tests.teardown
          tests.setup, tests.teardown = nil, nil
 
@@ -769,6 +770,8 @@ local function run_suite(hooks, opts, results, sname, tests)
          if steardown then pcall(steardown) end
          if hooks.end_suite then hooks.end_suite(res) end
          combine_results(results, res)
+         local suite_end_time = os.time()
+         print("-- Suite finished in time : " .. (suite_end_time - suite_start_time).." seconds. \n")
       end
    end
 end
