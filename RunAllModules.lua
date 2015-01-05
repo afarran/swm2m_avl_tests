@@ -48,10 +48,11 @@ end
 -- [-v]                     Verbose option
 -- [-t] [<string pattern>]  Execute test cases that match string pattern
 -- [-s] [<string pattern>]  Execute test suites that match string pattern
-for idx, val in ipairs(arg) do print(idx, val) end
-
+print("\nCLI Arguments:")
+for idx, val in ipairs(arg) do
+  print(idx, val) 
+end
+print("")
 setup()
-
 lunatest.run(nil, arg)
-
 teardown()
