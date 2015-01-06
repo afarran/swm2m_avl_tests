@@ -13,28 +13,28 @@ Profile680 = {}
     return self
     end,
   })
-  
+
   function Profile680:getRandomPortNumber()
     return math.random(1,4)
   end
-  
+
   function Profile680:hasFourIOs()
     return true
   end
-  
+
   function Profile680:hasThreeIOs()
     return false
   end
-  
+
   function Profile680:hasLine13()
     return false
   end
-  
+
   function Profile680:setupIO(lsf, device, lsfConstants)
     for counter = 1, 4, 1 do
        device.setIO(counter, 0) -- setting all 4 ports to low state
     end
-  
+
     if lsfConstants ~= nil then
       -- setting the IO properties - disabling all 4 I/O ports
       lsf.setProperties(lsfConstants.sins.io,{
@@ -46,25 +46,31 @@ Profile680 = {}
       )
     end
   end
-  
-  function Profile680:hasDualPowerSource() 
+
+  function Profile680:hasDualPowerSource()
     return false
   end
-  
-  function Profile680:isSeries600() 
+
+  function Profile680:isSeries600()
     return true
   end
-  
-  function Profile680:isSeries700() 
+
+  function Profile680:isSeries700()
     return false
   end
-  
-  function Profile680:isSeries800() 
+
+  function Profile680:isSeries800()
     return false
   end
-  
-  function Profile680:setupIOInLPM(device) 
+
+  function Profile680:setupIOInLPM(device)
     for counter = 1, 4, 1 do
       device.setIO(counter, 0)
     end
+  end
+
+  function Profile680:setupBatteryVoltage(device,ext_voltage,batt_voltage)
+    device.setPower(9, ext_voltage)  -- setting external power voltage
+    device.setIO(31, ext_voltage)    -- setting external power voltage (in eio service)
+    self.isBVSetup = false
   end

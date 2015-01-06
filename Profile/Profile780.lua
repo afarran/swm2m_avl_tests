@@ -23,23 +23,23 @@ Profile780 = {}
     return self
     end,
   })
-  
+
   function Profile780:getRandomPortNumber()
     return math.random(1,4)
   end
-  
+
   function Profile780:hasFourIOs()
     return true
   end
-  
+
   function Profile780:hasThreeIOs()
     return false
   end
-  
+
   function Profile780:hasLine13()
     return false
   end
-  
+
   function Profile780:setupIO(lsf, device, lsfConstants)
     -- 4 general purpose input ports configurable as digital
     for counter = 1, 4, 1 do
@@ -51,7 +51,7 @@ Profile780 = {}
     end
     -- 1 digital input port, active high for ignition detection
     device.setIO(17, 0)
-    
+
     if lsfConstants ~= nil then
       -- setting the IO properties - disabling all 4 I/O ports
       lsf.setProperties(lsfConstants.sins.io,{
@@ -71,23 +71,34 @@ Profile780 = {}
       )
     end
   end
-  
-  function Profile780:hasDualPowerSource() 
+
+  function Profile780:hasDualPowerSource()
     return false
   end
-  
-  function Profile780:isSeries600() 
+
+  function Profile780:isSeries600()
     return false
   end
-  
-  function Profile780:isSeries700() 
+
+  function Profile780:isSeries700()
     return true
   end
-  
-  function Profile780:isSeries800() 
+
+  function Profile780:isSeries800()
     return false
   end
-  
-  function Profile780:setupIOInLPM(device) 
-    
+
+  function Profile780:setupBatteryVoltage(device,ext_voltage,batt_voltage)
+    device.setPower(3, batt_voltage) -- setting battery voltage
+    device.setPower(9, ext_voltage)  -- setting external power voltage
+    device.setIO(31, ext_voltage)    -- setting external power voltage (in eio service)
+
+    -- setting external power source
+    device.setPower(8,0)                    -- external power not present (terminal unplugged from external power source)
+    framework.delay(2)
+    self.isBVSetup = true
+  end
+
+  function Profile780:setupIOInLPM(device)
+
   end

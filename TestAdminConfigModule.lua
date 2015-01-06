@@ -29,14 +29,14 @@ function suite_setup()
   local expectedMins = {avlConstants.mins.reset}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
-  
+
   --restore interval
   lsf.setProperties(lsfConstants.sins.position,{
-                                                {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}    
+                                                {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
                                                }
                     )
   framework.delay(2)
-  
+
 
 end
 
@@ -496,16 +496,16 @@ function generic_SetProperties_WhenSetPropertiesMessageSent_PropertiesCorrectlyS
 end
 
 function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_PreviousLatLngShouldBeTheSameAsBeforeRestart()
-  
-  local PROPS_SAVE_TIMEOUT = 1
-  
+
+  local PROPS_SAVE_INTERVAL = 1
+
   --continous gps fix
   lsf.setProperties(lsfConstants.sins.position,{
                                                 {lsfConstants.pins.gpsReadInterval,1}
                                                }
                     )
   framework.delay(2)
-  
+
   --set gps values
   gpsSettings={
                   latitude = 3,                        -- degrees
@@ -513,16 +513,16 @@ function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_Previ
                  }
   gps.set(gpsSettings)
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
-  
-  
+
+
   --params save interval
   lsf.setProperties(avlConstants.avlAgentSIN, {
-                                                {avlConstants.pins.ParamSaveInterval,PROPS_SAVE_TIMEOUT}
+                                                {avlConstants.pins.ParamSaveInterval,PROPS_SAVE_INTERVAL}
                                               }
                     )
-  framework.delay( PROPS_SAVE_TIMEOUT *60 + 5)
-  
-  -- restarting AVL agent after 
+  framework.delay(PROPS_SAVE_INTERVAL*60*2 + 5)
+
+  -- restarting AVL agent after
 	local message = {SIN = lsfConstants.sins.system,  MIN = lsfConstants.mins.restartService}
   message.Fields = {{Name="sin",Value=avlConstants.avlAgentSIN}}
   gateway.submitForwardMessage(message)
@@ -533,5 +533,5 @@ function test_RestartAvl_whenRestartMessageIsSentAndResetMessageIsReceived_Previ
   assert_not_nil(receivedMessages[avlConstants.mins.reset], "Reset message after reset of AVL not received")
   assert_equal(gpsSettings.latitude*60000, tonumber(receivedMessages[avlConstants.mins.reset].PrevLatitude),0, "Wrong previous latitude" )
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.reset].PrevLongitude), 0 , "Wrong previous longitude" )
-  
+
 end

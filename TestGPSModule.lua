@@ -2309,14 +2309,12 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)   --- wait until settings are applied
 
   -- setting terminals power properties for verification
-
   -- device profile application
   profile:setupBatteryVoltage(device,EXT_VOLTAGE,BATT_VOLTAGE)
 
   -- *** Execute
   gateway.setHighWaterMark()    -- to get the newest messages
 
-  device.setIO(31, EXT_VOLTAGE) -- setting external power voltage (in eio service)
   device.setIO(30, TEMPERATURE) -- setting temperature (in eio service)
 
   -- getting AvlStates and DigPorts properties for analysis
@@ -2324,10 +2322,6 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   -- getting digPortsProperty and DigPorts properties for analysis
   local digStatesDefBitmapProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.digStatesDefBitmap)
 
---[[
-  -- getting current temperature value
-  local temperature = lsf.getProperties(lsfConstants.sins.io,lsfConstants.pins.temperatureValue)
---]]
   -- sending getDiagnostics message
   local getDiagnosticsMessage = {SIN = AVL_SIN, MIN = avlConstants.mins.getDiagnostics}    -- to trigger DiagnosticsInfo message
 	gateway.submitForwardMessage(getDiagnosticsMessage)
@@ -2355,6 +2349,8 @@ function test_DiagnosticsInfo_WhenTerminalInStationaryStateAndGetDiagnosticsInfo
   -- device profile application
   if profile:isBatteryVoltageSetup() then
     assert_equal(BATT_VOLTAGE, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
+  else
+    assert_equal(0, tonumber(receivedMessages[avlConstants.mins.diagnosticsInfo].BattVoltage), "DiagnosticsInfo has incorrect BattVoltage value")
   end
 
 end
