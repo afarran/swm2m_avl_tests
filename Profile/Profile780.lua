@@ -67,7 +67,7 @@ Profile780 = {}
                                               {lsfConstants.pins.portConfig[10], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[11], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[17], 0},      -- port disabled
-                                          }
+                                             }
       )
     end
   end

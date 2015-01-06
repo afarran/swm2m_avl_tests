@@ -44,7 +44,7 @@ module("TestDigitalInputsModule", package.seeall)
  function suite_setup()
 
   -- reset of properties of SIN 126 and 25
-  -- lsf.resetProperties() 
+  -- lsf.resetProperties()
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
 	gateway.submitForwardMessage(message)
@@ -136,8 +136,8 @@ end
   ----------------------------------------------------------------------
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
-                                                {lsfConstants.pins.portConfig[1], 3},     -- port as digital input
-                                                {lsfConstants.pins.portEdgeDetect[1], 3}  -- detection for both rising and falling edge
+                                                {lsfConstants.pins.portConfig[1], 3},          -- port as digital input
+                                                {lsfConstants.pins.portEdgeDetect[1], 3},       -- detection for both rising and falling edge
                                          }
                    )
 
@@ -156,7 +156,7 @@ end
   -- toggling port 1 (in case terminal is in IgnitionOn state and port is low)
   device.setIO(1, 1)
   framework.delay(2)
-  
+
   -- device profile application
   profile:setupIO(lsf, device, lsfConstants)
 
@@ -463,7 +463,7 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   avlHelperFunctions.setDigStatesDefBitmap({"IgnitionOn"})
 
   gps.set(gpsSettings)    -- applying gps settings
-  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME)
+  framework.delay(GPS_READ_INTERVAL + GPS_PROCESS_TIME + 3)
 
   device.setIO(randomPortNumber, 1) -- that should trigger IgnitionOn
 
@@ -478,8 +478,8 @@ function test_Ignition_WhenPortValueChangesToLow_IgnitionOffMessageSent()
   device.setIO(randomPortNumber, 0)  -- port transition to low state; that should trigger IgnitionOff
 
   -- IgnitionOff message expected
-  local expectedMins = {avlConstants.mins.ignitionOFF}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  expectedMins = {avlConstants.mins.ignitionOFF}
+  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
 
   assert_not_nil(receivedMessages[avlConstants.mins.ignitionOFF], "IgnitionOff message not received")
   assert_equal(gpsSettings.longitude*60000, tonumber(receivedMessages[avlConstants.mins.ignitionOFF].Longitude), "IgnitionOff message has incorrect longitude value")
@@ -1712,7 +1712,7 @@ function test_SeatbeltViolation_WhenTerminalMovingSeatbeltViolationStateTrueAndI
 end
 
 -- Test cases for every IO are quite the same, so we are randomizing only one
--- You can force firing every test by changing constant RANDOM_SM .. 
+-- You can force firing every test by changing constant RANDOM_SM ..
 function test_DigitalInput_WhenTerminalMovingAndPortRandomStateChangesFromLowToHigh_DigInpRandomHiMessageSent()
 
     local tests = {}

@@ -42,6 +42,10 @@ Profile680 = {}
                                               {lsfConstants.pins.portConfig[2], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[3], 0},      -- port disabled
                                               {lsfConstants.pins.portConfig[4], 0},      -- port disabled
+                                              {lsfConstants.pins.portEdgeSampleCount[1], 1},  -- edge detected after 1 ms
+                                              {lsfConstants.pins.portEdgeSampleCount[2], 1},  -- edge detected after 1 ms
+                                              {lsfConstants.pins.portEdgeSampleCount[3], 1},  -- edge detected after 1 ms
+                                              {lsfConstants.pins.portEdgeSampleCount[4], 1},  -- edge detected after 1 ms
                                           }
       )
     end
