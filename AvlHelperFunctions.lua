@@ -277,6 +277,13 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
   local STATIONARY_DEBOUNCE_TIME = 1      -- seconds
   local STATIONARY_SPEED_THLD = 5         -- kmh
 
+  -- setting properties of the service to put terminal into stationary state
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                               {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
+                                              }
+                    )
+
   gateway.setHighWaterMark()
 
   local gpsSettings={
@@ -289,13 +296,6 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
                        antennaCutDetect = false,
                      }
   gps.set(gpsSettings)
-
-  -- setting properties of the service to put terminal into stationary state
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                               {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
-                                               {avlConstants.pins.stationaryDebounceTime, STATIONARY_DEBOUNCE_TIME}
-                                              }
-                    )
 
   -- get avlStatesPropety to decide if waiting for MovingEnd message is necessary
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
@@ -314,10 +314,6 @@ function avlHelperFunctions.putTerminalIntoStationaryState(tries)
     end
   end
 
-
-
-
-
 end
 
 
@@ -333,6 +329,13 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
   local MOVING_DEBOUNCE_TIME = 1      -- seconds
   local STATIONARY_SPEED_THLD = 5     -- kmh
 
+  -- setting properties of the service
+  lsf.setProperties(avlConstants.avlAgentSIN,{
+                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
+                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
+                                             }
+                   )
+
   -- gps settings table
   local gpsSettings={
                       speed = STATIONARY_SPEED_THLD + 5,   -- kmh
@@ -344,12 +347,6 @@ function avlHelperFunctions.putTerminalIntoMovingState(tries)
                       simulateLinearMotion = false,
                      }
   gps.set(gpsSettings) -- applying settings of gps simulator
-  -- setting properties of the service
-  lsf.setProperties(avlConstants.avlAgentSIN,{
-                                              {avlConstants.pins.stationarySpeedThld, STATIONARY_SPEED_THLD},
-                                              {avlConstants.pins.movingDebounceTime, MOVING_DEBOUNCE_TIME}
-                                             }
-                   )
 
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN, avlConstants.pins.avlStates)
 
