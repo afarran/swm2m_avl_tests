@@ -771,7 +771,7 @@ local function run_suite(hooks, opts, results, sname, tests)
          if hooks.end_suite then hooks.end_suite(res) end
          combine_results(results, res)
          local suite_end_time = os.time()
-         print("-- Suite finished in time : " .. (suite_end_time - suite_start_time).." seconds. \n")
+         print("-- Suite finished in time : "..os.difftime(suite_end_time - suite_start_time).." seconds. \n")
       end
    end
 end
