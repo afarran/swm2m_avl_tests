@@ -1109,7 +1109,7 @@ function test_Speeding_WhenSpeedAboveThldForPeriodAboveThld_SpeedingStartMessage
   local avlStatesProperty = lsf.getProperties(AVL_SIN,avlConstants.pins.avlStates)
   assert_true(avlHelperFunctions.stateDetector(avlStatesProperty).Speeding, "Terminal incorrectly not in the speeding state")
 
-  assert_equal(6, tonumber(receivedMessages[avlConstants.mins.speedingStart].GpsFixAge), 4 , "SpeedingStart message has incorrect GpsFixAge value")
+  assert_equal(6, tonumber(receivedMessages[avlConstants.mins.speedingStart].GpsFixAge), 10 , "SpeedingStart message has incorrect GpsFixAge value")
 
 
 end
