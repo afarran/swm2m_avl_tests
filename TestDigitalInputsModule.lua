@@ -879,7 +879,7 @@ function test_EngineIdling_WhenTerminalStationaryEngineIdlingStateTrueAndIgnitio
   local expectedMins = {avlConstants.mins.idlingEnd}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
   assert_not_nil(receivedMessages[avlConstants.mins.idlingEnd], "IdlingEnd message not received")
-  assert_equal(7, tonumber(receivedMessages[avlConstants.mins.idlingEnd].GpsFixAge), 3, "IdlingEnd message has incorrect GpsFixAge value")
+  assert_equal(7, tonumber(receivedMessages[avlConstants.mins.idlingEnd].GpsFixAge), 10, "IdlingEnd message has incorrect GpsFixAge value")
 
 end
 
