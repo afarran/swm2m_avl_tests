@@ -113,6 +113,12 @@ function setup()
   gps.set({fixType = 3}) -- valid fix provided
   avlHelperFunctions.putTerminalIntoStationaryState()
 
+  -- long driving feature is disabled (to stop long driving timer)
+  lsf.setProperties(AVL_SIN,{
+                             {avlConstants.pins.maxDrivingTime, 0},
+                            }
+                     )
+
 
 end
 -----------------------------------------------------------------------------------------------
@@ -129,7 +135,6 @@ function teardown()
 
   -- disabling, Turn feature long driving reports and reading odometer and speed from external source
   lsf.setProperties(AVL_SIN,{
-                             {avlConstants.pins.maxDrivingTime, 0},
                              {avlConstants.pins.externalSpeedSource, framework.base64Encode(""), "data" },
                              {avlConstants.pins.externalOdometerSource, framework.base64Encode(""), "data"},
                              {avlConstants.pins.turnThreshold, 0},
