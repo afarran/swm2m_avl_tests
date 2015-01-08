@@ -1303,7 +1303,7 @@ function test_Odometer_WhenTerminalTravelsDistanceBetweenTwoRandomPoints_Odomete
   local distanceTravelled = avlHelperFunctions.geoDistance(gpsSettings[1].latitude, gpsSettings[1].longitude, gpsSettings[2].latitude, gpsSettings[2].longitude)
   local odometerValueIncrement = odometerValue2 - odometerValue1
 
-  assert_equal(distanceTravelled*1000, odometerValueIncrement, 30000, "Odometer has been increased for incorrect value")
+  assert_equal(distanceTravelled*1000, odometerValueIncrement, 40000, "Odometer has been increased for incorrect value")
 
 end
 

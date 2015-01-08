@@ -78,8 +78,7 @@ module("TestDigitalInputsModule", package.seeall)
   local avlStatesProperty = lsf.getProperties(avlConstants.avlAgentSIN,avlConstants.pins.avlStates)
   assert_false(avlHelperFunctions.stateDetector(avlStatesProperty).InLPM, "Terminal is incorrectly in low power mode")
 
-  -- device profile application
-  randomPortNumber = profile:getRandomPortNumber()
+
 
 end
 
@@ -122,6 +121,10 @@ end
   -- 3. All 4 ports in low state
   -- 4. Digital input lines 1-4 disabled
  function setup()
+
+  -- device profile application
+  randomPortNumber = profile:getRandomPortNumber()
+
   -- setting the continues mode of position service (SIN 20, PIN 15)
   lsf.setProperties(lsfConstants.sins.position,{
                                                   {lsfConstants.pins.gpsReadInterval,GPS_READ_INTERVAL}
