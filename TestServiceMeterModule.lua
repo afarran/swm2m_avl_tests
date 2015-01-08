@@ -783,11 +783,6 @@ function test_ServiceMeter_ForTerminalMovingWhenAllServiceMetersActiveAndGetServ
                     SM4Time = SM4TimeInitial,                                      -- zero hours of increase SM4 is expected
                     SM4Distance = SM4DistanceInitial + (distanceOfStep*111.12)*counter,  -- with every loop run distance increases of distanceOfStep multiplied by 111 kilometers and number iteration
                           }
-    -- device profile application
-    if profile:hasFourIOs() then
-      expectedValues.SM4Time = nil       -- 800 has only 3 I/O's
-      expectedValues.SM4Distance = nil   -- 800 has only 3 I/O's
-    end
 
     assert_equal(expectedValues.SM1Time,tonumber(colmsg.Payload.SM1Time), "SM1Time value is not correct in the report")
     assert_equal(expectedValues.SM1Distance,tonumber(colmsg.Payload.SM1Distance), 2, "SM1Distance value is not correct")

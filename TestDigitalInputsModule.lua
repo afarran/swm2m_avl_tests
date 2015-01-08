@@ -1199,7 +1199,6 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
                                                 {lsfConstants.pins.portConfig[2], 3},      -- port 2 as digital input
                                                 {lsfConstants.pins.portEdgeDetect[1], 3},  -- detection for both rising and falling edge
                                                 {lsfConstants.pins.portEdgeDetect[2], 3},  -- detection for both rising and falling edge
-
                                         }
 
                    )
@@ -1207,7 +1206,7 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
    -- setting AVL properties
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigInp[1], avlConstants.funcDigInp["IgnitionOn"]},   -- line number 1 set for Ignition function
-                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SM1"]},   -- line number 2 set for ServiceMeter1 function
+                                                {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SM1"]},          -- line number 2 set for ServiceMeter1 function
                                                 {avlConstants.pins.maxIdlingTime, MAX_IDLING_TIME},                         -- maximum idling time allowed without sending idling report
 
                                              }
@@ -1224,6 +1223,19 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   gateway.setHighWaterMark()                -- to get the newest messages
 
   device.setIO(2, 1)                        -- that triggers SM = ON (Service Meter line active)
+
+  ---------------------------------------------------
+  -- TODO: REMOVE THIS DEBUGGING SECTION
+  -- sending getServiceMeter message
+  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
+  gateway.submitForwardMessage(getServiceMeterMessage)
+  -- ServiceMeter message is expected
+  local expectedMins = {avlConstants.mins.serviceMeter}
+  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
+  print("This TC was failing for non-identified reason - this print has been added for debugging. Will be removed when the problem is diagnosed")
+  print(framework.dump(receivedMessages))
+  ---------------------------------------------------
+
   framework.delay(2)                        -- to make sure event has been generated before further actions
   device.setIO(1, 1)                        -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(MAX_IDLING_TIME)          -- wait longer than maxIdlingTime to try to trigger the IdlingStart event
@@ -1231,9 +1243,11 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
   -- IdlingStart
   local expectedMins = {avlConstants.mins.idlingStart}
   local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins, TIMEOUT_MSG_NOT_EXPECTED)
-  assert_nil(receivedMessages[avlConstants.mins.idlingStart], "IdlingStart message not expected")
 
   device.setIO(2, 0)                        -- that triggers SM = Off (Service Meter line not active)
+  assert_nil(receivedMessages[avlConstants.mins.idlingStart], "IdlingStart message not expected")
+
+
 
 end
 
