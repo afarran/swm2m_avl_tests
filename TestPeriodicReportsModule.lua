@@ -509,7 +509,7 @@ end
 function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMessageSentPeriodically()
 
   local POSITION_MSG_INTERVAL = 10     -- seconds
-  local NUMBER_OF_REPORTS = 4          -- number of expected reports received during the TC
+  local NUMBER_OF_REPORTS = 6          -- number of expected reports received during the TC
 
 
   -- gps settings table to be sent to simulator
@@ -544,7 +544,7 @@ function test_PeriodicPosition_ForPositionMsgIntervalGreaterThanZero_PositionMes
   -- look for StationaryIntervalSat messages
   local matchingMessages = framework.filterMessages(receivedMessages, framework.checkMessageType(avlConstants.avlAgentSIN, avlConstants.mins.position))
 
-  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages), 1, "The number of received Position reports is incorrect")
+  assert_equal(NUMBER_OF_REPORTS, table.getn(matchingMessages), 2, "The number of received Position reports is incorrect")
 
 
 end
