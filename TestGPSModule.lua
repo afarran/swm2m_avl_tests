@@ -241,7 +241,7 @@ function test_Moving_WhenSpeedAboveStationarySpeedThldForPeriodAboveMovingDeboun
   assert_equal(gpsSettings[2].longitude*60000, tonumber(receivedMessages[avlConstants.mins.movingStart].Longitude), "MovingStart message has incorrect longitude value")
   assert_equal(gpsSettings[2].latitude*60000, tonumber(receivedMessages[avlConstants.mins.movingStart].Latitude), "MovingStart message has incorrect latitude value")
   assert_equal("MovingStart", receivedMessages[avlConstants.mins.movingStart].Name, "MovingStart message has incorrect message name")
-  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.movingStart].EventTime), 5, "MovingStart message has incorrect EventTime value")
+  assert_equal(timeOfEvent, tonumber(receivedMessages[avlConstants.mins.movingStart].EventTime), 15, "MovingStart message has incorrect EventTime value")
   assert_equal(gpsSettings[2].speed, tonumber(receivedMessages[avlConstants.mins.movingStart].Speed), "MovingStart message has incorrect speed value")
   assert_equal(gpsSettings[2].heading, tonumber(receivedMessages[avlConstants.mins.movingStart].Heading), "MovingStart message has incorrect heading value")
 
