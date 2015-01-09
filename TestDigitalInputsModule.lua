@@ -1227,18 +1227,6 @@ function test_EngineIdling_WhenTerminalStationaryAndIgnitionOnForPeriodAboveMaxI
 
   device.setIO(2, 1)                        -- that triggers SM = ON (Service Meter line active)
 
-  ---------------------------------------------------
-  -- TODO: REMOVE THIS DEBUGGING SECTION
-  -- sending getServiceMeter message
-  local getServiceMeterMessage = {SIN = avlConstants.avlAgentSIN, MIN = avlConstants.mins.getServiceMeter}    -- to trigger ServiceMeter event
-  gateway.submitForwardMessage(getServiceMeterMessage)
-  -- ServiceMeter message is expected
-  local expectedMins = {avlConstants.mins.serviceMeter}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-  print("This TC was failing for non-identified reason - this print has been added for debugging. Will be removed when the problem is diagnosed")
-  print(framework.dump(receivedMessages))
-  ---------------------------------------------------
-
   framework.delay(2)                        -- to make sure event has been generated before further actions
   device.setIO(1, 1)                        -- port 1 to high level - that should trigger IgnitionOn
   framework.delay(MAX_IDLING_TIME)          -- wait longer than maxIdlingTime to try to trigger the IdlingStart event

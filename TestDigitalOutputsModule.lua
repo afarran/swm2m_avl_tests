@@ -20,7 +20,7 @@ module("TestDigitalOutputsModule", package.seeall)
  -- *Expected results:
  -- lpmTrigger set correctly and terminal is not in the Low Power mode
 function suite_setup()
-  
+
   -- reset of properties of SIN 126 and 25
 	local message = {SIN = 16, MIN = 10}
 	message.Fields = {{Name="list",Elements={{Index=0,Fields={{Name="sin",Value=126},}},{Index=1,Fields={{Name="sin",Value=25},}}}}}
@@ -1045,18 +1045,7 @@ end
   -- port 1 associated with SeatbeltViolation function changes state according to SeatbeltOff line and moving state
 function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_DigitalOutputPortAssociatedWithSeatBeltViolationInHighState()
 
-  local movingDebounceTime = 1      -- seconds
-  local stationarySpeedThld = 5     -- kmh
-  local stationaryDebounceTime = 1  -- seconds
   local seatbeltDebounceTime = 30   -- seconds
-
-  -- gpsSettings to be used in TC
-  local gpsSettings={
-              speed = stationarySpeedThld+10 ,   -- speed above threshold, terminal in moving state
-              latitude = 1,                      -- degrees
-              longitude = 1,                     -- degrees
-              fixType=3,                         -- valid fix provided
-                     }
 
   -- setting the EIO properties
   lsf.setProperties(lsfConstants.sins.io,{
@@ -1069,9 +1058,6 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
   lsf.setProperties(avlConstants.avlAgentSIN,{
                                                 {avlConstants.pins.funcDigOut[1], avlConstants.funcDigOut["SeatbeltViol"]},   -- digital output line number 1 set for SeatbeltViolation function
                                                 {avlConstants.pins.funcDigInp[2], avlConstants.funcDigInp["SeatbeltOff"]},    -- digital input line number 2 set for SeatbeltOff function
-                                                {avlConstants.pins.movingDebounceTime,movingDebounceTime},                  -- moving related
-                                                {avlConstants.pins.stationarySpeedThld,stationarySpeedThld},                -- moving related
-                                                {avlConstants.pins.seatbeltDebounceTime,seatbeltDebounceTime},              -- moving related
                                              }
                    )
   -- setting digital input bitmap describing when special function inputs are active
@@ -1081,24 +1067,13 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
   -- asserting state of port 1 - low state is expected as terminal is not moving yet and seatbelt is fastened
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
 
-  -- terminal should be put in the moving state
-  local gpsSettings={
-              speed = stationarySpeedThld+10, -- speed above stationarySpeedThld
-              fixType = 3,                    -- valid fix provided
-                     }
-
-  gps.set(gpsSettings)
-  framework.delay(movingDebounceTime)
-
-  local expectedMins = {avlConstants.mins.movingStart}
-  local receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-  assert_not_nil(receivedMessages[avlConstants.mins.movingStart], "MovingStart message not received")
+  avlHelperFunctions.putTerminalIntoMovingState()
 
   -- asserting state of port 1 - low state is expected as terminal moving but seatbelt is fastened
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
 
   device.setIO(2, 1)                            --  port 2 to high level - that triggers SeatbeltOff
-  framework.delay(seatbeltDebounceTime-20)      --  wait shorter than seatbeltDebounceTime not to get SeatbeltViolation state
+  framework.delay(seatbeltDebounceTime - 20)      --  wait shorter than seatbeltDebounceTime not to get SeatbeltViolation state
 
   -- asserting state of port 1 - high state is expected as - terminal moving and  seatbelt is unfastened
   assert_equal(1, device.getIO(1), "Port1 associated with seatbeltViolation is not in high state as expected")
@@ -1111,16 +1086,10 @@ function test_DigitalOutput_WhenTerminalIsMovingAndDriverUnfastensSeatbelt_Digit
 
   -- SeatbeltOff high again
   device.setIO(2, 1)                            --  port 2 to high level - that triggers SeatbeltOff
-  framework.delay(seatbeltDebounceTime-20)      --  wait shorter than seatbeltDebounceTime not to get SeatbeltViolation state
+  framework.delay(seatbeltDebounceTime - 20)      --  wait shorter than seatbeltDebounceTime not to get SeatbeltViolation state
 
   -- checking if the Seatbelt Violation line is not active when SeatbeltOff is active but terminal is not moving
-  gpsSettings.speed = 0  -- terminal stationary
-  gps.set(gpsSettings)   -- applying gps settings
-  framework.delay(stationaryDebounceTime + GPS_READ_INTERVAL) -- wait until terminal is stationary
-
-  expectedMins = {avlConstants.mins.movingEnd}
-  receivedMessages = avlHelperFunctions.matchReturnMessages(expectedMins)
-  assert_not_nil(receivedMessages[avlConstants.mins.movingEnd], "MovingEnd message not received")
+  avlHelperFunctions.putTerminalIntoStationaryState()
 
   -- asserting state of port 1 - low state is expected - terminal not moving
   assert_equal(0, device.getIO(1), "Port1 associated with SeatbeltViol function not in low state as expected")
